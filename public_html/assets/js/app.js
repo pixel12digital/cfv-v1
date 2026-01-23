@@ -221,35 +221,38 @@
         }
     }
     
-    // Interceptar beforeinstallprompt (Android/Desktop)
+    // Escutar beforeinstallprompt (Android/Desktop)
+    // NOTA: NÃO interceptamos (sem preventDefault) para permitir banner automático do Chrome
+    // O botão no menu do usuário serve como alternativa manual
     window.addEventListener('beforeinstallprompt', function(e) {
-        // Prevenir o prompt automático do navegador
-        e.preventDefault();
-        
-        // Guardar o evento para usar depois
+        // NÃO chamar e.preventDefault() - deixar banner automático funcionar
+        // Guardar o evento apenas para uso manual no botão (se necessário)
         deferredPrompt = e;
         
-        // Mostrar botão apenas se não estiver em standalone E deferredPrompt existir
+        // Mostrar botão no menu do usuário como alternativa manual
         if (!isAppInstalled() && installButtonContainer && deferredPrompt) {
             installButtonContainer.style.display = 'block';
         }
         
         // Log discreto (apenas em desenvolvimento)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('[PWA] install handler ready');
+            console.log('[PWA] beforeinstallprompt disponível - banner automático será mostrado');
         }
     });
     
-    // Handler do botão de instalação
+    // Handler do botão de instalação (alternativa manual)
     if (installButton) {
         installButton.addEventListener('click', async function(e) {
             e.preventDefault();
             
-            // Android/Desktop: usar deferredPrompt
+            // Android/Desktop: usar deferredPrompt se disponível
             if (deferredPrompt) {
                 try {
+                    // Interceptar agora para controle manual
+                    deferredPrompt.preventDefault();
+                    
                     // Mostrar prompt de instalação
-                    deferredPrompt.prompt();
+                    await deferredPrompt.prompt();
                     
                     // Aguardar escolha do usuário
                     const { outcome } = await deferredPrompt.userChoice;
@@ -271,6 +274,7 @@
                         installButtonContainer.style.display = 'none';
                     }
                 } catch (error) {
+                    console.error('[PWA] Erro ao chamar prompt():', error);
                     // Se houver erro, esconder botão e limpar
                     deferredPrompt = null;
                     if (installButtonContainer) {
