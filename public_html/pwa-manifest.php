@@ -1,24 +1,30 @@
 <?php
 /**
- * Manifest PWA Dinâmico - White-Label
+ * Manifest PWA - Versão Isolada
  * 
- * Retorna manifest.json dinâmico baseado no CFC atual (tenant)
- * Fallback seguro para valores estáticos se não conseguir resolver CFC
+ * CRÍTICO: Este arquivo é 100% isolado e NÃO depende de:
+ * - Banco de dados
+ * - Frameworks
+ * - Bootstrap
+ * - Sessões
+ * 
+ * Sempre retorna JSON válido, mesmo em caso de erro.
  * 
  * CRÍTICO: Este arquivo NÃO deve ter BOM (Byte Order Mark) ou espaços antes do <?php
  */
 
-// Desabilitar output de erros para garantir JSON puro
+// Desabilitar TODOS os outputs de erro
 ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+ini_set('log_errors', 0);
+error_reporting(0);
 
-// Limpar qualquer output buffer anterior e iniciar novo (garantir JSON puro)
+// Limpar qualquer output buffer anterior
 while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
 
-// Função helper para gerar URL absoluta (se base_url não estiver disponível)
+// Função helper para gerar URL absoluta (isolada, não depende de nada)
 function getBaseUrl($path = '') {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
@@ -43,8 +49,8 @@ function getBaseUrl($path = '') {
     }
 }
 
-// Valores padrão (fallback)
-$defaultManifest = [
+// Manifest padrão (sempre válido)
+$manifest = [
     'name' => 'CFC Sistema de Gestão',
     'short_name' => 'CFC Sistema',
     'description' => 'Sistema de gestão para Centros de Formação de Condutores',
@@ -70,174 +76,32 @@ $defaultManifest = [
     ]
 ];
 
-// Tentar carregar dados dinâmicos do CFC (com fallback seguro)
-// CRÍTICO: Se qualquer erro ocorrer (DB, includes, etc), usar fallback estático
-try {
-    // Incluir dependências mínimas (com output buffering para evitar warnings)
-    $rootPath = dirname(__DIR__);
-    
-    // Suprimir warnings/notices durante includes (não queremos no JSON)
-    $oldErrorReporting = error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
-    
-    // 1. Bootstrap (session e helpers) - pode falhar se houver problemas de sessão
-    if (file_exists($rootPath . '/app/Bootstrap.php')) {
-        require_once $rootPath . '/app/Bootstrap.php';
-    }
-    
-    // 2. Constants (constantes do sistema) - não depende de DB
-    if (file_exists($rootPath . '/app/Config/Constants.php')) {
-        require_once $rootPath . '/app/Config/Constants.php';
-    }
-    
-    // 3. Env (configurações) - pode falhar se .env não existir, mas não é crítico
-    if (file_exists($rootPath . '/app/Config/Env.php')) {
-        require_once $rootPath . '/app/Config/Env.php';
-        \App\Config\Env::load();
-    }
-    
-    // 4. Database (conexão) - CRÍTICO: pode falhar se DB não estiver configurado
-    if (file_exists($rootPath . '/app/Config/Database.php')) {
-        require_once $rootPath . '/app/Config/Database.php';
-    } else {
-        // Se Database.php não existe, usar fallback
-        throw new \Exception('Database config not found');
-    }
-    
-    // 5. Model base - CRÍTICO: tenta conectar ao DB no construtor
-    if (file_exists($rootPath . '/app/Models/Model.php')) {
-        require_once $rootPath . '/app/Models/Model.php';
-    } else {
-        throw new \Exception('Model base not found');
-    }
-    
-    // 6. Model Cfc - CRÍTICO: tenta conectar ao DB no construtor
-    if (file_exists($rootPath . '/app/Models/Cfc.php')) {
-        require_once $rootPath . '/app/Models/Cfc.php';
-        
-        // Tentar criar instância do model - pode lançar exceção se DB não conectar
-        // Capturar qualquer erro de conexão aqui
-        try {
-            $cfcModel = new \App\Models\Cfc();
-            $cfc = $cfcModel->getCurrent();
-        } catch (\PDOException $e) {
-            // Erro de conexão ao banco - usar fallback
-            throw new \Exception('Database connection failed: ' . $e->getMessage());
-        } catch (\Exception $e) {
-            // Qualquer outro erro ao criar model - usar fallback
-            throw new \Exception('Model instantiation failed: ' . $e->getMessage());
-        }
-        
-        if ($cfc && !empty($cfc['nome'])) {
-            // Montar manifest dinâmico
-            $cfcName = trim($cfc['nome']);
-            $shortName = mb_substr($cfcName, 0, 15); // Limitar a 15 caracteres
-            
-            // Se o nome for muito longo, truncar e adicionar "..."
-            if (mb_strlen($cfcName) > 15) {
-                $shortName = mb_substr($cfcName, 0, 12) . '...';
-            }
-            
-            // Verificar se há ícones PWA gerados para este CFC
-            $icons = $defaultManifest['icons']; // Fallback para ícones padrão
-            
-            if (!empty($cfc['id'])) {
-                // Verificar se os arquivos existem
-                $rootPath = dirname(__DIR__);
-                $icon192Path = $rootPath . '/public_html/icons/' . $cfc['id'] . '/icon-192x192.png';
-                $icon512Path = $rootPath . '/public_html/icons/' . $cfc['id'] . '/icon-512x512.png';
-                
-                if (file_exists($icon192Path) && file_exists($icon512Path)) {
-                    // Usar ícones dinâmicos do CFC com URLs absolutas
-                    $icons = [
-                        [
-                            'src' => getBaseUrl('icons/' . $cfc['id'] . '/icon-192x192.png'),
-                            'sizes' => '192x192',
-                            'type' => 'image/png',
-                            'purpose' => 'any maskable'
-                        ],
-                        [
-                            'src' => getBaseUrl('icons/' . $cfc['id'] . '/icon-512x512.png'),
-                            'sizes' => '512x512',
-                            'type' => 'image/png',
-                            'purpose' => 'any maskable'
-                        ]
-                    ];
-                }
-            }
-            
-            // Usar nome do CFC
-            $manifest = [
-                'name' => $cfcName,
-                'short_name' => $shortName,
-                'description' => 'Sistema de gestão para ' . $cfcName,
-                'start_url' => getBaseUrl('dashboard'),
-                'scope' => getBaseUrl(''),
-                'display' => 'standalone',
-                'orientation' => 'portrait-primary',
-                'theme_color' => '#023A8D', // Pode ser dinâmico no futuro se houver campo theme_color
-                'background_color' => '#ffffff',
-                'icons' => $icons
-            ];
-            
-        } else {
-            // CFC não encontrado ou sem nome - usar fallback
-            $manifest = $defaultManifest;
-        }
-    } else {
-        // Model não existe - usar fallback
-        $manifest = $defaultManifest;
-    }
-    
-} catch (\PDOException $e) {
-    // Erro específico de conexão ao banco - usar fallback estático
-    // NÃO logar nem expor erro ao cliente - apenas usar manifest padrão
-    $manifest = $defaultManifest;
-} catch (\Exception $e) {
-    // Qualquer erro - usar fallback (nunca retornar 500)
-    // NÃO logar nem expor erro ao cliente - apenas usar manifest padrão
-    $manifest = $defaultManifest;
-} catch (\Throwable $e) {
-    // Capturar qualquer erro fatal também (ParseError, TypeError, etc)
-    $manifest = $defaultManifest;
-} finally {
-    // Restaurar error reporting
-    if (isset($oldErrorReporting)) {
-        error_reporting($oldErrorReporting);
-    }
-    // Garantir que não há output de erro antes do JSON
-    if (ob_get_level() > 0) {
-        ob_clean();
-    }
-}
-
-// Limpar buffer completamente e garantir que não há output antes do JSON
+// Limpar buffer completamente antes de qualquer output
 ob_clean();
 
 // CRÍTICO: Definir headers ANTES de qualquer output
-// Usar replace=true para sobrescrever qualquer header anterior
 if (!headers_sent()) {
     header('Content-Type: application/manifest+json; charset=utf-8', true);
     header('Cache-Control: public, max-age=300', true);
     header('X-Content-Type-Options: nosniff', true);
 }
 
-// Output JSON (sempre retorna 200 com manifest válido)
-// Garantir que não há whitespace ou BOM antes do JSON
+// Output JSON (sempre válido)
 $json = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
-// Verificar se houve erro na codificação JSON
+// Se houver erro na codificação (não deveria acontecer), usar JSON mínimo válido
 if (json_last_error() !== JSON_ERROR_NONE) {
-    // Se houver erro, usar fallback simples
     ob_clean();
     if (!headers_sent()) {
         header('Content-Type: application/manifest+json; charset=utf-8', true);
     }
-    $json = json_encode($defaultManifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    // JSON mínimo válido como último recurso
+    $json = '{"name":"CFC Sistema","short_name":"CFC","display":"standalone"}';
 }
 
 // Output direto sem espaços
 echo $json;
 
-// Finalizar output buffer e sair imediatamente
+// Finalizar e sair imediatamente
 ob_end_flush();
 exit(0);
