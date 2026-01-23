@@ -18,79 +18,111 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $currentRole = $_SESSION['current_role'] ?? '';
-        $userId = $_SESSION['user_id'] ?? null;
-        
-        // Se não houver current_role mas houver user_id, verificar tipo do usuário (sistema antigo)
-        if (empty($currentRole) && $userId) {
-            try {
-                $userModel = new User();
-                $user = $userModel->find($userId);
-                
-                if ($user) {
-                    // Mapear tipo do sistema antigo para current_role
-                    $tipo = strtolower($user['tipo'] ?? '');
-                    
-                    // Redirecionar para o dashboard correto do sistema antigo
-                    $basePath = '';
-                    if (function_exists('base_url')) {
-                        // Usar base_url se disponível (sistema novo)
-                        $basePath = rtrim(base_url(), '/');
-                    } elseif (defined('BASE_PATH')) {
-                        // Usar BASE_PATH se definido (sistema antigo)
-                        $basePath = BASE_PATH;
-                    }
-                    
-                    switch ($tipo) {
-                        case 'instrutor':
-                            header('Location: ' . $basePath . '/instrutor/dashboard.php');
-                            exit;
-                            
-                        case 'aluno':
-                            header('Location: ' . $basePath . '/aluno/dashboard.php');
-                            exit;
-                            
-                        case 'admin':
-                        case 'secretaria':
-                            header('Location: ' . $basePath . '/admin/index.php');
-                            exit;
-                            
-                        default:
-                            // Se não conseguir determinar, tentar usar o sistema novo
-                            break;
-                    }
-                }
-            } catch (\Exception $e) {
-                error_log('[DashboardController] Erro ao verificar tipo do usuário: ' . $e->getMessage());
+        try {
+            $currentRole = $_SESSION['current_role'] ?? '';
+            $userId = $_SESSION['user_id'] ?? null;
+            
+            // Se não houver user_id, redirecionar para login
+            if (!$userId) {
+                $this->redirectToLogin();
+                return;
             }
+            
+            // Se não houver current_role mas houver user_id, verificar tipo do usuário (sistema antigo)
+            if (empty($currentRole) && $userId) {
+                try {
+                    $userModel = new User();
+                    $user = $userModel->find($userId);
+                    
+                    if ($user) {
+                        // Mapear tipo do sistema antigo para current_role
+                        $tipo = strtolower($user['tipo'] ?? '');
+                        
+                        // Redirecionar para o dashboard correto do sistema antigo
+                        $this->redirectToLegacyDashboard($tipo);
+                        return;
+                    }
+                } catch (\Exception $e) {
+                    error_log('[DashboardController] Erro ao verificar tipo do usuário: ' . $e->getMessage());
+                    // Continuar com o fluxo normal se houver erro
+                }
+            }
+            
+            // Se for ALUNO, carregar dados específicos
+            if ($currentRole === Constants::ROLE_ALUNO && $userId) {
+                return $this->dashboardAluno($userId);
+            }
+            
+            // Se for INSTRUTOR, carregar dados específicos
+            if ($currentRole === Constants::ROLE_INSTRUTOR && $userId) {
+                return $this->dashboardInstrutor($userId);
+            }
+            
+            // Se for ADMIN ou SECRETARIA, carregar dashboard administrativo
+            if (($currentRole === Constants::ROLE_ADMIN || $currentRole === Constants::ROLE_SECRETARIA) && $userId) {
+                return $this->dashboardAdmin($userId);
+            }
+            
+            // Se chegou aqui sem role mas tem user_id, redirecionar para login
+            if ($userId && empty($currentRole)) {
+                $this->redirectToLogin();
+                return;
+            }
+            
+            // Dashboard genérico para outros perfis
+            $data = [
+                'pageTitle' => 'Dashboard'
+            ];
+            $this->view('dashboard', $data);
+        } catch (\Exception $e) {
+            error_log('[DashboardController] Erro fatal: ' . $e->getMessage());
+            error_log('[DashboardController] Stack trace: ' . $e->getTraceAsString());
+            
+            // Em caso de erro, redirecionar para login
+            $this->redirectToLogin();
         }
-        
-        // Se for ALUNO, carregar dados específicos
-        if ($currentRole === Constants::ROLE_ALUNO && $userId) {
-            return $this->dashboardAluno($userId);
-        }
-        
-        // Se for INSTRUTOR, carregar dados específicos
-        if ($currentRole === Constants::ROLE_INSTRUTOR && $userId) {
-            return $this->dashboardInstrutor($userId);
-        }
-        
-        // Se for ADMIN ou SECRETARIA, carregar dashboard administrativo
-        if (($currentRole === Constants::ROLE_ADMIN || $currentRole === Constants::ROLE_SECRETARIA) && $userId) {
-            return $this->dashboardAdmin($userId);
-        }
-        
-        // Se chegou aqui sem role mas tem user_id, redirecionar para login
-        if ($userId && empty($currentRole)) {
+    }
+    
+    private function redirectToLogin()
+    {
+        if (function_exists('base_url')) {
             header('Location: ' . base_url('login'));
-            exit;
+        } else {
+            $basePath = defined('BASE_PATH') ? BASE_PATH : '';
+            header('Location: ' . $basePath . '/login.php');
+        }
+        exit;
+    }
+    
+    private function redirectToLegacyDashboard($tipo)
+    {
+        $basePath = '';
+        if (function_exists('base_url')) {
+            // Usar base_url se disponível (sistema novo)
+            $basePath = rtrim(base_url(), '/');
+        } elseif (defined('BASE_PATH')) {
+            // Usar BASE_PATH se definido (sistema antigo)
+            $basePath = BASE_PATH;
         }
         
-        // Dashboard genérico para outros perfis
-        $data = [
-            'pageTitle' => 'Dashboard'
-        ];
-        $this->view('dashboard', $data);
+        switch ($tipo) {
+            case 'instrutor':
+                header('Location: ' . $basePath . '/instrutor/dashboard.php');
+                exit;
+                
+            case 'aluno':
+                header('Location: ' . $basePath . '/aluno/dashboard.php');
+                exit;
+                
+            case 'admin':
+            case 'secretaria':
+                header('Location: ' . $basePath . '/admin/index.php');
+                exit;
+                
+            default:
+                // Se não conseguir determinar, redirecionar para login
+                $this->redirectToLogin();
+        }
     }
     
     private function dashboardAluno($userId)
