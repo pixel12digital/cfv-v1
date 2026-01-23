@@ -44,6 +44,18 @@ class DashboardController extends Controller
             // Se não houver current_role mas houver user_id, verificar tipo do usuário (sistema antigo)
             if (empty($currentRole) && $userId) {
                 try {
+                    // CORREÇÃO: Verificar primeiro se há user_type na sessão (sistema antigo)
+                    $userType = $_SESSION['user_type'] ?? $_SESSION['user_tipo'] ?? null;
+                    
+                    if ($userType) {
+                        // Se houver user_type, usar diretamente sem consultar banco
+                        $tipo = strtolower($userType);
+                        $_SESSION['redirect_count'] = ($redirectCount ?? 0) + 1;
+                        $this->redirectToLegacyDashboard($tipo);
+                        return;
+                    }
+                    
+                    // Se não houver user_type, buscar do banco (último recurso)
                     $userModel = new User();
                     $user = $userModel->find($userId);
                     
@@ -427,67 +439,127 @@ class DashboardController extends Controller
     
     private function dashboardInstrutor($userId)
     {
-        $userModel = new User();
-        $user = $userModel->findWithLinks($userId);
+        try {
+            // LOGGING: Início do método
+            error_log('[DashboardController::dashboardInstrutor] Iniciando para user_id=' . $userId);
+            error_log('[DashboardController::dashboardInstrutor] Session: user_id=' . ($_SESSION['user_id'] ?? 'N/A') . ', current_role=' . ($_SESSION['current_role'] ?? 'N/A') . ', user_type=' . ($_SESSION['user_type'] ?? 'N/A'));
+            
+            $userModel = new User();
+            
+            // Buscar usuário com links (Model já trata tabelas inexistentes internamente)
+            $user = $userModel->findWithLinks($userId);
+            error_log('[DashboardController::dashboardInstrutor] findWithLinks() executado');
+            
+            if (!$user) {
+                error_log('[DashboardController::dashboardInstrutor] Usuário não encontrado');
+                $data = [
+                    'pageTitle' => 'Dashboard',
+                    'instructor' => null
+                ];
+                $this->view('dashboard/instrutor', $data);
+                return;
+            }
+            
+            // Determinar instructor_id (fallback para user_id se não encontrar)
+            $instructorId = $user['instructor_id'] ?? $userId;
+            error_log('[DashboardController::dashboardInstrutor] Usando instructor_id: ' . $instructorId);
+            
+            $db = Database::getInstance()->getConnection();
+            $cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
+            $today = date('Y-m-d');
+            
+            // Buscar próxima aula agendada (com dedupe de sessões teóricas)
+            try {
+                $lessonModel = new \App\Models\Lesson();
+                $nextLessons = $lessonModel->findByInstructorWithTheoryDedupe(
+                    $instructorId,
+                    $cfcId,
+                    ['tab' => 'proximas']
+                );
+                $nextLesson = !empty($nextLessons) ? $nextLessons[0] : null;
+                error_log('[DashboardController::dashboardInstrutor] Próximas aulas encontradas: ' . count($nextLessons));
+            } catch (\PDOException $e) {
+                error_log('[DashboardController::dashboardInstrutor] ERRO em findByInstructorWithTheoryDedupe():');
+                error_log('[DashboardController::dashboardInstrutor]   - Classe: ' . get_class($e));
+                error_log('[DashboardController::dashboardInstrutor]   - SQLSTATE: ' . $e->getCode());
+                error_log('[DashboardController::dashboardInstrutor]   - Mensagem: ' . $e->getMessage());
+                error_log('[DashboardController::dashboardInstrutor]   - Arquivo: ' . $e->getFile() . ':' . $e->getLine());
+                $nextLesson = null;
+            }
+            
+            // Buscar aulas de hoje
+            try {
+                $stmt = $db->prepare(
+                    "SELECT l.*,
+                            s.name as student_name,
+                            v.plate as vehicle_plate
+                     FROM lessons l
+                     INNER JOIN students s ON l.student_id = s.id
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     WHERE l.instructor_id = ?
+                       AND l.cfc_id = ?
+                       AND l.scheduled_date = ?
+                       AND l.status != 'cancelada'
+                     ORDER BY l.scheduled_time ASC"
+                );
+                $stmt->execute([$instructorId, $cfcId, $today]);
+                $todayLessons = $stmt->fetchAll();
+                error_log('[DashboardController::dashboardInstrutor] Aulas de hoje encontradas: ' . count($todayLessons));
+            } catch (\PDOException $e) {
+                error_log('[DashboardController::dashboardInstrutor] ERRO ao buscar aulas de hoje:');
+                error_log('[DashboardController::dashboardInstrutor]   - Classe: ' . get_class($e));
+                error_log('[DashboardController::dashboardInstrutor]   - SQLSTATE: ' . $e->getCode());
+                error_log('[DashboardController::dashboardInstrutor]   - Mensagem: ' . $e->getMessage());
+                error_log('[DashboardController::dashboardInstrutor]   - Arquivo: ' . $e->getFile() . ':' . $e->getLine());
+                $todayLessons = [];
+            }
         
-        if (!$user || empty($user['instructor_id'])) {
-            // Instrutor sem vínculo, mostrar mensagem
+            // Contadores
+            $totalToday = count($todayLessons);
+            $completedToday = count(array_filter($todayLessons, function($l) {
+                return $l['status'] === 'concluida';
+            }));
+            $pendingToday = $totalToday - $completedToday;
+            
+            error_log('[DashboardController::dashboardInstrutor] Preparando dados para view');
+            
             $data = [
                 'pageTitle' => 'Dashboard',
-                'instructor' => null
+                'instructor' => $user,
+                'nextLesson' => $nextLesson,
+                'todayLessons' => $todayLessons,
+                'totalToday' => $totalToday,
+                'completedToday' => $completedToday,
+                'pendingToday' => $pendingToday
             ];
+            
+            error_log('[DashboardController::dashboardInstrutor] Renderizando view dashboard/instrutor');
             $this->view('dashboard/instrutor', $data);
-            return;
+            
+        } catch (\PDOException $e) {
+            // LOGGING: Erro detalhado de PDO
+            error_log('[DashboardController::dashboardInstrutor] ERRO PDOException:');
+            error_log('[DashboardController::dashboardInstrutor]   - Classe: ' . get_class($e));
+            error_log('[DashboardController::dashboardInstrutor]   - SQLSTATE: ' . $e->getCode());
+            error_log('[DashboardController::dashboardInstrutor]   - Mensagem: ' . $e->getMessage());
+            error_log('[DashboardController::dashboardInstrutor]   - Arquivo: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[DashboardController::dashboardInstrutor]   - Stack trace: ' . $e->getTraceAsString());
+            error_log('[DashboardController::dashboardInstrutor]   - Session: user_id=' . ($_SESSION['user_id'] ?? 'N/A') . ', current_role=' . ($_SESSION['current_role'] ?? 'N/A') . ', user_type=' . ($_SESSION['user_type'] ?? 'N/A'));
+            
+            // Re-lançar para ser capturado pelo try-catch do index()
+            throw $e;
+        } catch (\Exception $e) {
+            // LOGGING: Erro geral
+            error_log('[DashboardController::dashboardInstrutor] ERRO Exception:');
+            error_log('[DashboardController::dashboardInstrutor]   - Classe: ' . get_class($e));
+            error_log('[DashboardController::dashboardInstrutor]   - Mensagem: ' . $e->getMessage());
+            error_log('[DashboardController::dashboardInstrutor]   - Arquivo: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[DashboardController::dashboardInstrutor]   - Stack trace: ' . $e->getTraceAsString());
+            error_log('[DashboardController::dashboardInstrutor]   - Session: user_id=' . ($_SESSION['user_id'] ?? 'N/A') . ', current_role=' . ($_SESSION['current_role'] ?? 'N/A') . ', user_type=' . ($_SESSION['user_type'] ?? 'N/A'));
+            
+            // Re-lançar para ser capturado pelo try-catch do index()
+            throw $e;
         }
-        
-        $instructorId = $user['instructor_id'];
-        $db = Database::getInstance()->getConnection();
-        $cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
-        
-        // Buscar próxima aula agendada (com dedupe de sessões teóricas)
-        $lessonModel = new \App\Models\Lesson();
-        $nextLessons = $lessonModel->findByInstructorWithTheoryDedupe(
-            $instructorId,
-            $cfcId,
-            ['tab' => 'proximas']
-        );
-        $nextLesson = !empty($nextLessons) ? $nextLessons[0] : null;
-        
-        // Buscar aulas de hoje
-        $stmt = $db->prepare(
-            "SELECT l.*,
-                    s.name as student_name,
-                    v.plate as vehicle_plate
-             FROM lessons l
-             INNER JOIN students s ON l.student_id = s.id
-             LEFT JOIN vehicles v ON l.vehicle_id = v.id
-             WHERE l.instructor_id = ?
-               AND l.cfc_id = ?
-               AND l.scheduled_date = ?
-               AND l.status != 'cancelada'
-             ORDER BY l.scheduled_time ASC"
-        );
-        $stmt->execute([$instructorId, $cfcId, $today]);
-        $todayLessons = $stmt->fetchAll();
-        
-        // Contadores
-        $totalToday = count($todayLessons);
-        $completedToday = count(array_filter($todayLessons, function($l) {
-            return $l['status'] === 'concluida';
-        }));
-        $pendingToday = $totalToday - $completedToday;
-        
-        $data = [
-            'pageTitle' => 'Dashboard',
-            'instructor' => $user,
-            'nextLesson' => $nextLesson,
-            'todayLessons' => $todayLessons,
-            'totalToday' => $totalToday,
-            'completedToday' => $completedToday,
-            'pendingToday' => $pendingToday
-        ];
-        
-        $this->view('dashboard/instrutor', $data);
     }
     
     private function dashboardAdmin($userId)

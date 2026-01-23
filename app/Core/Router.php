@@ -94,8 +94,16 @@ class Router
                 echo "404 - Página não encontrada";
             }
         } catch (\PDOException $e) {
-            // Tratar erros de conexão ao banco de dados
-            error_log('[Router] Erro de conexão ao banco: ' . $e->getMessage());
+            // LOGGING DETALHADO: Erro de conexão ao banco de dados
+            error_log('[Router] ========== ERRO PDOException ==========');
+            error_log('[Router] Classe: ' . get_class($e));
+            error_log('[Router] SQLSTATE: ' . $e->getCode());
+            error_log('[Router] Mensagem: ' . $e->getMessage());
+            error_log('[Router] Arquivo: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[Router] Stack trace: ' . $e->getTraceAsString());
+            error_log('[Router] REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+            error_log('[Router] Session: user_id=' . ($_SESSION['user_id'] ?? 'N/A') . ', current_role=' . ($_SESSION['current_role'] ?? 'N/A') . ', user_type=' . ($_SESSION['user_type'] ?? 'N/A'));
+            error_log('[Router] ========================================');
             
             http_response_code(500);
             
@@ -120,9 +128,15 @@ class Router
                 echo '</body></html>';
             }
         } catch (\Exception $e) {
-            // Tratar outras exceções
-            error_log('[Router] Erro não tratado: ' . $e->getMessage());
+            // LOGGING DETALHADO: Outras exceções
+            error_log('[Router] ========== ERRO Exception ==========');
+            error_log('[Router] Classe: ' . get_class($e));
+            error_log('[Router] Mensagem: ' . $e->getMessage());
+            error_log('[Router] Arquivo: ' . $e->getFile() . ':' . $e->getLine());
             error_log('[Router] Stack trace: ' . $e->getTraceAsString());
+            error_log('[Router] REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+            error_log('[Router] Session: user_id=' . ($_SESSION['user_id'] ?? 'N/A') . ', current_role=' . ($_SESSION['current_role'] ?? 'N/A') . ', user_type=' . ($_SESSION['user_type'] ?? 'N/A'));
+            error_log('[Router] =====================================');
             
             http_response_code(500);
             
