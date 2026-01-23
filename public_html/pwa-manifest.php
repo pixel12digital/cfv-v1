@@ -12,9 +12,8 @@ while (ob_get_level()) {
 }
 ob_start();
 
-// Headers (definir antes de qualquer output)
-header('Content-Type: application/manifest+json; charset=utf-8');
-header('Cache-Control: public, max-age=300'); // 5 minutos - permite atualização rápida mas mantém performance
+// CRÍTICO: Headers devem ser definidos ANTES de qualquer output
+// Não definir aqui ainda - serão definidos antes do echo do JSON
 
 // Função helper para gerar URL absoluta (se base_url não estiver disponível)
 function getBaseUrl($path = '') {
@@ -188,12 +187,25 @@ try {
 // Limpar buffer e garantir que não há output antes do JSON
 ob_clean();
 
+// CRÍTICO: Definir headers ANTES de qualquer output
+if (!headers_sent()) {
+    header('Content-Type: application/manifest+json; charset=utf-8', true);
+    header('Cache-Control: public, max-age=300', true);
+}
+
 // Output JSON (sempre retorna 200 com manifest válido)
 // Garantir que não há whitespace ou BOM antes do JSON
-header('Content-Type: application/manifest+json; charset=utf-8', true);
-header('Cache-Control: public, max-age=300', true);
+$json = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
-echo json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+// Verificar se houve erro na codificação JSON
+if (json_last_error() !== JSON_ERROR_NONE) {
+    // Se houver erro, usar fallback simples
+    ob_clean();
+    header('Content-Type: application/manifest+json; charset=utf-8', true);
+    $json = json_encode($defaultManifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+}
+
+echo $json;
 
 // Finalizar output buffer
 ob_end_flush();

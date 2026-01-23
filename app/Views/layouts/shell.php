@@ -198,16 +198,14 @@
                 // Corrigir path do SW usando pwa_asset_path (detecta automaticamente estrutura do servidor)
                 let swPath = <?= json_encode(pwa_asset_path('sw.js')) ?>;
                 
-                // Log do path para debug (apenas em desenvolvimento)
-                if (!isProduction) {
-                    console.log('[SW] Tentando registrar Service Worker em:', swPath);
-                }
+                // Log do path para debug (sempre logar para identificar problema)
+                console.log('[SW] Tentando registrar Service Worker em:', swPath);
                 
                 // Desabilitar SW em localhost durante debug
                 if (isLocalhost) {
                     console.log('[SW] Service Worker desabilitado em localhost para debug');
                 } else {
-                    // Verificar se arquivo existe antes de registrar (apenas em produção)
+                    // Verificar se arquivo existe antes de registrar
                     fetch(swPath, { method: 'HEAD' })
                     .then(function(response) {
                         if (response.ok) {
@@ -216,12 +214,15 @@
                                     .then(function(registration) {
                                         console.log('[SW] Service Worker registrado com sucesso:', registration.scope);
                                         
-                                        // Verificar se está controlando a página
-                                        if (navigator.serviceWorker.controller) {
-                                            console.log('[SW] Service Worker está controlando a página');
-                                        } else {
-                                            console.log('[SW] Service Worker registrado mas não está controlando ainda');
-                                        }
+                                        // Aguardar um pouco e verificar se está controlando
+                                        setTimeout(function() {
+                                            if (navigator.serviceWorker.controller) {
+                                                console.log('[SW] ✅ Service Worker está controlando a página');
+                                            } else {
+                                                console.log('[SW] ⚠️ Service Worker registrado mas não está controlando ainda');
+                                                console.log('[SW] Aguardando ativação...');
+                                            }
+                                        }, 1000);
                                         
                                         if (isProduction) {
                                             // Verificar atualizações periodicamente (apenas em produção)
@@ -231,16 +232,17 @@
                                         }
                                     })
                                     .catch(function(error) {
-                                        console.error('[SW] Erro ao registrar Service Worker:', error);
+                                        console.error('[SW] ❌ Erro ao registrar Service Worker:', error);
                                     });
                             });
                         } else {
-                            console.error('[SW] Service Worker não encontrado (404) em:', swPath);
+                            console.error('[SW] ❌ Service Worker não encontrado (', response.status, ') em:', swPath);
+                            console.log('[SW] Verifique se o arquivo existe no servidor');
                         }
-                        // Se response não é ok (404, etc), não registrar (evita 404 no console)
                     })
                     .catch(function(error) {
-                        console.error('[SW] Erro ao verificar Service Worker:', error);
+                        console.error('[SW] ❌ Erro ao verificar Service Worker:', error);
+                        console.log('[SW] Path tentado:', swPath);
                     });
                 }
             }
