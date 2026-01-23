@@ -18,15 +18,28 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Proteção contra loop de redirecionamento
+        $redirectCount = $_SESSION['redirect_count'] ?? 0;
+        if ($redirectCount > 3) {
+            // Limpar contador e mostrar erro
+            unset($_SESSION['redirect_count']);
+            error_log('[DashboardController] Loop de redirecionamento detectado. Interrompendo.');
+            die('Erro: Loop de redirecionamento detectado. Por favor, limpe os cookies e tente novamente.');
+        }
+        
         try {
             $currentRole = $_SESSION['current_role'] ?? '';
             $userId = $_SESSION['user_id'] ?? null;
             
             // Se não houver user_id, redirecionar para login
             if (!$userId) {
+                $_SESSION['redirect_count'] = ($redirectCount ?? 0) + 1;
                 $this->redirectToLogin();
                 return;
             }
+            
+            // Resetar contador se chegou aqui com user_id válido
+            unset($_SESSION['redirect_count']);
             
             // Se não houver current_role mas houver user_id, verificar tipo do usuário (sistema antigo)
             if (empty($currentRole) && $userId) {
@@ -39,6 +52,7 @@ class DashboardController extends Controller
                         $tipo = strtolower($user['tipo'] ?? '');
                         
                         // Redirecionar para o dashboard correto do sistema antigo
+                        $_SESSION['redirect_count'] = ($redirectCount ?? 0) + 1;
                         $this->redirectToLegacyDashboard($tipo);
                         return;
                     } else {
@@ -56,7 +70,11 @@ class DashboardController extends Controller
                         'pageTitle' => 'Erro',
                         'error' => 'Erro ao carregar dados do usuário. Por favor, faça logout e login novamente.'
                     ];
-                    $this->view('errors/500', $data);
+                    if (file_exists(APP_PATH . '/Views/errors/500.php')) {
+                        $this->view('errors/500', $data);
+                    } else {
+                        die('Erro ao carregar dados do usuário. <a href="' . base_url('logout') . '">Fazer logout</a>');
+                    }
                     return;
                 }
             }

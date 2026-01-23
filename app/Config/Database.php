@@ -33,7 +33,15 @@ class Database
             
             $this->connection = new \PDO($dsn, $config['username'], $config['password'], $options);
         } catch (\PDOException $e) {
-            die("Erro na conexão: " . $e->getMessage());
+            // Não usar die() para evitar quebrar o fluxo - logar e lançar exceção
+            error_log('[Database] Erro na conexão: ' . $e->getMessage());
+            
+            // Se for erro de limite de conexões, mostrar mensagem amigável
+            if (strpos($e->getMessage(), 'max_connections_per_hour') !== false) {
+                throw new \PDOException('Limite de conexões ao banco de dados excedido. Por favor, aguarde alguns minutos e tente novamente.');
+            }
+            
+            throw $e;
         }
     }
 
