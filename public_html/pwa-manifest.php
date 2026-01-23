@@ -71,6 +71,7 @@ $defaultManifest = [
 ];
 
 // Tentar carregar dados dinâmicos do CFC (com fallback seguro)
+// CRÍTICO: Se qualquer erro ocorrer (DB, includes, etc), usar fallback estático
 try {
     // Incluir dependências mínimas (com output buffering para evitar warnings)
     $rootPath = dirname(__DIR__);
@@ -78,39 +79,53 @@ try {
     // Suprimir warnings/notices durante includes (não queremos no JSON)
     $oldErrorReporting = error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
     
-    // 1. Bootstrap (session e helpers)
+    // 1. Bootstrap (session e helpers) - pode falhar se houver problemas de sessão
     if (file_exists($rootPath . '/app/Bootstrap.php')) {
         require_once $rootPath . '/app/Bootstrap.php';
     }
     
-    // 2. Constants (constantes do sistema)
+    // 2. Constants (constantes do sistema) - não depende de DB
     if (file_exists($rootPath . '/app/Config/Constants.php')) {
         require_once $rootPath . '/app/Config/Constants.php';
     }
     
-    // 3. Env (configurações)
+    // 3. Env (configurações) - pode falhar se .env não existir, mas não é crítico
     if (file_exists($rootPath . '/app/Config/Env.php')) {
         require_once $rootPath . '/app/Config/Env.php';
         \App\Config\Env::load();
     }
     
-    // 4. Database (conexão)
+    // 4. Database (conexão) - CRÍTICO: pode falhar se DB não estiver configurado
     if (file_exists($rootPath . '/app/Config/Database.php')) {
         require_once $rootPath . '/app/Config/Database.php';
+    } else {
+        // Se Database.php não existe, usar fallback
+        throw new \Exception('Database config not found');
     }
     
-    // 5. Model base
+    // 5. Model base - CRÍTICO: tenta conectar ao DB no construtor
     if (file_exists($rootPath . '/app/Models/Model.php')) {
         require_once $rootPath . '/app/Models/Model.php';
+    } else {
+        throw new \Exception('Model base not found');
     }
     
-    // 6. Model Cfc
+    // 6. Model Cfc - CRÍTICO: tenta conectar ao DB no construtor
     if (file_exists($rootPath . '/app/Models/Cfc.php')) {
         require_once $rootPath . '/app/Models/Cfc.php';
         
-        // Buscar dados do CFC atual
-        $cfcModel = new \App\Models\Cfc();
-        $cfc = $cfcModel->getCurrent();
+        // Tentar criar instância do model - pode lançar exceção se DB não conectar
+        // Capturar qualquer erro de conexão aqui
+        try {
+            $cfcModel = new \App\Models\Cfc();
+            $cfc = $cfcModel->getCurrent();
+        } catch (\PDOException $e) {
+            // Erro de conexão ao banco - usar fallback
+            throw new \Exception('Database connection failed: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            // Qualquer outro erro ao criar model - usar fallback
+            throw new \Exception('Model instantiation failed: ' . $e->getMessage());
+        }
         
         if ($cfc && !empty($cfc['nome'])) {
             // Montar manifest dinâmico
@@ -173,17 +188,25 @@ try {
         $manifest = $defaultManifest;
     }
     
+} catch (\PDOException $e) {
+    // Erro específico de conexão ao banco - usar fallback estático
+    // NÃO logar nem expor erro ao cliente - apenas usar manifest padrão
+    $manifest = $defaultManifest;
 } catch (\Exception $e) {
     // Qualquer erro - usar fallback (nunca retornar 500)
-    // Log do erro pode ser feito aqui se necessário, mas não expor ao cliente
+    // NÃO logar nem expor erro ao cliente - apenas usar manifest padrão
     $manifest = $defaultManifest;
 } catch (\Throwable $e) {
-    // Capturar qualquer erro fatal também
+    // Capturar qualquer erro fatal também (ParseError, TypeError, etc)
     $manifest = $defaultManifest;
 } finally {
     // Restaurar error reporting
     if (isset($oldErrorReporting)) {
         error_reporting($oldErrorReporting);
+    }
+    // Garantir que não há output de erro antes do JSON
+    if (ob_get_level() > 0) {
+        ob_clean();
     }
 }
 

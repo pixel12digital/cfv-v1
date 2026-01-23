@@ -1,4 +1,4 @@
-﻿# Sistema CFC Bom Conselho
+# Sistema CFC Bom Conselho
 
 # Arquivos de configuração local
 config_local.php
@@ -34,3 +34,8 @@ node_modules/
 # Arquivos de ambiente
 .env
 .env.local
+
+# Certificados
+certificados/*.p12
+certificados/*.pfx
+certificados/*.pem
