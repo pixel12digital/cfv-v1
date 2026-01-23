@@ -22,6 +22,9 @@ RewriteRule ^sw\.(js|php)$ - [L]
 # 2.3) Permitir acesso direto aos tools (scripts de diagnóstico)
 RewriteRule ^tools/ - [L]
 
+# 2.4) Permitir acesso direto ao diagnostico.php (script de diagnóstico)
+RewriteRule ^diagnostico\.php$ - [L]
+
 # 3) Front controller (só chega aqui se não for arquivo estático)
 RewriteRule ^ index.php [L]
 
