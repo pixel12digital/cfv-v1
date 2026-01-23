@@ -35,37 +35,38 @@ class AgendaController extends Controller
      */
     public function index()
     {
-        $currentRole = $_SESSION['current_role'] ?? '';
-        $userId = $_SESSION['user_id'] ?? null;
-        $isAluno = ($currentRole === Constants::ROLE_ALUNO);
-        $isInstrutor = ($currentRole === Constants::ROLE_INSTRUTOR);
-        // Para ALUNO e INSTRUTOR, padrão é 'list', para outros perfis é 'week'
-        $view = $_GET['view'] ?? (($isAluno || $isInstrutor) ? 'list' : 'week');
-        $date = $_GET['date'] ?? date('Y-m-d');
-        
-        $lessonModel = new Lesson();
-        $instructorModel = new Instructor();
-        $vehicleModel = new Vehicle();
-        $userModel = new User();
-        
-        // Se for ALUNO, filtrar apenas aulas do próprio aluno
-        $studentId = null;
-        $loggedInstructorId = null;
-        
-        if ($isAluno && $userId) {
-            $user = $userModel->findWithLinks($userId);
-            if ($user && !empty($user['student_id'])) {
-                $studentId = $user['student_id'];
+        try {
+            $currentRole = $_SESSION['current_role'] ?? '';
+            $userId = $_SESSION['user_id'] ?? null;
+            $isAluno = ($currentRole === Constants::ROLE_ALUNO);
+            $isInstrutor = ($currentRole === Constants::ROLE_INSTRUTOR);
+            // Para ALUNO e INSTRUTOR, padrão é 'list', para outros perfis é 'week'
+            $view = $_GET['view'] ?? (($isAluno || $isInstrutor) ? 'list' : 'week');
+            $date = $_GET['date'] ?? date('Y-m-d');
+            
+            $lessonModel = new Lesson();
+            $instructorModel = new Instructor();
+            $vehicleModel = new Vehicle();
+            $userModel = new User();
+            
+            // Se for ALUNO, filtrar apenas aulas do próprio aluno
+            $studentId = null;
+            $loggedInstructorId = null;
+            
+            if ($isAluno && $userId) {
+                $user = $userModel->findWithLinks($userId);
+                if ($user && !empty($user['student_id'])) {
+                    $studentId = $user['student_id'];
+                }
             }
-        }
-        
-        // Se for INSTRUTOR, filtrar apenas aulas do próprio instrutor
-        if ($isInstrutor && $userId) {
-            $user = $userModel->findWithLinks($userId);
-            if ($user && !empty($user['instructor_id'])) {
-                $loggedInstructorId = $user['instructor_id'];
+            
+            // Se for INSTRUTOR, filtrar apenas aulas do próprio instrutor
+            if ($isInstrutor && $userId) {
+                $user = $userModel->findWithLinks($userId);
+                if ($user && !empty($user['instructor_id'])) {
+                    $loggedInstructorId = $user['instructor_id'];
+                }
             }
-        }
         
         // Filtros (apenas para perfis administrativos, não para INSTRUTOR)
         $instructorId = ($isAluno || $isInstrutor) ? null : ($_GET['instructor_id'] ?? null);
@@ -209,6 +210,33 @@ class AgendaController extends Controller
         ];
         
         $this->view('agenda/index', $data);
+        } catch (\PDOException $e) {
+            error_log("[AgendaController::index] PDOException capturada:");
+            error_log("  Classe: " . get_class($e));
+            error_log("  SQLSTATE: " . $e->getCode());
+            error_log("  Mensagem: " . $e->getMessage());
+            error_log("  Arquivo: " . $e->getFile() . ":" . $e->getLine());
+            error_log("  Stack trace: " . $e->getTraceAsString());
+            error_log("  Sessão: " . json_encode([
+                'user_id' => $_SESSION['user_id'] ?? null,
+                'current_role' => $_SESSION['current_role'] ?? null,
+                'user_type' => $_SESSION['user_type'] ?? null,
+            ]));
+            error_log("  REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+            
+            // Exibir mensagem amigável
+            $_SESSION['error'] = 'Erro ao carregar a agenda. Por favor, tente novamente mais tarde.';
+            redirect(base_url('dashboard'));
+        } catch (\Exception $e) {
+            error_log("[AgendaController::index] Exception capturada:");
+            error_log("  Classe: " . get_class($e));
+            error_log("  Mensagem: " . $e->getMessage());
+            error_log("  Arquivo: " . $e->getFile() . ":" . $e->getLine());
+            error_log("  Stack trace: " . $e->getTraceAsString());
+            
+            $_SESSION['error'] = 'Erro ao carregar a agenda. Por favor, tente novamente mais tarde.';
+            redirect(base_url('dashboard'));
+        }
     }
 
     /**

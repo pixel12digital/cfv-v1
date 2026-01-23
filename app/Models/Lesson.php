@@ -8,82 +8,161 @@ class Lesson extends Model
 
     /**
      * Busca aulas com detalhes completos
+     * Trata caso onde tabela instructors não existe
      */
     public function findWithDetails($id)
     {
-        $stmt = $this->query(
-            "SELECT l.*,
-                    s.name as student_name, s.cpf as student_cpf,
-                    e.id as enrollment_id, e.financial_status,
-                    i.name as instructor_name,
-                    v.plate as vehicle_plate, v.model as vehicle_model,
-                    u.nome as created_by_name,
-                    uc.nome as canceled_by_name
-             FROM {$this->table} l
-             INNER JOIN students s ON l.student_id = s.id
-             INNER JOIN enrollments e ON l.enrollment_id = e.id
-             INNER JOIN instructors i ON l.instructor_id = i.id
-             LEFT JOIN vehicles v ON l.vehicle_id = v.id
-             LEFT JOIN usuarios u ON l.created_by = u.id
-             LEFT JOIN usuarios uc ON l.canceled_by = uc.id
-             WHERE l.id = ?",
-            [$id]
-        );
-        return $stmt->fetch();
+        try {
+            $stmt = $this->query(
+                "SELECT l.*,
+                        s.name as student_name, s.cpf as student_cpf,
+                        e.id as enrollment_id, e.financial_status,
+                        i.name as instructor_name,
+                        v.plate as vehicle_plate, v.model as vehicle_model,
+                        u.nome as created_by_name,
+                        uc.nome as canceled_by_name
+                 FROM {$this->table} l
+                 INNER JOIN students s ON l.student_id = s.id
+                 INNER JOIN enrollments e ON l.enrollment_id = e.id
+                 LEFT JOIN instructors i ON l.instructor_id = i.id
+                 LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                 LEFT JOIN usuarios u ON l.created_by = u.id
+                 LEFT JOIN usuarios uc ON l.canceled_by = uc.id
+                 WHERE l.id = ?",
+                [$id]
+            );
+            return $stmt->fetch();
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, fazer query sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findWithDetails] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
+                $stmt = $this->query(
+                    "SELECT l.*,
+                            s.name as student_name, s.cpf as student_cpf,
+                            e.id as enrollment_id, e.financial_status,
+                            NULL as instructor_name,
+                            v.plate as vehicle_plate, v.model as vehicle_model,
+                            u.nome as created_by_name,
+                            uc.nome as canceled_by_name
+                     FROM {$this->table} l
+                     INNER JOIN students s ON l.student_id = s.id
+                     INNER JOIN enrollments e ON l.enrollment_id = e.id
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     LEFT JOIN usuarios u ON l.created_by = u.id
+                     LEFT JOIN usuarios uc ON l.canceled_by = uc.id
+                     WHERE l.id = ?",
+                    [$id]
+                );
+                return $stmt->fetch();
+            }
+            // Re-throw outros erros
+            throw $e;
+        }
     }
 
     /**
      * Busca aulas por período
+     * Trata caso onde tabela instructors não existe
      */
     public function findByPeriod($cfcId, $startDate, $endDate, $filters = [])
     {
-        $sql = "SELECT l.*,
-                       s.name as student_name,
-                       i.name as instructor_name,
-                       v.plate as vehicle_plate
-                FROM {$this->table} l
-                INNER JOIN students s ON l.student_id = s.id
-                INNER JOIN instructors i ON l.instructor_id = i.id
-                LEFT JOIN vehicles v ON l.vehicle_id = v.id
-                WHERE l.cfc_id = ? 
-                  AND l.scheduled_date BETWEEN ? AND ?";
-        
-        $params = [$cfcId, $startDate, $endDate];
-        
-        // Filtro por status
-        if (!empty($filters['status'])) {
-            $sql .= " AND l.status = ?";
-            $params[] = $filters['status'];
-        } else {
-            // Se não há filtro de status específico, filtrar canceladas por padrão
-            // (a menos que show_canceled esteja ativo)
-            if (empty($filters['show_canceled'])) {
-                $sql .= " AND l.status != 'cancelada'";
+        try {
+            $sql = "SELECT l.*,
+                           s.name as student_name,
+                           i.name as instructor_name,
+                           v.plate as vehicle_plate
+                    FROM {$this->table} l
+                    INNER JOIN students s ON l.student_id = s.id
+                    LEFT JOIN instructors i ON l.instructor_id = i.id
+                    LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                    WHERE l.cfc_id = ? 
+                      AND l.scheduled_date BETWEEN ? AND ?";
+            
+            $params = [$cfcId, $startDate, $endDate];
+            
+            // Filtro por status
+            if (!empty($filters['status'])) {
+                $sql .= " AND l.status = ?";
+                $params[] = $filters['status'];
+            } else {
+                // Se não há filtro de status específico, filtrar canceladas por padrão
+                // (a menos que show_canceled esteja ativo)
+                if (empty($filters['show_canceled'])) {
+                    $sql .= " AND l.status != 'cancelada'";
+                }
             }
+            
+            // Filtro por tipo
+            if (!empty($filters['type'])) {
+                $sql .= " AND l.type = ?";
+                $params[] = $filters['type'];
+            }
+            
+            // Filtro por instrutor
+            if (!empty($filters['instructor_id'])) {
+                $sql .= " AND l.instructor_id = ?";
+                $params[] = $filters['instructor_id'];
+            }
+            
+            // Filtro por veículo (apenas para práticas)
+            if (!empty($filters['vehicle_id']) && (empty($filters['type']) || $filters['type'] === 'pratica')) {
+                $sql .= " AND l.vehicle_id = ?";
+                $params[] = $filters['vehicle_id'];
+            }
+            
+            $sql .= " ORDER BY l.scheduled_date ASC, l.scheduled_time ASC";
+            
+            $stmt = $this->query($sql, $params);
+            return $stmt->fetchAll();
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, fazer query sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findByPeriod] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
+                $sql = "SELECT l.*,
+                               s.name as student_name,
+                               NULL as instructor_name,
+                               v.plate as vehicle_plate
+                        FROM {$this->table} l
+                        INNER JOIN students s ON l.student_id = s.id
+                        LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                        WHERE l.cfc_id = ? 
+                          AND l.scheduled_date BETWEEN ? AND ?";
+                
+                $params = [$cfcId, $startDate, $endDate];
+                
+                // Aplicar mesmos filtros
+                if (!empty($filters['status'])) {
+                    $sql .= " AND l.status = ?";
+                    $params[] = $filters['status'];
+                } else {
+                    if (empty($filters['show_canceled'])) {
+                        $sql .= " AND l.status != 'cancelada'";
+                    }
+                }
+                
+                if (!empty($filters['type'])) {
+                    $sql .= " AND l.type = ?";
+                    $params[] = $filters['type'];
+                }
+                
+                if (!empty($filters['instructor_id'])) {
+                    $sql .= " AND l.instructor_id = ?";
+                    $params[] = $filters['instructor_id'];
+                }
+                
+                if (!empty($filters['vehicle_id']) && (empty($filters['type']) || $filters['type'] === 'pratica')) {
+                    $sql .= " AND l.vehicle_id = ?";
+                    $params[] = $filters['vehicle_id'];
+                }
+                
+                $sql .= " ORDER BY l.scheduled_date ASC, l.scheduled_time ASC";
+                
+                $stmt = $this->query($sql, $params);
+                return $stmt->fetchAll();
+            }
+            // Re-throw outros erros
+            throw $e;
         }
-        
-        // Filtro por tipo
-        if (!empty($filters['type'])) {
-            $sql .= " AND l.type = ?";
-            $params[] = $filters['type'];
-        }
-        
-        // Filtro por instrutor
-        if (!empty($filters['instructor_id'])) {
-            $sql .= " AND l.instructor_id = ?";
-            $params[] = $filters['instructor_id'];
-        }
-        
-        // Filtro por veículo (apenas para práticas)
-        if (!empty($filters['vehicle_id']) && (empty($filters['type']) || $filters['type'] === 'pratica')) {
-            $sql .= " AND l.vehicle_id = ?";
-            $params[] = $filters['vehicle_id'];
-        }
-        
-        $sql .= " ORDER BY l.scheduled_date ASC, l.scheduled_time ASC";
-        
-        $stmt = $this->query($sql, $params);
-        return $stmt->fetchAll();
     }
 
     /**
@@ -130,7 +209,7 @@ class Lesson extends Model
                              NULL as student_names
                        FROM {$this->table} l
                        INNER JOIN students s ON l.student_id = s.id
-                       INNER JOIN instructors i ON l.instructor_id = i.id
+                       LEFT JOIN instructors i ON l.instructor_id = i.id
                        LEFT JOIN vehicles v ON l.vehicle_id = v.id
                        WHERE l.cfc_id = ?
                          AND l.scheduled_date BETWEEN ? AND ?
@@ -179,7 +258,7 @@ class Lesson extends Model
                       INNER JOIN theory_sessions ts ON l.theory_session_id = ts.id
                       INNER JOIN theory_disciplines td ON ts.discipline_id = td.id
                       INNER JOIN theory_classes tc ON ts.class_id = tc.id
-                      INNER JOIN instructors i ON l.instructor_id = i.id
+                      LEFT JOIN instructors i ON l.instructor_id = i.id
                       WHERE l.cfc_id = ?
                         AND l.scheduled_date BETWEEN ? AND ?
                         AND l.type = 'teoria'
@@ -299,19 +378,52 @@ class Lesson extends Model
             error_log("Params: " . json_encode($allParams));
         }
         
-        $stmt = $this->query($sql, $allParams);
-        $results = $stmt->fetchAll();
-        
-        // Log resultados para auditoria
-        if ($startDate === $endDate) {
-            error_log("Results count: " . count($results));
-            foreach ($results as $idx => $result) {
-                error_log("Result {$idx}: scheduled_date={$result['scheduled_date']}, status={$result['status']}, type={$result['type']}");
+        try {
+            $stmt = $this->query($sql, $allParams);
+            $results = $stmt->fetchAll();
+            
+            // Log resultados para auditoria
+            if ($startDate === $endDate) {
+                error_log("Results count: " . count($results));
+                foreach ($results as $idx => $result) {
+                    error_log("Result {$idx}: scheduled_date={$result['scheduled_date']}, status={$result['status']}, type={$result['type']}");
+                }
+                error_log("=== END AGENDA SQL AUDIT ===");
             }
-            error_log("=== END AGENDA SQL AUDIT ===");
+            
+            return $results;
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, refazer queries sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findByPeriodWithTheoryDedupe] Tabela 'instructors' não existe. Refazendo queries sem JOIN.");
+                // Refazer as queries sem JOIN com instructors
+                $sqlPratica = str_replace('LEFT JOIN instructors i ON l.instructor_id = i.id', '', $sqlPratica);
+                $sqlPratica = str_replace('i.name as instructor_name,', 'NULL as instructor_name,', $sqlPratica);
+                $sqlTeoria = str_replace('LEFT JOIN instructors i ON l.instructor_id = i.id', '', $sqlTeoria);
+                $sqlTeoria = str_replace('i.name as instructor_name,', 'NULL as instructor_name,', $sqlTeoria);
+                
+                // Reconstruir UNION
+                if (!empty($sqlPratica) && !empty($sqlTeoria)) {
+                    $sql = "({$sqlPratica}) UNION ({$sqlTeoria})";
+                    $allParams = array_merge($params, $paramsTeoria);
+                } elseif (!empty($sqlPratica)) {
+                    $sql = $sqlPratica;
+                    $allParams = $params;
+                } elseif (!empty($sqlTeoria)) {
+                    $sql = $sqlTeoria;
+                    $allParams = $paramsTeoria;
+                } else {
+                    return [];
+                }
+                
+                $sql .= " ORDER BY scheduled_date ASC, scheduled_time ASC";
+                
+                $stmt = $this->query($sql, $allParams);
+                return $stmt->fetchAll();
+            }
+            // Re-throw outros erros
+            throw $e;
         }
-        
-        return $results;
     }
 
     /**
@@ -529,72 +641,149 @@ class Lesson extends Model
 
     /**
      * Busca aulas de um aluno
+     * Trata caso onde tabela instructors não existe
      */
     public function findByStudent($studentId, $limit = null)
     {
-        $sql = "SELECT l.*,
-                       i.name as instructor_name,
-                       v.plate as vehicle_plate,
-                       ts.discipline_id,
-                       td.name as discipline_name,
-                       ts.class_id,
-                       tc.name as class_name
-                FROM {$this->table} l
-                INNER JOIN instructors i ON l.instructor_id = i.id
-                LEFT JOIN vehicles v ON l.vehicle_id = v.id
-                LEFT JOIN theory_sessions ts ON l.theory_session_id = ts.id
-                LEFT JOIN theory_disciplines td ON ts.discipline_id = td.id
-                LEFT JOIN theory_classes tc ON ts.class_id = tc.id
-                WHERE l.student_id = ?
-                ORDER BY l.scheduled_date DESC, l.scheduled_time DESC";
-        
-        if ($limit) {
-            $sql .= " LIMIT " . (int)$limit;
+        try {
+            $sql = "SELECT l.*,
+                           i.name as instructor_name,
+                           v.plate as vehicle_plate,
+                           ts.discipline_id,
+                           td.name as discipline_name,
+                           ts.class_id,
+                           tc.name as class_name
+                    FROM {$this->table} l
+                    LEFT JOIN instructors i ON l.instructor_id = i.id
+                    LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                    LEFT JOIN theory_sessions ts ON l.theory_session_id = ts.id
+                    LEFT JOIN theory_disciplines td ON ts.discipline_id = td.id
+                    LEFT JOIN theory_classes tc ON ts.class_id = tc.id
+                    WHERE l.student_id = ?
+                    ORDER BY l.scheduled_date DESC, l.scheduled_time DESC";
+            
+            if ($limit) {
+                $sql .= " LIMIT " . (int)$limit;
+            }
+            
+            $stmt = $this->query($sql, [$studentId]);
+            return $stmt->fetchAll();
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, fazer query sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findByStudent] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
+                $sql = "SELECT l.*,
+                               NULL as instructor_name,
+                               v.plate as vehicle_plate,
+                               ts.discipline_id,
+                               td.name as discipline_name,
+                               ts.class_id,
+                               tc.name as class_name
+                        FROM {$this->table} l
+                        LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                        LEFT JOIN theory_sessions ts ON l.theory_session_id = ts.id
+                        LEFT JOIN theory_disciplines td ON ts.discipline_id = td.id
+                        LEFT JOIN theory_classes tc ON ts.class_id = tc.id
+                        WHERE l.student_id = ?
+                        ORDER BY l.scheduled_date DESC, l.scheduled_time DESC";
+                
+                if ($limit) {
+                    $sql .= " LIMIT " . (int)$limit;
+                }
+                
+                $stmt = $this->query($sql, [$studentId]);
+                return $stmt->fetchAll();
+            }
+            // Re-throw outros erros
+            throw $e;
         }
-        
-        $stmt = $this->query($sql, [$studentId]);
-        return $stmt->fetchAll();
     }
 
     /**
      * Busca aulas de uma matrícula
+     * Trata caso onde tabela instructors não existe
      */
     public function findByEnrollment($enrollmentId)
     {
-        $stmt = $this->query(
-            "SELECT l.*,
-                    i.name as instructor_name,
-                    v.plate as vehicle_plate
-             FROM {$this->table} l
-             INNER JOIN instructors i ON l.instructor_id = i.id
-             LEFT JOIN vehicles v ON l.vehicle_id = v.id
-             WHERE l.enrollment_id = ?
-             ORDER BY l.scheduled_date ASC, l.scheduled_time ASC",
-            [$enrollmentId]
-        );
-        return $stmt->fetchAll();
+        try {
+            $stmt = $this->query(
+                "SELECT l.*,
+                        i.name as instructor_name,
+                        v.plate as vehicle_plate
+                 FROM {$this->table} l
+                 LEFT JOIN instructors i ON l.instructor_id = i.id
+                 LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                 WHERE l.enrollment_id = ?
+                 ORDER BY l.scheduled_date ASC, l.scheduled_time ASC",
+                [$enrollmentId]
+            );
+            return $stmt->fetchAll();
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, fazer query sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findByEnrollment] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
+                $stmt = $this->query(
+                    "SELECT l.*,
+                            NULL as instructor_name,
+                            v.plate as vehicle_plate
+                     FROM {$this->table} l
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     WHERE l.enrollment_id = ?
+                     ORDER BY l.scheduled_date ASC, l.scheduled_time ASC",
+                    [$enrollmentId]
+                );
+                return $stmt->fetchAll();
+            }
+            // Re-throw outros erros
+            throw $e;
+        }
     }
 
     /**
      * Busca a próxima aula agendada de um aluno
+     * Trata caso onde tabela instructors não existe
      */
     public function findNextByStudent($studentId)
     {
-        $today = date('Y-m-d');
-        $stmt = $this->query(
-            "SELECT l.*,
-                    i.name as instructor_name,
-                    v.plate as vehicle_plate
-             FROM {$this->table} l
-             INNER JOIN instructors i ON l.instructor_id = i.id
-             LEFT JOIN vehicles v ON l.vehicle_id = v.id
-             WHERE l.student_id = ?
-               AND l.status = 'agendada'
-               AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= CURTIME()))
-             ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
-             LIMIT 1",
-            [$studentId, $today, $today]
-        );
-        return $stmt->fetch();
+        try {
+            $today = date('Y-m-d');
+            $stmt = $this->query(
+                "SELECT l.*,
+                        i.name as instructor_name,
+                        v.plate as vehicle_plate
+                 FROM {$this->table} l
+                 LEFT JOIN instructors i ON l.instructor_id = i.id
+                 LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                 WHERE l.student_id = ?
+                   AND l.status = 'agendada'
+                   AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= CURTIME()))
+                 ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
+                 LIMIT 1",
+                [$studentId, $today, $today]
+            );
+            return $stmt->fetch();
+        } catch (\PDOException $e) {
+            // Se a tabela instructors não existe, fazer query sem JOIN
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
+                error_log("[Lesson::findNextByStudent] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
+                $today = date('Y-m-d');
+                $stmt = $this->query(
+                    "SELECT l.*,
+                            NULL as instructor_name,
+                            v.plate as vehicle_plate
+                     FROM {$this->table} l
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     WHERE l.student_id = ?
+                       AND l.status = 'agendada'
+                       AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= CURTIME()))
+                     ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
+                     LIMIT 1",
+                    [$studentId, $today, $today]
+                );
+                return $stmt->fetch();
+            }
+            // Re-throw outros erros
+            throw $e;
+        }
     }
 }
