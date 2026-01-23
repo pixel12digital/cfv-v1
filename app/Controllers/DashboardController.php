@@ -62,6 +62,27 @@ class DashboardController extends Controller
                         $this->redirectToLogin();
                         return;
                     }
+                } catch (\PDOException $e) {
+                    error_log('[DashboardController] Erro de conexão ao banco: ' . $e->getMessage());
+                    
+                    // Se for erro de limite de conexões, mostrar mensagem específica
+                    if (strpos($e->getMessage(), 'max_connections_per_hour') !== false || 
+                        strpos($e->getMessage(), 'Limite de conexões') !== false) {
+                        $errorMessage = 'Limite de conexões ao banco de dados excedido. Por favor, aguarde alguns minutos e tente novamente.';
+                    } else {
+                        $errorMessage = 'Erro ao conectar ao banco de dados. Por favor, tente novamente mais tarde.';
+                    }
+                    
+                    $data = [
+                        'pageTitle' => 'Erro de Conexão',
+                        'error' => $errorMessage
+                    ];
+                    if (file_exists(APP_PATH . '/Views/errors/500.php')) {
+                        $this->view('errors/500', $data);
+                    } else {
+                        die('Erro: ' . htmlspecialchars($errorMessage) . ' <a href="' . base_url('logout') . '">Fazer logout</a>');
+                    }
+                    return;
                 } catch (\Exception $e) {
                     error_log('[DashboardController] Erro ao verificar tipo do usuário: ' . $e->getMessage());
                     // Se houver erro ao buscar usuário, não redirecionar para login para evitar loop
@@ -107,6 +128,27 @@ class DashboardController extends Controller
                         $this->redirectToLegacyDashboard($tipo);
                         return;
                     }
+                } catch (\PDOException $e) {
+                    error_log('[DashboardController] Erro de conexão ao banco ao buscar usuário: ' . $e->getMessage());
+                    
+                    // Se for erro de limite de conexões, mostrar mensagem específica
+                    if (strpos($e->getMessage(), 'max_connections_per_hour') !== false || 
+                        strpos($e->getMessage(), 'Limite de conexões') !== false) {
+                        $errorMessage = 'Limite de conexões ao banco de dados excedido. Por favor, aguarde alguns minutos e tente novamente.';
+                    } else {
+                        $errorMessage = 'Erro ao conectar ao banco de dados. Por favor, tente novamente mais tarde.';
+                    }
+                    
+                    $data = [
+                        'pageTitle' => 'Erro de Conexão',
+                        'error' => $errorMessage
+                    ];
+                    if (file_exists(APP_PATH . '/Views/errors/500.php')) {
+                        $this->view('errors/500', $data);
+                    } else {
+                        die('Erro: ' . htmlspecialchars($errorMessage) . ' <a href="' . base_url('logout') . '">Fazer logout</a>');
+                    }
+                    return;
                 } catch (\Exception $e) {
                     error_log('[DashboardController] Erro ao buscar usuário: ' . $e->getMessage());
                 }
@@ -129,6 +171,26 @@ class DashboardController extends Controller
                 'pageTitle' => 'Dashboard'
             ];
             $this->view('dashboard', $data);
+        } catch (\PDOException $e) {
+            error_log('[DashboardController] Erro de conexão ao banco: ' . $e->getMessage());
+            
+            // Se for erro de limite de conexões, mostrar mensagem específica
+            if (strpos($e->getMessage(), 'max_connections_per_hour') !== false || 
+                strpos($e->getMessage(), 'Limite de conexões') !== false) {
+                $errorMessage = 'Limite de conexões ao banco de dados excedido. Por favor, aguarde alguns minutos e tente novamente.';
+            } else {
+                $errorMessage = 'Erro ao conectar ao banco de dados. Por favor, tente novamente mais tarde.';
+            }
+            
+            $data = [
+                'pageTitle' => 'Erro de Conexão',
+                'error' => $errorMessage
+            ];
+            if (file_exists(APP_PATH . '/Views/errors/500.php')) {
+                $this->view('errors/500', $data);
+            } else {
+                die('Erro: ' . htmlspecialchars($errorMessage) . ' <a href="' . base_url('logout') . '">Fazer logout</a>');
+            }
         } catch (\Exception $e) {
             error_log('[DashboardController] Erro fatal: ' . $e->getMessage());
             error_log('[DashboardController] Stack trace: ' . $e->getTraceAsString());
