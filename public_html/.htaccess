@@ -16,7 +16,10 @@ RewriteRule ^assets/ - [L]
 # 2.1) Permitir acesso direto ao pwa-manifest.php (PWA white-label)
 RewriteRule ^pwa-manifest\.php$ - [L]
 
-# 2.2) Permitir acesso direto aos tools (scripts de diagnóstico)
+# 2.2) Permitir acesso direto ao sw.js e sw.php (Service Worker PWA)
+RewriteRule ^sw\.(js|php)$ - [L]
+
+# 2.3) Permitir acesso direto aos tools (scripts de diagnóstico)
 RewriteRule ^tools/ - [L]
 
 # 3) Front controller (só chega aqui se não for arquivo estático)

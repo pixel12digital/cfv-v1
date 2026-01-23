@@ -4,16 +4,19 @@
  * 
  * Retorna manifest.json dinâmico baseado no CFC atual (tenant)
  * Fallback seguro para valores estáticos se não conseguir resolver CFC
+ * 
+ * CRÍTICO: Este arquivo NÃO deve ter BOM (Byte Order Mark) ou espaços antes do <?php
  */
+
+// Desabilitar output de erros para garantir JSON puro
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 // Limpar qualquer output buffer anterior e iniciar novo (garantir JSON puro)
 while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
-
-// CRÍTICO: Headers devem ser definidos ANTES de qualquer output
-// Não definir aqui ainda - serão definidos antes do echo do JSON
 
 // Função helper para gerar URL absoluta (se base_url não estiver disponível)
 function getBaseUrl($path = '') {
@@ -184,13 +187,15 @@ try {
     }
 }
 
-// Limpar buffer e garantir que não há output antes do JSON
+// Limpar buffer completamente e garantir que não há output antes do JSON
 ob_clean();
 
 // CRÍTICO: Definir headers ANTES de qualquer output
+// Usar replace=true para sobrescrever qualquer header anterior
 if (!headers_sent()) {
     header('Content-Type: application/manifest+json; charset=utf-8', true);
     header('Cache-Control: public, max-age=300', true);
+    header('X-Content-Type-Options: nosniff', true);
 }
 
 // Output JSON (sempre retorna 200 com manifest válido)
@@ -201,12 +206,15 @@ $json = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON
 if (json_last_error() !== JSON_ERROR_NONE) {
     // Se houver erro, usar fallback simples
     ob_clean();
-    header('Content-Type: application/manifest+json; charset=utf-8', true);
+    if (!headers_sent()) {
+        header('Content-Type: application/manifest+json; charset=utf-8', true);
+    }
     $json = json_encode($defaultManifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 }
 
+// Output direto sem espaços
 echo $json;
 
-// Finalizar output buffer
+// Finalizar output buffer e sair imediatamente
 ob_end_flush();
-exit; // Garantir que não há output adicional
+exit(0);

@@ -196,7 +196,9 @@
                 const isProduction = <?= json_encode(($_ENV['APP_ENV'] ?? 'local') === 'production') ?>;
                 
                 // Corrigir path do SW usando pwa_asset_path (detecta automaticamente estrutura do servidor)
+                // Tentar primeiro sw.js, se falhar, tentar sw.php como fallback
                 let swPath = <?= json_encode(pwa_asset_path('sw.js')) ?>;
+                let swPathFallback = <?= json_encode(pwa_asset_path('sw.php')) ?>;
                 
                 // Log do path para debug (sempre logar para identificar problema)
                 console.log('[SW] Tentando registrar Service Worker em:', swPath);
@@ -205,45 +207,66 @@
                 if (isLocalhost) {
                     console.log('[SW] Service Worker desabilitado em localhost para debug');
                 } else {
-                    // Verificar se arquivo existe antes de registrar
-                    fetch(swPath, { method: 'HEAD' })
-                    .then(function(response) {
-                        if (response.ok) {
-                            window.addEventListener('load', function() {
-                                navigator.serviceWorker.register(swPath, { scope: '/' })
-                                    .then(function(registration) {
-                                        console.log('[SW] Service Worker registrado com sucesso:', registration.scope);
-                                        
-                                        // Aguardar um pouco e verificar se está controlando
-                                        setTimeout(function() {
-                                            if (navigator.serviceWorker.controller) {
-                                                console.log('[SW] ✅ Service Worker está controlando a página');
-                                            } else {
-                                                console.log('[SW] ⚠️ Service Worker registrado mas não está controlando ainda');
-                                                console.log('[SW] Aguardando ativação...');
-                                            }
-                                        }, 1000);
-                                        
-                                        if (isProduction) {
-                                            // Verificar atualizações periodicamente (apenas em produção)
-                                            setInterval(function() {
-                                                registration.update();
-                                            }, 60000); // Verificar a cada minuto
-                                        }
-                                    })
-                                    .catch(function(error) {
-                                        console.error('[SW] ❌ Erro ao registrar Service Worker:', error);
+                    // Função para tentar registrar o SW
+                    function tryRegisterSW(path, isFallback = false) {
+                        return fetch(path, { method: 'HEAD' })
+                            .then(function(response) {
+                                if (response.ok) {
+                                    window.addEventListener('load', function() {
+                                        navigator.serviceWorker.register(path, { scope: '/' })
+                                            .then(function(registration) {
+                                                console.log('[SW] ✅ Service Worker registrado com sucesso:', registration.scope);
+                                                
+                                                // Aguardar um pouco e verificar se está controlando
+                                                setTimeout(function() {
+                                                    if (navigator.serviceWorker.controller) {
+                                                        console.log('[SW] ✅ Service Worker está controlando a página');
+                                                    } else {
+                                                        console.log('[SW] ⚠️ Service Worker registrado mas não está controlando ainda');
+                                                        console.log('[SW] Aguardando ativação...');
+                                                    }
+                                                }, 1000);
+                                                
+                                                if (isProduction) {
+                                                    // Verificar atualizações periodicamente (apenas em produção)
+                                                    setInterval(function() {
+                                                        registration.update();
+                                                    }, 60000); // Verificar a cada minuto
+                                                }
+                                            })
+                                            .catch(function(error) {
+                                                console.error('[SW] ❌ Erro ao registrar Service Worker:', error);
+                                                if (!isFallback) {
+                                                    console.log('[SW] Tentando fallback:', swPathFallback);
+                                                    tryRegisterSW(swPathFallback, true);
+                                                }
+                                            });
                                     });
+                                    return true; // Sucesso
+                                } else {
+                                    if (!isFallback) {
+                                        console.warn('[SW] ⚠️ Service Worker não encontrado (', response.status, ') em:', path);
+                                        console.log('[SW] Tentando fallback:', swPathFallback);
+                                        return tryRegisterSW(swPathFallback, true);
+                                    } else {
+                                        console.error('[SW] ❌ Service Worker não encontrado (', response.status, ') em:', path);
+                                        console.log('[SW] Verifique se o arquivo existe no servidor');
+                                        return false;
+                                    }
+                                }
+                            })
+                            .catch(function(error) {
+                                console.error('[SW] ❌ Erro ao verificar Service Worker:', error);
+                                if (!isFallback) {
+                                    console.log('[SW] Tentando fallback:', swPathFallback);
+                                    return tryRegisterSW(swPathFallback, true);
+                                }
+                                return false;
                             });
-                        } else {
-                            console.error('[SW] ❌ Service Worker não encontrado (', response.status, ') em:', swPath);
-                            console.log('[SW] Verifique se o arquivo existe no servidor');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('[SW] ❌ Erro ao verificar Service Worker:', error);
-                        console.log('[SW] Path tentado:', swPath);
-                    });
+                    }
+                    
+                    // Tentar registrar o SW
+                    tryRegisterSW(swPath);
                 }
             }
         })();
