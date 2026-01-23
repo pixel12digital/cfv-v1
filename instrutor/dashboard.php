@@ -125,12 +125,17 @@ try {
 
 // Buscar dados do instrutor (incluindo foto)
 // A tabela instrutores tem usuario_id que referencia usuarios.id
-$instrutor = $db->fetch("
-    SELECT i.*, u.nome as nome_usuario, u.email as email_usuario 
-    FROM instrutores i 
-    LEFT JOIN usuarios u ON i.usuario_id = u.id 
-    WHERE i.usuario_id = ?
-", [$user['id']]);
+try {
+    $instrutor = $db->fetch("
+        SELECT i.*, u.nome as nome_usuario, u.email as email_usuario 
+        FROM instrutores i 
+        LEFT JOIN usuarios u ON i.usuario_id = u.id 
+        WHERE i.usuario_id = ?
+    ", [$user['id']]);
+} catch (Exception $e) {
+    error_log('[DASHBOARD] Erro ao buscar dados do instrutor: ' . $e->getMessage());
+    $instrutor = null;
+}
 
 // Se não encontrar na tabela instrutores, usar dados do usuário diretamente
 if (!$instrutor) {
@@ -159,56 +164,69 @@ if (!$instrutorId) {
 // FASE INSTRUTOR - AULAS TEORICAS - Buscar aulas do dia (práticas + teóricas)
 $hoje = date('Y-m-d');
 $aulasHoje = [];
+$aulasPraticasHoje = [];
+$aulasTeoricasHoje = [];
+
 if ($instrutorId) {
-    // Buscar aulas práticas do dia
-    $aulasPraticasHoje = $db->fetchAll("
-        SELECT a.*, 
-               a.aluno_id,
-               al.nome as aluno_nome, 
-               al.telefone as aluno_telefone,
-               al.cpf as aluno_cpf,
-               al.foto as aluno_foto,
-               al.categoria_cnh as aluno_categoria_cnh,
-               al.email as aluno_email,
-               v.modelo as veiculo_modelo, v.placa as veiculo_placa,
-               'pratica' as tipo_aula
-        FROM aulas a
-        JOIN alunos al ON a.aluno_id = al.id
-        LEFT JOIN veiculos v ON a.veiculo_id = v.id
-        WHERE a.instrutor_id = ? 
-          AND a.data_aula = ?
-          AND a.status != 'cancelada'
-        ORDER BY a.hora_inicio ASC
-    ", [$instrutorId, $hoje]);
+    try {
+        // Buscar aulas práticas do dia
+        $aulasPraticasHoje = $db->fetchAll("
+            SELECT a.*, 
+                   a.aluno_id,
+                   al.nome as aluno_nome, 
+                   al.telefone as aluno_telefone,
+                   al.cpf as aluno_cpf,
+                   al.foto as aluno_foto,
+                   al.categoria_cnh as aluno_categoria_cnh,
+                   al.email as aluno_email,
+                   v.modelo as veiculo_modelo, v.placa as veiculo_placa,
+                   'pratica' as tipo_aula
+            FROM aulas a
+            JOIN alunos al ON a.aluno_id = al.id
+            LEFT JOIN veiculos v ON a.veiculo_id = v.id
+            WHERE a.instrutor_id = ? 
+              AND a.data_aula = ?
+              AND a.status != 'cancelada'
+            ORDER BY a.hora_inicio ASC
+        ", [$instrutorId, $hoje]);
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar aulas práticas: ' . $e->getMessage());
+        $aulasPraticasHoje = [];
+    }
     
-    // FASE INSTRUTOR - AULAS TEORICAS - Buscar aulas teóricas do dia
-    $aulasTeoricasHoje = $db->fetchAll("
-        SELECT 
-            taa.id,
-            taa.turma_id,
-            taa.disciplina,
-            taa.nome_aula,
-            taa.data_aula,
-            taa.hora_inicio,
-            taa.hora_fim,
-            taa.status,
-            taa.observacoes,
-            taa.sala_id,
-            tt.nome as turma_nome,
-            s.nome as sala_nome,
-            'teorica' as tipo_aula,
-            NULL as aluno_nome,
-            NULL as aluno_telefone,
-            NULL as veiculo_modelo,
-            NULL as veiculo_placa
-        FROM turma_aulas_agendadas taa
-        JOIN turmas_teoricas tt ON taa.turma_id = tt.id
-        LEFT JOIN salas s ON taa.sala_id = s.id
-        WHERE taa.instrutor_id = ?
-          AND taa.data_aula = ?
-          AND taa.status != 'cancelada'
-        ORDER BY taa.hora_inicio ASC
-    ", [$instrutorId, $hoje]);
+    try {
+        // FASE INSTRUTOR - AULAS TEORICAS - Buscar aulas teóricas do dia
+        $aulasTeoricasHoje = $db->fetchAll("
+            SELECT 
+                taa.id,
+                taa.turma_id,
+                taa.disciplina,
+                taa.nome_aula,
+                taa.data_aula,
+                taa.hora_inicio,
+                taa.hora_fim,
+                taa.status,
+                taa.observacoes,
+                taa.sala_id,
+                tt.nome as turma_nome,
+                s.nome as sala_nome,
+                'teorica' as tipo_aula,
+                NULL as aluno_nome,
+                NULL as aluno_telefone,
+                NULL as veiculo_modelo,
+                NULL as veiculo_placa
+            FROM turma_aulas_agendadas taa
+            JOIN turmas_teoricas tt ON taa.turma_id = tt.id
+            LEFT JOIN salas s ON taa.sala_id = s.id
+            WHERE taa.instrutor_id = ?
+              AND taa.data_aula = ?
+              AND taa.status != 'cancelada'
+            ORDER BY taa.hora_inicio ASC
+        ", [$instrutorId, $hoje]);
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar aulas teóricas: ' . $e->getMessage());
+        $aulasTeoricasHoje = [];
+    }
     
     // Combinar aulas práticas e teóricas
     $aulasHoje = array_merge($aulasPraticasHoje, $aulasTeoricasHoje);
@@ -288,17 +306,21 @@ if ($instrutorId) {
 
 // Buscar dados completos do aluno para a próxima aula (se for prática)
 if ($proximaAula && $proximaAula['tipo_aula'] === 'pratica' && isset($proximaAula['aluno_id'])) {
-    // Buscar categoria CNH da matrícula ativa (prioridade)
-    $matriculaAtiva = $db->fetch("
-        SELECT categoria_cnh, tipo_servico
-        FROM matriculas
-        WHERE aluno_id = ? AND status = 'ativa'
-        ORDER BY data_inicio DESC
-        LIMIT 1
-    ", [$proximaAula['aluno_id']]);
-    
-    if ($matriculaAtiva && !empty($matriculaAtiva['categoria_cnh'])) {
-        $proximaAula['aluno_categoria_cnh'] = $matriculaAtiva['categoria_cnh'];
+    try {
+        // Buscar categoria CNH da matrícula ativa (prioridade)
+        $matriculaAtiva = $db->fetch("
+            SELECT categoria_cnh, tipo_servico
+            FROM matriculas
+            WHERE aluno_id = ? AND status = 'ativa'
+            ORDER BY data_inicio DESC
+            LIMIT 1
+        ", [$proximaAula['aluno_id']]);
+        
+        if ($matriculaAtiva && !empty($matriculaAtiva['categoria_cnh'])) {
+            $proximaAula['aluno_categoria_cnh'] = $matriculaAtiva['categoria_cnh'];
+        }
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar matrícula ativa: ' . $e->getMessage());
     }
 }
 
@@ -349,60 +371,73 @@ function formatarTelefone($telefone) {
 
 // FASE INSTRUTOR - AULAS TEORICAS - Buscar próximas aulas (próximos 7 dias) - práticas + teóricas
 $proximasAulas = [];
+$aulasPraticasProximas = [];
+$aulasTeoricasProximas = [];
+
 if ($instrutorId) {
-    // Buscar aulas práticas dos próximos 7 dias
-    $aulasPraticasProximas = $db->fetchAll("
-        SELECT a.*, 
-               a.aluno_id,
-               al.nome as aluno_nome, 
-               al.telefone as aluno_telefone,
-               al.cpf as aluno_cpf,
-               al.foto as aluno_foto,
-               al.categoria_cnh as aluno_categoria_cnh,
-               al.email as aluno_email,
-               v.modelo as veiculo_modelo, v.placa as veiculo_placa,
-               'pratica' as tipo_aula
-        FROM aulas a
-        JOIN alunos al ON a.aluno_id = al.id
-        LEFT JOIN veiculos v ON a.veiculo_id = v.id
-        WHERE a.instrutor_id = ? 
-          AND a.data_aula > ?
-          AND a.data_aula <= DATE_ADD(?, INTERVAL 7 DAY)
-          AND a.status != 'cancelada'
-        ORDER BY a.data_aula ASC, a.hora_inicio ASC
-        LIMIT 10
-    ", [$instrutorId, $hoje, $hoje]);
+    try {
+        // Buscar aulas práticas dos próximos 7 dias
+        $aulasPraticasProximas = $db->fetchAll("
+            SELECT a.*, 
+                   a.aluno_id,
+                   al.nome as aluno_nome, 
+                   al.telefone as aluno_telefone,
+                   al.cpf as aluno_cpf,
+                   al.foto as aluno_foto,
+                   al.categoria_cnh as aluno_categoria_cnh,
+                   al.email as aluno_email,
+                   v.modelo as veiculo_modelo, v.placa as veiculo_placa,
+                   'pratica' as tipo_aula
+            FROM aulas a
+            JOIN alunos al ON a.aluno_id = al.id
+            LEFT JOIN veiculos v ON a.veiculo_id = v.id
+            WHERE a.instrutor_id = ? 
+              AND a.data_aula > ?
+              AND a.data_aula <= DATE_ADD(?, INTERVAL 7 DAY)
+              AND a.status != 'cancelada'
+            ORDER BY a.data_aula ASC, a.hora_inicio ASC
+            LIMIT 10
+        ", [$instrutorId, $hoje, $hoje]);
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar próximas aulas práticas: ' . $e->getMessage());
+        $aulasPraticasProximas = [];
+    }
     
-    // FASE INSTRUTOR - AULAS TEORICAS - Buscar aulas teóricas dos próximos 7 dias
-    $aulasTeoricasProximas = $db->fetchAll("
-        SELECT 
-            taa.id,
-            taa.turma_id,
-            taa.disciplina,
-            taa.nome_aula,
-            taa.data_aula,
-            taa.hora_inicio,
-            taa.hora_fim,
-            taa.status,
-            taa.observacoes,
-            taa.sala_id,
-            tt.nome as turma_nome,
-            s.nome as sala_nome,
-            'teorica' as tipo_aula,
-            NULL as aluno_nome,
-            NULL as aluno_telefone,
-            NULL as veiculo_modelo,
-            NULL as veiculo_placa
-        FROM turma_aulas_agendadas taa
-        JOIN turmas_teoricas tt ON taa.turma_id = tt.id
-        LEFT JOIN salas s ON taa.sala_id = s.id
-        WHERE taa.instrutor_id = ?
-          AND taa.data_aula > ?
-          AND taa.data_aula <= DATE_ADD(?, INTERVAL 7 DAY)
-          AND taa.status != 'cancelada'
-        ORDER BY taa.data_aula ASC, taa.hora_inicio ASC
-        LIMIT 10
-    ", [$instrutorId, $hoje, $hoje]);
+    try {
+        // FASE INSTRUTOR - AULAS TEORICAS - Buscar aulas teóricas dos próximos 7 dias
+        $aulasTeoricasProximas = $db->fetchAll("
+            SELECT 
+                taa.id,
+                taa.turma_id,
+                taa.disciplina,
+                taa.nome_aula,
+                taa.data_aula,
+                taa.hora_inicio,
+                taa.hora_fim,
+                taa.status,
+                taa.observacoes,
+                taa.sala_id,
+                tt.nome as turma_nome,
+                s.nome as sala_nome,
+                'teorica' as tipo_aula,
+                NULL as aluno_nome,
+                NULL as aluno_telefone,
+                NULL as veiculo_modelo,
+                NULL as veiculo_placa
+            FROM turma_aulas_agendadas taa
+            JOIN turmas_teoricas tt ON taa.turma_id = tt.id
+            LEFT JOIN salas s ON taa.sala_id = s.id
+            WHERE taa.instrutor_id = ?
+              AND taa.data_aula > ?
+              AND taa.data_aula <= DATE_ADD(?, INTERVAL 7 DAY)
+              AND taa.status != 'cancelada'
+            ORDER BY taa.data_aula ASC, taa.hora_inicio ASC
+            LIMIT 10
+        ", [$instrutorId, $hoje, $hoje]);
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar próximas aulas teóricas: ' . $e->getMessage());
+        $aulasTeoricasProximas = [];
+    }
     
     // Combinar aulas práticas e teóricas
     $proximasAulas = array_merge($aulasPraticasProximas, $aulasTeoricasProximas);
@@ -419,7 +454,12 @@ if ($instrutorId) {
 }
 
 // Buscar notificações não lidas
-$notificacoesNaoLidas = $notificacoes->buscarNotificacoesNaoLidas($user['id'], 'instrutor');
+try {
+    $notificacoesNaoLidas = $notificacoes->buscarNotificacoesNaoLidas($user['id'], 'instrutor');
+} catch (Exception $e) {
+    error_log('[DASHBOARD] Erro ao buscar notificações: ' . $e->getMessage());
+    $notificacoesNaoLidas = [];
+}
 
 // FASE 1 - PRESENCA TEORICA - Buscar turmas teóricas do instrutor
 // Arquivo: instrutor/dashboard.php (linha ~117)
@@ -427,44 +467,54 @@ $notificacoesNaoLidas = $notificacoes->buscarNotificacoesNaoLidas($user['id'], '
 $turmasTeoricas = [];
 $turmasTeoricasInstrutor = [];
 if ($instrutorId) {
-    // Buscar todas as turmas teóricas do instrutor (não apenas do dia)
-    // O instrutor está associado às aulas agendadas, não diretamente à turma
-    $turmasTeoricasInstrutor = $db->fetchAll("
-        SELECT 
-            tt.id,
-            tt.nome,
-            tt.curso_tipo,
-            tt.data_inicio,
-            tt.data_fim,
-            tt.status,
-            COUNT(DISTINCT tm.id) as total_alunos,
-            COUNT(DISTINCT CASE WHEN taa.data_aula >= CURDATE() AND taa.status = 'agendada' THEN taa.id END) as proximas_aulas
-        FROM turmas_teoricas tt
-        INNER JOIN turma_aulas_agendadas taa_instrutor ON tt.id = taa_instrutor.turma_id 
-            AND taa_instrutor.instrutor_id = ?
-        LEFT JOIN turma_matriculas tm ON tt.id = tm.turma_id 
-            AND tm.status IN ('matriculado', 'cursando', 'concluido')
-        LEFT JOIN turma_aulas_agendadas taa ON tt.id = taa.turma_id
-        WHERE tt.status IN ('ativa', 'completa', 'cursando', 'concluida')
-        GROUP BY tt.id
-        ORDER BY tt.data_inicio DESC, tt.nome ASC
-        LIMIT 10
-    ", [$instrutorId]);
-    
-    // Buscar próxima aula teórica de cada turma (para link rápido)
-    foreach ($turmasTeoricasInstrutor as &$turma) {
-        $proximaAula = $db->fetch("
-            SELECT id, data_aula, hora_inicio
-            FROM turma_aulas_agendadas
-            WHERE turma_id = ? 
-              AND data_aula >= CURDATE()
-              AND status = 'agendada'
-            ORDER BY data_aula ASC, hora_inicio ASC
-            LIMIT 1
-        ", [$turma['id']]);
-        $turma['proxima_aula'] = $proximaAula;
+    try {
+        // Buscar todas as turmas teóricas do instrutor (não apenas do dia)
+        // O instrutor está associado às aulas agendadas, não diretamente à turma
+        $turmasTeoricasInstrutor = $db->fetchAll("
+            SELECT 
+                tt.id,
+                tt.nome,
+                tt.curso_tipo,
+                tt.data_inicio,
+                tt.data_fim,
+                tt.status,
+                COUNT(DISTINCT tm.id) as total_alunos,
+                COUNT(DISTINCT CASE WHEN taa.data_aula >= CURDATE() AND taa.status = 'agendada' THEN taa.id END) as proximas_aulas
+            FROM turmas_teoricas tt
+            INNER JOIN turma_aulas_agendadas taa_instrutor ON tt.id = taa_instrutor.turma_id 
+                AND taa_instrutor.instrutor_id = ?
+            LEFT JOIN turma_matriculas tm ON tt.id = tm.turma_id 
+                AND tm.status IN ('matriculado', 'cursando', 'concluido')
+            LEFT JOIN turma_aulas_agendadas taa ON tt.id = taa.turma_id
+            WHERE tt.status IN ('ativa', 'completa', 'cursando', 'concluida')
+            GROUP BY tt.id
+            ORDER BY tt.data_inicio DESC, tt.nome ASC
+            LIMIT 10
+        ", [$instrutorId]);
+        
+        // Buscar próxima aula teórica de cada turma (para link rápido)
+        foreach ($turmasTeoricasInstrutor as &$turma) {
+            try {
+                $proximaAulaTurma = $db->fetch("
+                    SELECT id, data_aula, hora_inicio
+                    FROM turma_aulas_agendadas
+                    WHERE turma_id = ? 
+                      AND data_aula >= CURDATE()
+                      AND status = 'agendada'
+                    ORDER BY data_aula ASC, hora_inicio ASC
+                    LIMIT 1
+                ", [$turma['id']]);
+                $turma['proxima_aula'] = $proximaAulaTurma;
+            } catch (Exception $e) {
+                error_log('[DASHBOARD] Erro ao buscar próxima aula da turma ' . $turma['id'] . ': ' . $e->getMessage());
+                $turma['proxima_aula'] = null;
+            }
+        }
+        unset($turma);
+    } catch (Exception $e) {
+        error_log('[DASHBOARD] Erro ao buscar turmas teóricas: ' . $e->getMessage());
+        $turmasTeoricasInstrutor = [];
     }
-    unset($turma);
 }
 
 // FASE INSTRUTOR - AULAS TEORICAS - Estatísticas do dia (práticas + teóricas)
