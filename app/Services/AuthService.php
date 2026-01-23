@@ -36,7 +36,21 @@ class AuthService
             $_SESSION['available_roles'] = $roles;
             $_SESSION['current_role'] = $_SESSION['last_role'] ?? $roles[0]['role'];
         } else {
-            $_SESSION['current_role'] = Constants::ROLE_ALUNO;
+            // Se não há roles na tabela usuario_roles, usar o campo 'tipo' do usuário (sistema antigo)
+            $tipo = strtolower($user['tipo'] ?? '');
+            
+            // Mapear tipo do sistema antigo para current_role (Constants usa maiúsculas)
+            $roleMap = [
+                'admin' => Constants::ROLE_ADMIN,           // 'admin' -> 'ADMIN'
+                'secretaria' => Constants::ROLE_SECRETARIA, // 'secretaria' -> 'SECRETARIA'
+                'instrutor' => Constants::ROLE_INSTRUTOR,   // 'instrutor' -> 'INSTRUTOR'
+                'aluno' => Constants::ROLE_ALUNO            // 'aluno' -> 'ALUNO'
+            ];
+            
+            $_SESSION['current_role'] = $roleMap[$tipo] ?? Constants::ROLE_ALUNO;
+            
+            // Log para debug
+            error_log('[AuthService] Usuário sem roles na tabela usuario_roles. Usando tipo: ' . $tipo . ' -> current_role: ' . $_SESSION['current_role']);
         }
     }
 
