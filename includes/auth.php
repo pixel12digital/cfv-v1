@@ -39,14 +39,22 @@ class Auth {
                 return ['success' => false, 'message' => 'Login ou senha inválidos'];
             }
             
-            // Verificar senha
-            if (!password_verify($senha, $usuario['senha'])) {
+            // Verificar senha (campo pode ser 'senha' ou 'password')
+            $senhaHash = $usuario['senha'] ?? $usuario['password'] ?? null;
+            if (!$senhaHash || !password_verify($senha, $senhaHash)) {
                 $this->incrementAttempts($this->getClientIP());
                 return ['success' => false, 'message' => 'Login ou senha inválidos'];
             }
             
-            // Verificar se usuário está ativo
-            if (!$usuario['ativo']) {
+            // Verificar se usuário está ativo (campo pode ser 'ativo' ou 'status')
+            $ativo = $usuario['ativo'] ?? null;
+            if ($ativo === null) {
+                // Se não tem campo 'ativo', verificar 'status'
+                $status = strtolower($usuario['status'] ?? '');
+                if ($status !== 'ativo') {
+                    return ['success' => false, 'message' => 'Usuário inativo. Entre em contato com o administrador'];
+                }
+            } elseif (!$ativo) {
                 return ['success' => false, 'message' => 'Usuário inativo. Entre em contato com o administrador'];
             }
             
@@ -311,7 +319,13 @@ class Auth {
             }
         }
         
+        // CORREÇÃO: Buscar tipo do usuário (compatibilidade com RBAC e sistema antigo)
         $tipo = strtolower($user['tipo'] ?? '');
+        
+        // Se não encontrou tipo no array, buscar do banco (RBAC)
+        if (empty($tipo)) {
+            $tipo = $this->getUserType($user['id']);
+        }
         
         // Se precisa trocar senha, redirecionar para página de troca
         if ($precisaTrocarSenha) {
@@ -375,16 +389,79 @@ class Auth {
         return in_array($user['tipo'], ['admin', 'secretaria']);
     }
     
+    // Buscar tipo do usuário (compatibilidade com sistema antigo e novo RBAC)
+    private function getUserType($userId) {
+        try {
+            // Primeiro, tentar buscar da tabela usuario_roles (sistema novo RBAC)
+            $sql = "SELECT ur.role FROM usuario_roles ur WHERE ur.usuario_id = :id ORDER BY ur.id LIMIT 1";
+            $role = $this->db->fetch($sql, ['id' => $userId]);
+            
+            if ($role && !empty($role['role'])) {
+                // Mapear role RBAC para tipo legado
+                $roleMap = [
+                    'ADMIN' => 'admin',
+                    'SECRETARIA' => 'secretaria',
+                    'INSTRUTOR' => 'instrutor',
+                    'ALUNO' => 'aluno'
+                ];
+                return $roleMap[strtoupper($role['role'])] ?? 'aluno';
+            }
+            
+            // Se não encontrou em usuario_roles, tentar campo 'tipo' (sistema antigo)
+            $sql = "SELECT tipo FROM usuarios WHERE id = :id LIMIT 1";
+            $usuario = $this->db->fetch($sql, ['id' => $userId]);
+            
+            if ($usuario && !empty($usuario['tipo'])) {
+                return strtolower($usuario['tipo']);
+            }
+            
+            // Fallback: retornar 'aluno' como padrão
+            return 'aluno';
+        } catch (Exception $e) {
+            if (LOG_ENABLED) {
+                error_log('Erro ao buscar tipo do usuário: ' . $e->getMessage());
+            }
+            return 'aluno';
+        }
+    }
+    
     // Criar nova sessão
     private function createSession($usuario, $remember = false) {
         $_SESSION['user_id'] = $usuario['id'];
         $_SESSION['user_email'] = $usuario['email'];
         $_SESSION['user_name'] = $usuario['nome'];
-        $_SESSION['user_type'] = $usuario['tipo'];
+        
+        // CORREÇÃO: Buscar tipo do usuário (compatibilidade com RBAC e sistema antigo)
+        $tipo = $this->getUserType($usuario['id']);
+        $_SESSION['user_type'] = $tipo;
+        
         $_SESSION['user_cfc_id'] = $usuario['cfc_id'] ?? null;
         $_SESSION['last_activity'] = time();
         $_SESSION['ip_address'] = $this->getClientIP();
         $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        
+        // CORREÇÃO: Definir current_role para compatibilidade com sistema novo
+        // Mapear tipo do sistema antigo para current_role (usando constantes se disponíveis)
+        
+        // Tentar usar constantes do sistema novo se disponíveis
+        if (class_exists('\App\Config\Constants')) {
+            $roleMap = [
+                'admin' => \App\Config\Constants::ROLE_ADMIN,
+                'secretaria' => \App\Config\Constants::ROLE_SECRETARIA,
+                'instrutor' => \App\Config\Constants::ROLE_INSTRUTOR,
+                'aluno' => \App\Config\Constants::ROLE_ALUNO
+            ];
+            $_SESSION['current_role'] = $roleMap[$tipo] ?? \App\Config\Constants::ROLE_ALUNO;
+        } else {
+            // Fallback: usar strings maiúsculas compatíveis com Constants
+            $roleMap = [
+                'admin' => 'ADMIN',
+                'secretaria' => 'SECRETARIA',
+                'instrutor' => 'INSTRUTOR',
+                'aluno' => 'ALUNO'
+            ];
+            $_SESSION['current_role'] = $roleMap[$tipo] ?? 'ALUNO';
+        }
         
         // Criar token de "lembrar-me" se solicitado
         if ($remember) {
@@ -445,13 +522,21 @@ class Auth {
     
     // Obter dados do usuário
     private function getUserData($userId) {
-        $sql = "SELECT u.id, u.nome, u.email, u.tipo, u.cpf, u.telefone, u.ultimo_login, 
+        // Buscar dados básicos do usuário
+        $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.telefone, u.ultimo_login, 
                        c.id as cfc_id, c.nome as cfc_nome, c.cnpj as cfc_cnpj
                 FROM usuarios u 
                 LEFT JOIN cfcs c ON u.id = c.responsavel_id 
                 WHERE u.id = :id LIMIT 1";
         
-        return $this->db->fetch($sql, ['id' => $userId]);
+        $user = $this->db->fetch($sql, ['id' => $userId]);
+        
+        // Adicionar tipo do usuário (compatibilidade com RBAC e sistema antigo)
+        if ($user) {
+            $user['tipo'] = $this->getUserType($userId);
+        }
+        
+        return $user;
     }
     
     // Atualizar último login
