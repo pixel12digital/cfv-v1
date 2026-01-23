@@ -41,10 +41,23 @@ class DashboardController extends Controller
                         // Redirecionar para o dashboard correto do sistema antigo
                         $this->redirectToLegacyDashboard($tipo);
                         return;
+                    } else {
+                        // Usuário não encontrado - limpar sessão e redirecionar para login
+                        session_destroy();
+                        session_start();
+                        $this->redirectToLogin();
+                        return;
                     }
                 } catch (\Exception $e) {
                     error_log('[DashboardController] Erro ao verificar tipo do usuário: ' . $e->getMessage());
-                    // Continuar com o fluxo normal se houver erro
+                    // Se houver erro ao buscar usuário, não redirecionar para login para evitar loop
+                    // Tentar usar dashboard genérico ou mostrar erro
+                    $data = [
+                        'pageTitle' => 'Erro',
+                        'error' => 'Erro ao carregar dados do usuário. Por favor, faça logout e login novamente.'
+                    ];
+                    $this->view('errors/500', $data);
+                    return;
                 }
             }
             
@@ -63,9 +76,33 @@ class DashboardController extends Controller
                 return $this->dashboardAdmin($userId);
             }
             
-            // Se chegou aqui sem role mas tem user_id, redirecionar para login
+            // Se chegou aqui sem role mas tem user_id, não redirecionar para login (evitar loop)
+            // Tentar usar dashboard genérico ou mostrar mensagem
             if ($userId && empty($currentRole)) {
-                $this->redirectToLogin();
+                error_log('[DashboardController] Usuário sem current_role: user_id=' . $userId);
+                // Tentar buscar usuário novamente para redirecionar para dashboard legado
+                try {
+                    $userModel = new User();
+                    $user = $userModel->find($userId);
+                    if ($user) {
+                        $tipo = strtolower($user['tipo'] ?? '');
+                        $this->redirectToLegacyDashboard($tipo);
+                        return;
+                    }
+                } catch (\Exception $e) {
+                    error_log('[DashboardController] Erro ao buscar usuário: ' . $e->getMessage());
+                }
+                
+                // Se não conseguir redirecionar, mostrar erro ao invés de redirecionar para login
+                $data = [
+                    'pageTitle' => 'Erro de Configuração',
+                    'error' => 'Não foi possível determinar seu tipo de usuário. Por favor, faça logout e login novamente.'
+                ];
+                if (file_exists(APP_PATH . '/Views/errors/500.php')) {
+                    $this->view('errors/500', $data);
+                } else {
+                    die('Erro: Não foi possível determinar seu tipo de usuário. <a href="' . base_url('logout') . '">Fazer logout</a>');
+                }
                 return;
             }
             
