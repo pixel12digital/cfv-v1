@@ -198,6 +198,11 @@
                 // Corrigir path do SW usando pwa_asset_path (detecta automaticamente estrutura do servidor)
                 let swPath = <?= json_encode(pwa_asset_path('sw.js')) ?>;
                 
+                // Log do path para debug (apenas em desenvolvimento)
+                if (!isProduction) {
+                    console.log('[SW] Tentando registrar Service Worker em:', swPath);
+                }
+                
                 // Desabilitar SW em localhost durante debug
                 if (isLocalhost) {
                     console.log('[SW] Service Worker desabilitado em localhost para debug');
@@ -207,30 +212,35 @@
                     .then(function(response) {
                         if (response.ok) {
                             window.addEventListener('load', function() {
-                                navigator.serviceWorker.register(swPath)
+                                navigator.serviceWorker.register(swPath, { scope: '/' })
                                     .then(function(registration) {
+                                        console.log('[SW] Service Worker registrado com sucesso:', registration.scope);
+                                        
+                                        // Verificar se está controlando a página
+                                        if (navigator.serviceWorker.controller) {
+                                            console.log('[SW] Service Worker está controlando a página');
+                                        } else {
+                                            console.log('[SW] Service Worker registrado mas não está controlando ainda');
+                                        }
+                                        
                                         if (isProduction) {
-                                            console.log('[SW] Service Worker registrado com sucesso:', registration.scope);
-                                            
                                             // Verificar atualizações periodicamente (apenas em produção)
                                             setInterval(function() {
                                                 registration.update();
                                             }, 60000); // Verificar a cada minuto
-                                        } else {
-                                            console.log('[SW] Service Worker registrado:', registration.scope);
                                         }
                                     })
                                     .catch(function(error) {
-                                        // Silenciar erro completamente (não poluir console)
-                                        // O arquivo existe mas houve erro ao registrar (pode ser problema de CORS, etc)
+                                        console.error('[SW] Erro ao registrar Service Worker:', error);
                                     });
                             });
+                        } else {
+                            console.error('[SW] Service Worker não encontrado (404) em:', swPath);
                         }
                         // Se response não é ok (404, etc), não registrar (evita 404 no console)
                     })
-                    .catch(function() {
-                        // Arquivo não existe ou erro de rede - não registrar (evita 404)
-                        // Não fazer nada, silenciar completamente
+                    .catch(function(error) {
+                        console.error('[SW] Erro ao verificar Service Worker:', error);
                     });
                 }
             }
