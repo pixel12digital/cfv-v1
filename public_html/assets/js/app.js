@@ -248,10 +248,8 @@
             // Android/Desktop: usar deferredPrompt se disponível
             if (deferredPrompt) {
                 try {
-                    // Interceptar agora para controle manual
-                    deferredPrompt.preventDefault();
-                    
-                    // Mostrar prompt de instalação
+                    // Mostrar prompt de instalação diretamente
+                    // (não precisamos preventDefault() porque não interceptamos inicialmente)
                     await deferredPrompt.prompt();
                     
                     // Aguardar escolha do usuário
