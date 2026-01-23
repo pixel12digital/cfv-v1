@@ -21,6 +21,50 @@ class DashboardController extends Controller
         $currentRole = $_SESSION['current_role'] ?? '';
         $userId = $_SESSION['user_id'] ?? null;
         
+        // Se não houver current_role mas houver user_id, verificar tipo do usuário (sistema antigo)
+        if (empty($currentRole) && $userId) {
+            try {
+                $userModel = new User();
+                $user = $userModel->find($userId);
+                
+                if ($user) {
+                    // Mapear tipo do sistema antigo para current_role
+                    $tipo = strtolower($user['tipo'] ?? '');
+                    
+                    // Redirecionar para o dashboard correto do sistema antigo
+                    $basePath = '';
+                    if (function_exists('base_url')) {
+                        // Usar base_url se disponível (sistema novo)
+                        $basePath = rtrim(base_url(), '/');
+                    } elseif (defined('BASE_PATH')) {
+                        // Usar BASE_PATH se definido (sistema antigo)
+                        $basePath = BASE_PATH;
+                    }
+                    
+                    switch ($tipo) {
+                        case 'instrutor':
+                            header('Location: ' . $basePath . '/instrutor/dashboard.php');
+                            exit;
+                            
+                        case 'aluno':
+                            header('Location: ' . $basePath . '/aluno/dashboard.php');
+                            exit;
+                            
+                        case 'admin':
+                        case 'secretaria':
+                            header('Location: ' . $basePath . '/admin/index.php');
+                            exit;
+                            
+                        default:
+                            // Se não conseguir determinar, tentar usar o sistema novo
+                            break;
+                    }
+                }
+            } catch (\Exception $e) {
+                error_log('[DashboardController] Erro ao verificar tipo do usuário: ' . $e->getMessage());
+            }
+        }
+        
         // Se for ALUNO, carregar dados específicos
         if ($currentRole === Constants::ROLE_ALUNO && $userId) {
             return $this->dashboardAluno($userId);
@@ -34,6 +78,12 @@ class DashboardController extends Controller
         // Se for ADMIN ou SECRETARIA, carregar dashboard administrativo
         if (($currentRole === Constants::ROLE_ADMIN || $currentRole === Constants::ROLE_SECRETARIA) && $userId) {
             return $this->dashboardAdmin($userId);
+        }
+        
+        // Se chegou aqui sem role mas tem user_id, redirecionar para login
+        if ($userId && empty($currentRole)) {
+            header('Location: ' . base_url('login'));
+            exit;
         }
         
         // Dashboard genérico para outros perfis

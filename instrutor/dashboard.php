@@ -77,6 +77,15 @@ require_once __DIR__ . '/../includes/services/SistemaNotificacoes.php';
 
 // DEBUG: dashboard instrutor carregado (instrutor/dashboard.php)
 
+// Inicializar variáveis antes de qualquer verificação
+$aulasHoje = [];
+$proximasAulas = [];
+$statsHoje = [
+    'total_aulas' => 0,
+    'pendentes' => 0,
+    'concluidas' => 0
+];
+
 // Verificar autenticação
 $user = getCurrentUser();
 if (!$user || $user['tipo'] !== 'instrutor') {
@@ -84,20 +93,16 @@ if (!$user || $user['tipo'] !== 'instrutor') {
     $basePath = defined('BASE_PATH') ? BASE_PATH : '';
     header('Location: ' . $basePath . '/login.php');
     exit();
-} else {
-    // Sem instrutor_id: evitar uso de arrays não inicializados
-    $aulasHoje = [];
-    $proximasAulas = [];
-    $statsHoje = [
-        'total_aulas' => 0,
-        'pendentes' => 0,
-        'concluidas' => 0
-    ];
-    error_log("[WARN] Dashboard instrutor: sem aulas porque instrutor_id é null para usuario_id={$user['id']}");
 }
 
 $db = db();
-$notificacoes = new SistemaNotificacoes();
+try {
+    $notificacoes = new SistemaNotificacoes();
+} catch (Exception $e) {
+    error_log('[DASHBOARD] Erro ao inicializar SistemaNotificacoes: ' . $e->getMessage());
+    // Continuar sem notificações se houver erro
+    $notificacoes = null;
+}
 $proximaAula = null;
 
 // Verificar se precisa trocar senha - se sim, forçar redirecionamento
