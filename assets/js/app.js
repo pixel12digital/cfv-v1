@@ -221,22 +221,23 @@
         }
     }
     
-    // Escutar beforeinstallprompt (Android/Desktop)
-    // NOTA: NÃO interceptamos (sem preventDefault) para permitir banner automático do Chrome
-    // O botão no menu do usuário serve como alternativa manual
+    // Interceptar beforeinstallprompt (Android/Desktop)
+    // CRÍTICO: Se interceptamos (preventDefault), DEVEMOS sempre chamar prompt() quando usuário interagir
     window.addEventListener('beforeinstallprompt', function(e) {
-        // NÃO chamar e.preventDefault() - deixar banner automático funcionar
-        // Guardar o evento apenas para uso manual no botão (se necessário)
+        // Interceptar para controle manual do prompt
+        e.preventDefault();
+        
+        // Guardar o evento para usar depois
         deferredPrompt = e;
         
-        // Mostrar botão no menu do usuário como alternativa manual
+        // Mostrar botão apenas se não estiver em standalone E deferredPrompt existir
         if (!isAppInstalled() && installButtonContainer && deferredPrompt) {
             installButtonContainer.style.display = 'block';
         }
         
         // Log discreto (apenas em desenvolvimento)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('[PWA] beforeinstallprompt disponível - banner automático será mostrado');
+            console.log('[PWA] beforeinstallprompt interceptado - botão manual disponível');
         }
     });
     
@@ -245,13 +246,10 @@
         installButton.addEventListener('click', async function(e) {
             e.preventDefault();
             
-            // Android/Desktop: usar deferredPrompt se disponível
+            // Android/Desktop: usar deferredPrompt
             if (deferredPrompt) {
                 try {
-                    // Interceptar agora para controle manual
-                    deferredPrompt.preventDefault();
-                    
-                    // Mostrar prompt de instalação
+                    // CRÍTICO: Chamar prompt() - obrigatório após preventDefault()
                     await deferredPrompt.prompt();
                     
                     // Aguardar escolha do usuário
