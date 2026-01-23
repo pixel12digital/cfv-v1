@@ -7,7 +7,7 @@
  */
 
 // Limpar qualquer output buffer anterior e iniciar novo (garantir JSON puro)
-if (ob_get_level()) {
+while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
@@ -189,7 +189,12 @@ try {
 ob_clean();
 
 // Output JSON (sempre retorna 200 com manifest válido)
+// Garantir que não há whitespace ou BOM antes do JSON
+header('Content-Type: application/manifest+json; charset=utf-8', true);
+header('Cache-Control: public, max-age=300', true);
+
 echo json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
 // Finalizar output buffer
 ob_end_flush();
+exit; // Garantir que não há output adicional
