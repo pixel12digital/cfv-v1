@@ -438,12 +438,37 @@ class Lesson extends Model
             $now = date('H:i:s');
             
             // Query para aulas práticas (normais)
-            $sqlPratica = "SELECT l.*,
-                                  s.name as student_name,
-                                  v.plate as vehicle_plate,
+            // IMPORTANTE: Selecionar as mesmas colunas que a query teórica para UNION funcionar
+            $sqlPratica = "SELECT l.id,
+                                  l.cfc_id,
+                                  l.student_id,
+                                  l.enrollment_id,
+                                  l.instructor_id,
+                                  l.vehicle_id,
+                                  l.type,
+                                  l.status,
+                                  l.scheduled_date,
+                                  l.scheduled_time,
+                                  l.duration_minutes,
+                                  l.started_at,
+                                  l.completed_at,
+                                  l.canceled_at,
+                                  l.canceled_by,
+                                  l.cancel_reason,
+                                  l.notes,
+                                  l.created_by,
+                                  l.created_at,
+                                  l.updated_at,
+                                  l.km_start,
+                                  l.km_end,
+                                  l.instructor_notes,
                                   NULL as theory_session_id,
+                                  NULL as class_id,
                                   1 as student_count,
-                                  'pratica' as lesson_type
+                                  'pratica' as lesson_type,
+                                  NULL as student_names,
+                                  s.name as student_name,
+                                  v.plate as vehicle_plate
                            FROM {$this->table} l
                            INNER JOIN students s ON l.student_id = s.id
                            LEFT JOIN vehicles v ON l.vehicle_id = v.id
@@ -454,6 +479,7 @@ class Lesson extends Model
             $params = [$instructorId, $cfcId];
             
             // Query para aulas teóricas (agrupadas por theory_session_id)
+            // IMPORTANTE: Mesmo número de colunas que a query prática para UNION funcionar
             $sqlTeoria = "SELECT MIN(l.id) as id,
                                  l.cfc_id,
                                  MIN(l.student_id) as student_id,
@@ -467,10 +493,16 @@ class Lesson extends Model
                                  MIN(l.duration_minutes) as duration_minutes,
                                  MIN(l.started_at) as started_at,
                                  MIN(l.completed_at) as completed_at,
+                                 MIN(l.canceled_at) as canceled_at,
+                                 MIN(l.canceled_by) as canceled_by,
+                                 MIN(l.cancel_reason) as cancel_reason,
                                  MIN(l.notes) as notes,
                                  MIN(l.created_by) as created_by,
                                  MIN(l.created_at) as created_at,
                                  MIN(l.updated_at) as updated_at,
+                                 MIN(l.km_start) as km_start,
+                                 MIN(l.km_end) as km_end,
+                                 MIN(l.instructor_notes) as instructor_notes,
                                  l.theory_session_id,
                                  ts.class_id,
                                  COUNT(DISTINCT l.student_id) as student_count,
