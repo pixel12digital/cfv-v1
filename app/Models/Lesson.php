@@ -429,118 +429,137 @@ class Lesson extends Model
     /**
      * Busca aulas do instrutor com dedupe de sessões teóricas
      * Agrupa lessons teóricas por theory_session_id para evitar duplicação
+     * Trata caso onde tabela instructors não existe
      */
     public function findByInstructorWithTheoryDedupe($instructorId, $cfcId, $filters = [])
     {
-        $today = date('Y-m-d');
-        $now = date('H:i:s');
-        
-        // Query para aulas práticas (normais)
-        $sqlPratica = "SELECT l.*,
-                              s.name as student_name,
-                              v.plate as vehicle_plate,
-                              NULL as theory_session_id,
-                              1 as student_count,
-                              'pratica' as lesson_type
-                       FROM {$this->table} l
-                       INNER JOIN students s ON l.student_id = s.id
-                       LEFT JOIN vehicles v ON l.vehicle_id = v.id
-                       WHERE l.instructor_id = ?
-                         AND l.cfc_id = ?
-                         AND l.type = 'pratica'";
-        
-        $params = [$instructorId, $cfcId];
-        
-        // Query para aulas teóricas (agrupadas por theory_session_id)
-        $sqlTeoria = "SELECT MIN(l.id) as id,
-                             l.cfc_id,
-                             MIN(l.student_id) as student_id,
-                             MIN(l.enrollment_id) as enrollment_id,
-                             l.instructor_id,
-                             NULL as vehicle_id,
-                             l.type,
-                             MIN(l.status) as status,
-                             l.scheduled_date,
-                             l.scheduled_time,
-                             MIN(l.duration_minutes) as duration_minutes,
-                             MIN(l.started_at) as started_at,
-                             MIN(l.completed_at) as completed_at,
-                             MIN(l.notes) as notes,
-                             MIN(l.created_by) as created_by,
-                             MIN(l.created_at) as created_at,
-                             MIN(l.updated_at) as updated_at,
-                             l.theory_session_id,
-                             ts.class_id,
-                             COUNT(DISTINCT l.student_id) as student_count,
-                             'teoria' as lesson_type,
-                             GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') as student_names,
-                             NULL as student_name,
-                             NULL as vehicle_plate
-                      FROM {$this->table} l
-                      INNER JOIN students s ON l.student_id = s.id
-                      INNER JOIN theory_sessions ts ON l.theory_session_id = ts.id
-                      WHERE l.instructor_id = ?
-                        AND l.cfc_id = ?
-                        AND l.type = 'teoria'
-                        AND l.theory_session_id IS NOT NULL";
-        
-        $paramsTeoria = [$instructorId, $cfcId];
-        
-        // Aplicar filtro de data se fornecido (OBRIGATÓRIO para view=list com date)
-        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $dateFilter = " AND l.scheduled_date BETWEEN ? AND ?";
-            $sqlPratica .= $dateFilter;
-            $sqlTeoria .= $dateFilter;
-            $params[] = $filters['start_date'];
-            $params[] = $filters['end_date'];
-            $paramsTeoria[] = $filters['start_date'];
-            $paramsTeoria[] = $filters['end_date'];
-        }
-        
-        // Aplicar filtros de status ANTES do GROUP BY
-        if (!empty($filters['status'])) {
-            $statusFilter = " AND l.status = ?";
-            $sqlPratica .= $statusFilter;
-            $sqlTeoria .= $statusFilter;
-            $params[] = $filters['status'];
-            $paramsTeoria[] = $filters['status'];
-        } elseif (!empty($filters['tab'])) {
-            if ($filters['tab'] === 'proximas') {
-                $sqlPratica .= " AND l.status IN ('agendada', 'em_andamento')
-                                AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
-                $sqlTeoria .= " AND l.status IN ('agendada', 'em_andamento')
-                                AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
-                $params = array_merge($params, [$today, $today, $now]);
-                $paramsTeoria = array_merge($paramsTeoria, [$today, $today, $now]);
-            } elseif ($filters['tab'] === 'historico') {
-                $sqlPratica .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
-                $sqlTeoria .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
+        try {
+            $today = date('Y-m-d');
+            $now = date('H:i:s');
+            
+            // Query para aulas práticas (normais)
+            $sqlPratica = "SELECT l.*,
+                                  s.name as student_name,
+                                  v.plate as vehicle_plate,
+                                  NULL as theory_session_id,
+                                  1 as student_count,
+                                  'pratica' as lesson_type
+                           FROM {$this->table} l
+                           INNER JOIN students s ON l.student_id = s.id
+                           LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                           WHERE l.instructor_id = ?
+                             AND l.cfc_id = ?
+                             AND l.type = 'pratica'";
+            
+            $params = [$instructorId, $cfcId];
+            
+            // Query para aulas teóricas (agrupadas por theory_session_id)
+            $sqlTeoria = "SELECT MIN(l.id) as id,
+                                 l.cfc_id,
+                                 MIN(l.student_id) as student_id,
+                                 MIN(l.enrollment_id) as enrollment_id,
+                                 l.instructor_id,
+                                 NULL as vehicle_id,
+                                 l.type,
+                                 MIN(l.status) as status,
+                                 l.scheduled_date,
+                                 l.scheduled_time,
+                                 MIN(l.duration_minutes) as duration_minutes,
+                                 MIN(l.started_at) as started_at,
+                                 MIN(l.completed_at) as completed_at,
+                                 MIN(l.notes) as notes,
+                                 MIN(l.created_by) as created_by,
+                                 MIN(l.created_at) as created_at,
+                                 MIN(l.updated_at) as updated_at,
+                                 l.theory_session_id,
+                                 ts.class_id,
+                                 COUNT(DISTINCT l.student_id) as student_count,
+                                 'teoria' as lesson_type,
+                                 GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') as student_names,
+                                 NULL as student_name,
+                                 NULL as vehicle_plate
+                          FROM {$this->table} l
+                          INNER JOIN students s ON l.student_id = s.id
+                          INNER JOIN theory_sessions ts ON l.theory_session_id = ts.id
+                          WHERE l.instructor_id = ?
+                            AND l.cfc_id = ?
+                            AND l.type = 'teoria'
+                            AND l.theory_session_id IS NOT NULL";
+            
+            $paramsTeoria = [$instructorId, $cfcId];
+            
+            // Aplicar filtro de data se fornecido (OBRIGATÓRIO para view=list com date)
+            if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+                $dateFilter = " AND l.scheduled_date BETWEEN ? AND ?";
+                $sqlPratica .= $dateFilter;
+                $sqlTeoria .= $dateFilter;
+                $params[] = $filters['start_date'];
+                $params[] = $filters['end_date'];
+                $paramsTeoria[] = $filters['start_date'];
+                $paramsTeoria[] = $filters['end_date'];
             }
-        } else {
-            // Padrão: excluir canceladas
-            if (empty($filters['show_canceled'])) {
-                $sqlPratica .= " AND l.status != 'cancelada'";
-                $sqlTeoria .= " AND l.status != 'cancelada'";
+            
+            // Aplicar filtros de status ANTES do GROUP BY
+            if (!empty($filters['status'])) {
+                $statusFilter = " AND l.status = ?";
+                $sqlPratica .= $statusFilter;
+                $sqlTeoria .= $statusFilter;
+                $params[] = $filters['status'];
+                $paramsTeoria[] = $filters['status'];
+            } elseif (!empty($filters['tab'])) {
+                if ($filters['tab'] === 'proximas') {
+                    $sqlPratica .= " AND l.status IN ('agendada', 'em_andamento')
+                                    AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
+                    $sqlTeoria .= " AND l.status IN ('agendada', 'em_andamento')
+                                    AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
+                    $params = array_merge($params, [$today, $today, $now]);
+                    $paramsTeoria = array_merge($paramsTeoria, [$today, $today, $now]);
+                } elseif ($filters['tab'] === 'historico') {
+                    $sqlPratica .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
+                    $sqlTeoria .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
+                }
+            } else {
+                // Padrão: excluir canceladas
+                if (empty($filters['show_canceled'])) {
+                    $sqlPratica .= " AND l.status != 'cancelada'";
+                    $sqlTeoria .= " AND l.status != 'cancelada'";
+                }
             }
+            
+            // GROUP BY para teóricas (após WHERE, antes de HAVING se necessário)
+            $sqlTeoria .= " GROUP BY l.theory_session_id, l.scheduled_date, l.scheduled_time, ts.class_id, l.instructor_id, l.cfc_id, l.type";
+            
+            // UNION e ordenação
+            $sql = "({$sqlPratica}) UNION ({$sqlTeoria})";
+            $allParams = array_merge($params, $paramsTeoria);
+            
+            if (!empty($filters['tab']) && $filters['tab'] === 'proximas') {
+                $sql .= " ORDER BY scheduled_date ASC, scheduled_time ASC";
+            } elseif (!empty($filters['tab']) && $filters['tab'] === 'historico') {
+                $sql .= " ORDER BY scheduled_date DESC, scheduled_time DESC";
+            } else {
+                $sql .= " ORDER BY scheduled_date DESC, scheduled_time DESC";
+            }
+            
+            $stmt = $this->query($sql, $allParams);
+            return $stmt->fetchAll();
+        } catch (\PDOException $e) {
+            // Log do erro para debug
+            error_log("[Lesson::findByInstructorWithTheoryDedupe] PDOException capturada:");
+            error_log("  SQLSTATE: " . $e->getCode());
+            error_log("  Mensagem: " . $e->getMessage());
+            error_log("  Arquivo: " . $e->getFile() . ":" . $e->getLine());
+            
+            // Se for erro de tabela não encontrada ou qualquer erro de schema, retornar array vazio
+            if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || 
+                strpos($e->getMessage(), 'Base table or view not found') !== false) {
+                error_log("[Lesson::findByInstructorWithTheoryDedupe] Tabela não encontrada. Retornando array vazio.");
+                return [];
+            }
+            
+            // Re-throw outros erros para serem capturados pelo controller
+            throw $e;
         }
-        
-        // GROUP BY para teóricas (após WHERE, antes de HAVING se necessário)
-        $sqlTeoria .= " GROUP BY l.theory_session_id, l.scheduled_date, l.scheduled_time, ts.class_id, l.instructor_id, l.cfc_id, l.type";
-        
-        // UNION e ordenação
-        $sql = "({$sqlPratica}) UNION ({$sqlTeoria})";
-        $allParams = array_merge($params, $paramsTeoria);
-        
-        if (!empty($filters['tab']) && $filters['tab'] === 'proximas') {
-            $sql .= " ORDER BY scheduled_date ASC, scheduled_time ASC";
-        } elseif (!empty($filters['tab']) && $filters['tab'] === 'historico') {
-            $sql .= " ORDER BY scheduled_date DESC, scheduled_time DESC";
-        } else {
-            $sql .= " ORDER BY scheduled_date DESC, scheduled_time DESC";
-        }
-        
-        $stmt = $this->query($sql, $allParams);
-        return $stmt->fetchAll();
     }
 
     /**
