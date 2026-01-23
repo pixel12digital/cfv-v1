@@ -385,10 +385,7 @@ class Lesson extends Model
             $paramsTeoria[] = $filters['end_date'];
         }
         
-        // GROUP BY para teóricas (após WHERE)
-        $sqlTeoria .= " GROUP BY l.theory_session_id, l.scheduled_date, l.scheduled_time, ts.class_id, l.instructor_id, l.cfc_id, l.type";
-        
-        // Aplicar filtros de status
+        // Aplicar filtros de status ANTES do GROUP BY
         if (!empty($filters['status'])) {
             $statusFilter = " AND l.status = ?";
             $sqlPratica .= $statusFilter;
@@ -399,21 +396,24 @@ class Lesson extends Model
             if ($filters['tab'] === 'proximas') {
                 $sqlPratica .= " AND l.status IN ('agendada', 'em_andamento')
                                 AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
-                $sqlTeoria .= " AND MIN(l.status) IN ('agendada', 'em_andamento')
+                $sqlTeoria .= " AND l.status IN ('agendada', 'em_andamento')
                                 AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))";
                 $params = array_merge($params, [$today, $today, $now]);
                 $paramsTeoria = array_merge($paramsTeoria, [$today, $today, $now]);
             } elseif ($filters['tab'] === 'historico') {
                 $sqlPratica .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
-                $sqlTeoria .= " AND MIN(l.status) IN ('concluida', 'cancelada', 'no_show')";
+                $sqlTeoria .= " AND l.status IN ('concluida', 'cancelada', 'no_show')";
             }
         } else {
             // Padrão: excluir canceladas
             if (empty($filters['show_canceled'])) {
                 $sqlPratica .= " AND l.status != 'cancelada'";
-                $sqlTeoria .= " AND MIN(l.status) != 'cancelada'";
+                $sqlTeoria .= " AND l.status != 'cancelada'";
             }
         }
+        
+        // GROUP BY para teóricas (após WHERE, antes de HAVING se necessário)
+        $sqlTeoria .= " GROUP BY l.theory_session_id, l.scheduled_date, l.scheduled_time, ts.class_id, l.instructor_id, l.cfc_id, l.type";
         
         // UNION e ordenação
         $sql = "({$sqlPratica}) UNION ({$sqlTeoria})";
