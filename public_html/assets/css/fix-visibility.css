@@ -1,0 +1,172 @@
+/* =====================================================
+   CORREÇÃO DE VISIBILIDADE - TEXTO DE SUPORTE
+   Sistema CFC Bom Conselho
+   ===================================================== */
+
+/* Problema identificado: Texto "Problemas para acessar? Entre em contato com o suporte." 
+   fica escondido quando a página carrega, mas aparece ao clicar em qualquer lugar */
+
+/* Solução 1: Forçar visibilidade com !important */
+.text-center .form-help-text,
+.text-center .text-muted.small,
+.text-center small.form-help-text {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.25rem 0 !important;
+    max-height: none !important;
+    max-width: none !important;
+    min-height: auto !important;
+    min-width: auto !important;
+}
+
+/* Solução 2: Corrigir possíveis problemas de posicionamento */
+footer .form-help-text,
+footer .text-muted,
+footer small {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Solução 3: Corrigir problemas específicos do Bootstrap */
+.text-muted.small {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Solução 4: Corrigir problemas de container */
+.container .text-center .form-help-text,
+.container .text-center .text-muted.small {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Solução 5: Corrigir problemas de layout responsivo */
+@media (max-width: 991.98px) {
+    .text-center .form-help-text,
+    .text-center .text-muted.small {
+        position: relative !important;
+        z-index: 9999 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        clip: auto !important;
+        overflow: visible !important;
+        height: auto !important;
+        width: auto !important;
+    }
+}
+
+/* Solução 6: Corrigir problemas de z-index em diferentes contextos */
+.login-container .text-center .form-help-text,
+.login-container .text-center .text-muted.small {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Solução 7: Corrigir problemas específicos do formulário */
+form .text-center .form-help-text,
+form .text-center .text-muted.small {
+    position: relative !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Solução 8: Forçar renderização em diferentes navegadores */
+.text-center .form-help-text,
+.text-center .text-muted.small {
+    -webkit-transform: none !important;
+    -moz-transform: none !important;
+    -ms-transform: none !important;
+    -o-transform: none !important;
+    transform: none !important;
+    
+    -webkit-backface-visibility: visible !important;
+    -moz-backface-visibility: visible !important;
+    -ms-backface-visibility: visible !important;
+    backface-visibility: visible !important;
+    
+    -webkit-perspective: none !important;
+    -moz-perspective: none !important;
+    -ms-perspective: none !important;
+    perspective: none !important;
+}
+
+/* Solução 9: Corrigir problemas de animação que podem estar escondendo o texto */
+@keyframes forceVisible {
+    0%, 100% {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+}
+
+.text-center .form-help-text,
+.text-center .text-muted.small {
+    animation: forceVisible 0.1s ease-in-out !important;
+}
+
+/* Solução 10: Corrigir problemas de CSS que podem estar sendo sobrescritos */
+.text-center .form-help-text,
+.text-center .text-muted.small {
+    all: unset !important;
+    display: block !important;
+    position: relative !important;
+    z-index: 9999 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: var(--dark-gray) !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.25rem 0 !important;
+    line-height: 1.4 !important;
+}

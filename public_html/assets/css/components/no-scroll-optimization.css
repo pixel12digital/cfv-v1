@@ -1,0 +1,359 @@
+/* =====================================================
+   OTIMIZAÇÕES PARA SEM ROLAGEM - SISTEMA CFC
+   VERSÃO 2.0 - LAYOUT COMPACTO PARA DESKTOP
+   ===================================================== */
+
+/* Garantir que o container principal não cause rolagem */
+.login-page-container {
+    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
+}
+
+/* Otimizações específicas para desktop sem rolagem */
+@media (min-width: 992px) {
+    /* Container principal */
+    .login-page-container {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
+    
+    /* Coluna da esquerda - compacta */
+    .login-info-column {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+        padding: 1.5rem 1rem;
+    }
+    
+    /* Conteúdo da coluna esquerda - otimizado */
+    .login-info-content {
+        max-height: calc(100vh - 3rem);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* Logo container - mais compacto */
+    .login-logo-container {
+        margin-bottom: 1.5rem;
+        padding: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    /* Lista de recursos - compacta */
+    .login-features-list {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    
+    .login-feature-item {
+        margin-bottom: 0.75rem;
+        padding: 0.875rem 1rem;
+        min-height: 45px;
+    }
+    
+    /* Coluna da direita - formulário compacto */
+    .login-form-column {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+        padding: 1rem;
+    }
+    
+    /* Container do formulário - otimizado */
+    .login-form-wrapper {
+        max-height: calc(100vh - 2rem);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* Card do formulário - compacto */
+    .login-form-card {
+        max-height: calc(100vh - 4rem);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Cabeçalho do formulário - compacto */
+    .login-form-header {
+        padding: 1.25rem 1.25rem 0.5rem;
+        flex-shrink: 0;
+    }
+    
+    /* Corpo do formulário - compacto */
+    .login-form-body {
+        padding: 1.25rem;
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    /* Campos do formulário - espaçamento otimizado */
+    .form-field-group {
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+    }
+    
+    /* Campos de entrada - altura reduzida */
+    .form-field-input {
+        min-height: 44px;
+        padding: 0.875rem 1rem;
+    }
+    
+    /* Input groups - altura reduzida */
+    .form-input-group .input-group-text {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Botão de toggle - altura reduzida */
+    .password-toggle-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Botão de submit - compacto */
+    .form-submit-btn {
+        min-height: 44px;
+        padding: 0.875rem 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Rodapé - compacto */
+    footer {
+        margin-top: 1rem !important;
+        padding-top: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    footer p {
+        margin-bottom: 0.25rem !important;
+    }
+    
+    footer .text-muted.mt-1 {
+        margin-top: 0.25rem !important;
+    }
+}
+
+/* Otimizações para telas muito grandes */
+@media (min-width: 1400px) {
+    .login-info-column {
+        padding: 2rem 1.5rem;
+    }
+    
+    .login-form-column {
+        padding: 1.5rem;
+    }
+    
+    .login-form-wrapper {
+        max-width: 450px;
+    }
+}
+
+/* Otimizações para monitores ultrawide */
+@media (min-width: 1920px) {
+    .login-info-column {
+        padding: 2.5rem 2rem;
+    }
+    
+    .login-form-column {
+        padding: 2rem;
+    }
+    
+    .login-form-wrapper {
+        max-width: 500px;
+    }
+}
+
+/* Garantir que não haja rolagem em nenhum dispositivo */
+@media (max-width: 991.98px) {
+    .login-page-container {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
+    
+    .login-form-column {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+        padding: 1rem;
+    }
+    
+    .login-form-wrapper {
+        max-height: calc(100vh - 2rem);
+        overflow: hidden;
+    }
+    
+    .login-mobile-logo {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    .login-form-card {
+        max-height: calc(100vh - 6rem);
+        overflow: hidden;
+    }
+    
+    .login-form-body {
+        padding: 1rem;
+        overflow: hidden;
+    }
+    
+    .form-field-group {
+        margin-bottom: 0.875rem;
+    }
+    
+    .form-field-input {
+        min-height: 42px;
+        padding: 0.75rem 0.875rem;
+    }
+    
+    .form-input-group .input-group-text {
+        min-height: 42px;
+        min-width: 42px;
+    }
+    
+    .password-toggle-btn {
+        min-height: 42px;
+        min-width: 42px;
+    }
+    
+    .form-submit-btn {
+        min-height: 42px;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    footer {
+        margin-top: 0.75rem !important;
+    }
+}
+
+/* Prevenção de rolagem global */
+html, body {
+    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
+}
+
+/* Garantir que o formulário seja responsivo sem rolagem */
+.login-form-card {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: 100%;
+}
+
+/* Otimização para diferentes alturas de tela */
+@media (max-height: 800px) {
+    .login-logo-container {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    .login-logo-icon {
+        font-size: 3.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .login-logo-title {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-logo-subtitle {
+        font-size: 1rem;
+    }
+    
+    .login-feature-item {
+        padding: 0.75rem 1rem;
+        min-height: 40px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-field-group {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-field-input {
+        min-height: 40px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .form-input-group .input-group-text {
+        min-height: 40px;
+        min-width: 40px;
+    }
+    
+    .password-toggle-btn {
+        min-height: 40px;
+        min-width: 40px;
+    }
+    
+    .form-submit-btn {
+        min-height: 40px;
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+@media (max-height: 600px) {
+    .login-logo-container {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .login-logo-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-logo-title {
+        font-size: 1.75rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .login-logo-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .login-feature-item {
+        padding: 0.5rem 0.75rem;
+        min-height: 35px;
+        margin-bottom: 0.375rem;
+    }
+    
+    .form-field-group {
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-field-input {
+        min-height: 36px;
+        padding: 0.5rem 0.875rem;
+    }
+    
+    .form-input-group .input-group-text {
+        min-height: 36px;
+        min-width: 36px;
+    }
+    
+    .password-toggle-btn {
+        min-height: 36px;
+        min-width: 36px;
+    }
+    
+    .form-submit-btn {
+        min-height: 36px;
+        padding: 0.5rem 1.25rem;
+    }
+}

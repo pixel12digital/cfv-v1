@@ -1,0 +1,345 @@
+/**
+ * Estilos específicos para o Dashboard do Aluno
+ * Melhorias visuais e responsividade
+ */
+
+/* =====================================================
+   CARD DE BOAS-VINDAS (não é mais header, é card dentro do conteúdo)
+   ===================================================== */
+.aluno-dashboard-header {
+    /* Removido background gradiente - agora é apenas conteúdo dentro do card */
+    padding: 0;
+    margin: 0;
+}
+
+.aluno-dashboard-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.aluno-dashboard-header .subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+/* Mobile: reduzir tamanho */
+@media (max-width: 576px) {
+    .aluno-dashboard-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .aluno-dashboard-header .subtitle {
+        font-size: 0.8125rem;
+    }
+}
+
+/* =====================================================
+   CARDS DE PROGRESSO
+   ===================================================== */
+.progresso-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: white;
+    transition: all 0.2s;
+    height: 100%;
+}
+
+.progresso-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.progresso-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.progresso-card.completed .progresso-card-icon {
+    background: #10b981;
+}
+
+.progresso-card.pending .progresso-card-icon {
+    background: #f59e0b;
+}
+
+.progresso-card.disabled .progresso-card-icon {
+    background: #e2e8f0;
+    color: #94a3b8;
+}
+
+.progresso-card-content {
+    flex: 1;
+}
+
+.progresso-card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.progresso-card.disabled .progresso-card-title {
+    color: #94a3b8;
+}
+
+.progresso-card-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.progresso-card-badge.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.progresso-card-badge.primary {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.progresso-card-badge.secondary {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+/* Desktop: garantir altura consistente dos cards de progresso */
+@media (min-width: 992px) {
+    .progresso-card {
+        min-height: 100px;
+    }
+}
+
+/* Mobile: ajustar tamanho dos cards */
+@media (max-width: 576px) {
+    .progresso-card {
+        padding: 0.875rem;
+    }
+    
+    .progresso-card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+        margin-right: 0.75rem;
+    }
+    
+    .progresso-card-title {
+        font-size: 0.875rem;
+    }
+}
+
+/* =====================================================
+   PRÓXIMAS AULAS - ESTADO VAZIO
+   ===================================================== */
+.proximas-aulas-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.proximas-aulas-empty-icon {
+    font-size: 3rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+}
+
+.proximas-aulas-empty-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.proximas-aulas-empty-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Mobile: reduzir padding */
+@media (max-width: 576px) {
+    .proximas-aulas-empty {
+        padding: 2rem 1rem;
+    }
+    
+    .proximas-aulas-empty-icon {
+        font-size: 2.5rem;
+    }
+    
+    .proximas-aulas-empty-title {
+        font-size: 1rem;
+    }
+}
+
+/* =====================================================
+   AÇÕES RÁPIDAS
+   ===================================================== */
+.acoes-rapidas-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.acoes-rapidas-wrapper .btn {
+    flex: 1 1 0;
+    min-width: 140px;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.acoes-rapidas-wrapper .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Destaque para "Minhas Presenças Teóricas" */
+.acoes-rapidas-wrapper .btn-presencas-teoricas {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    font-weight: 600;
+}
+
+.acoes-rapidas-wrapper .btn-presencas-teoricas:hover {
+    background: #1e40af;
+    border-color: #1e40af;
+    color: white;
+}
+
+/* Mobile: 2 colunas */
+@media (max-width: 576px) {
+    .acoes-rapidas-wrapper {
+        gap: 0.5rem;
+    }
+    
+    .acoes-rapidas-wrapper .btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: auto;
+        font-size: 0.875rem;
+        padding: 0.625rem 0.75rem;
+    }
+}
+
+/* Mobile muito pequeno: 1 coluna */
+@media (max-width: 360px) {
+    .acoes-rapidas-wrapper .btn {
+        flex: 1 1 100%;
+    }
+}
+
+/* =====================================================
+   CARDS GERAIS
+   ===================================================== */
+.card-aluno-dashboard {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-aluno-dashboard .card-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px 8px 0 0;
+}
+
+.card-aluno-dashboard .card-header h2,
+.card-aluno-dashboard .card-header h3,
+.card-aluno-dashboard .card-header h5,
+.card-aluno-dashboard .card-header h6 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.card-aluno-dashboard .card-body {
+    padding: 1.5rem;
+}
+
+/* Mobile: reduzir padding */
+@media (max-width: 576px) {
+    .card-aluno-dashboard .card-header {
+        padding: 0.875rem 1rem;
+    }
+    
+    .card-aluno-dashboard .card-header h2,
+    .card-aluno-dashboard .card-header h3,
+    .card-aluno-dashboard .card-header h5,
+    .card-aluno-dashboard .card-header h6 {
+        font-size: 1rem;
+    }
+    
+    .card-aluno-dashboard .card-body {
+        padding: 1rem;
+    }
+}
+
+/* =====================================================
+   UTILITÁRIOS
+   ===================================================== */
+.mb-section {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 576px) {
+    .mb-section {
+        margin-bottom: 1rem;
+    }
+}
+
+/* =====================================================
+   LAYOUT DESKTOP DASHBOARD - PRÓXIMAS AULAS
+   ===================================================== */
+/* Ajustar .aula-list para funcionar como grid Bootstrap */
+.aula-list.row {
+    margin-left: 0;
+    margin-right: 0;
+    list-style: none; /* Sobrescrever list-style do mobile-first.css */
+    padding-left: 0; /* Remover padding padrão de lista */
+}
+
+/* Remover margin-bottom do .aula-item quando dentro do grid (gap do Bootstrap cuida do espaçamento) */
+.aula-list.row > div > .aula-item {
+    margin-bottom: 0;
+    height: 100%;
+}
+
+/* Desktop: garantir altura consistente dos cards de aula */
+@media (min-width: 768px) {
+    .aula-list.row > div > .aula-item {
+        display: flex;
+        flex-direction: column;
+        min-height: 200px;
+    }
+    
+    .aula-list.row .aula-item .aula-actions {
+        margin-top: auto;
+    }
+}
+
+/* Mobile: manter comportamento original (1 coluna) */
+@media (max-width: 767.98px) {
+    .aula-list.row > div > .aula-item {
+        margin-bottom: 0.75rem;
+    }
+}
+
