@@ -21,6 +21,47 @@ class AuthController extends Controller
         $this->authService = new AuthService();
         $this->emailService = new EmailService();
     }
+    
+    /**
+     * Helper para redirecionar para o dashboard correto baseado no tipo do usuário
+     */
+    private function redirectToUserDashboard($userId = null)
+    {
+        if (!$userId) {
+            $userId = $_SESSION['user_id'] ?? null;
+        }
+        
+        if (!$userId) {
+            redirect(base_url('/login'));
+            return;
+        }
+        
+        $userModel = new User();
+        $user = $userModel->find($userId);
+        
+        if (!$user) {
+            redirect(base_url('/login'));
+            return;
+        }
+        
+        $tipo = strtolower($user['tipo'] ?? '');
+        
+        switch ($tipo) {
+            case 'admin':
+            case 'secretaria':
+                redirect(base_url('/admin/index.php'));
+                break;
+            case 'instrutor':
+                redirect(base_url('/instrutor/dashboard.php'));
+                break;
+            case 'aluno':
+                redirect(base_url('/aluno/dashboard.php'));
+                break;
+            default:
+                // Fallback para dashboard genérico
+                redirect(base_url('/dashboard'));
+        }
+    }
 
     public function showLogin()
     {
@@ -31,7 +72,25 @@ class AuthController extends Controller
             
             // Só redirecionar para dashboard se o usuário existir e estiver ativo
             if ($user && $user['status'] === 'ativo') {
-                redirect(base_url('/dashboard'));
+                // CORREÇÃO: Redirecionar para o dashboard correto baseado no tipo do usuário
+                // Não usar /dashboard genérico, usar os dashboards legados específicos
+                $tipo = strtolower($user['tipo'] ?? '');
+                
+                switch ($tipo) {
+                    case 'admin':
+                    case 'secretaria':
+                        redirect(base_url('/admin/index.php'));
+                        break;
+                    case 'instrutor':
+                        redirect(base_url('/instrutor/dashboard.php'));
+                        break;
+                    case 'aluno':
+                        redirect(base_url('/aluno/dashboard.php'));
+                        break;
+                    default:
+                        // Se tipo desconhecido, usar dashboard genérico
+                        redirect(base_url('/dashboard'));
+                }
             } else {
                 // Se usuário não existe ou está inativo, limpar sessão e mostrar login
                 session_destroy();
@@ -144,7 +203,8 @@ class AuthController extends Controller
                 redirect(base_url('/change-password'));
             }
             
-            redirect(base_url('/dashboard'));
+            // CORREÇÃO: Redirecionar para o dashboard correto baseado no tipo do usuário
+            $this->redirectToUserDashboard($user['id']);
         } else {
             $_SESSION['error'] = 'Credenciais inválidas';
             redirect(base_url('/login'));
@@ -163,7 +223,9 @@ class AuthController extends Controller
     public function showForgotPassword()
     {
         if (!empty($_SESSION['user_id'])) {
-            redirect(base_url('/dashboard'));
+            // CORREÇÃO: Redirecionar para o dashboard correto baseado no tipo do usuário
+            $this->redirectToUserDashboard();
+            return;
         }
         $this->viewRaw('auth/forgot-password');
     }
@@ -384,9 +446,10 @@ class AuthController extends Controller
 
         $_SESSION['success'] = 'Senha alterada com sucesso!';
         
-        // Se estava obrigado a trocar, redirecionar para dashboard
+        // Se estava obrigado a trocar, redirecionar para dashboard correto
         if (!empty($user['must_change_password']) && $user['must_change_password'] == 1) {
-            redirect(base_url('/dashboard'));
+            $this->redirectToUserDashboard($user['id']);
+            return;
         }
         
         redirect(base_url('/change-password'));
