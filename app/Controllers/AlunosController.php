@@ -766,7 +766,13 @@ class AlunosController extends Controller
         if ($canEditPaymentPlan) {
             // Validações de parcelamento conforme método de pagamento
             if (in_array($paymentMethod, ['boleto', 'pix', 'cartao', 'entrada_parcelas'])) {
-                $installments = !empty($_POST['installments']) ? intval($_POST['installments']) : null;
+                // Em edição de matrícula, o formulário atual exibe as parcelas apenas em modo leitura.
+                // Portanto, se o campo "installments" não vier no POST, usamos o valor já salvo na matrícula.
+                if (isset($_POST['installments']) && $_POST['installments'] !== '') {
+                    $installments = intval($_POST['installments']);
+                } else {
+                    $installments = isset($enrollment['installments']) ? intval($enrollment['installments']) : null;
+                }
                 
                 if (!$installments || $installments < 1 || $installments > 12) {
                     $_SESSION['error'] = 'Número de parcelas deve ser entre 1 e 12.';
