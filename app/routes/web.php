@@ -203,6 +203,7 @@ $router->get('/api/payments/status', [PaymentsController::class, 'status'], [Aut
 $router->post('/api/payments/sync', [PaymentsController::class, 'sync'], [AuthMiddleware::class]);
 $router->post('/api/payments/cancel', [PaymentsController::class, 'cancel'], [AuthMiddleware::class]);
 $router->post('/api/payments/sync-pendings', [PaymentsController::class, 'syncPendings'], [AuthMiddleware::class]);
+$router->post('/api/payments/mark-paid', [PaymentsController::class, 'markPaid'], [AuthMiddleware::class]);
 $router->post('/api/payments/webhook/efi', [PaymentsController::class, 'webhookEfi']);
 
 // Debug (APENAS LOCAL - REMOVER EM PRODUÇÃO)

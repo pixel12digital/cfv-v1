@@ -75,6 +75,19 @@ class EfiPaymentService
             ];
         }
 
+        // BLOQUEAR EFI para Cartão (fail-safe)
+        $paymentMethod = $enrollment['payment_method'] ?? 'pix';
+        if ($paymentMethod === 'cartao' || $paymentMethod === 'credit_card') {
+            $this->efiLog('WARN', 'createCharge: Tentativa de gerar cobrança EFI para cartão bloqueada', [
+                'enrollment_id' => $enrollment['id'] ?? null,
+                'payment_method' => $paymentMethod
+            ]);
+            return [
+                'ok' => false,
+                'message' => 'Cartão de crédito é pagamento local (maquininha). Use a opção "Confirmar Pagamento" para dar baixa manual.'
+            ];
+        }
+
         // Validar saldo devedor
         $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0);
         if ($outstandingAmount <= 0) {

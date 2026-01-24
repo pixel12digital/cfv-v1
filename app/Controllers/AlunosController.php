@@ -478,8 +478,10 @@ class AlunosController extends Controller
         if (in_array($paymentMethod, ['boleto', 'pix', 'cartao', 'entrada_parcelas'])) {
             $installments = !empty($_POST['installments']) ? intval($_POST['installments']) : null;
             
-            if (!$installments || $installments < 1 || $installments > 12) {
-                $_SESSION['error'] = 'Número de parcelas deve ser entre 1 e 12.';
+            // Validação dinâmica de parcelas conforme método de pagamento
+            $maxInstallments = ($paymentMethod === 'cartao') ? 24 : 12;
+            if (!$installments || $installments < 1 || $installments > $maxInstallments) {
+                $_SESSION['error'] = "Número de parcelas deve ser entre 1 e {$maxInstallments}.";
                 redirect(base_url("alunos/{$id}/matricular"));
             }
         }
@@ -744,7 +746,18 @@ class AlunosController extends Controller
         }
         
         // Calcular saldo devedor
-        $outstandingAmount = $entryAmount > 0 ? max(0, $finalPrice - $entryAmount) : $finalPrice;
+        // IMPORTANTE: Não recalcular se pagamento foi confirmado localmente (gateway_provider='local')
+        // Isso evita regressão de saldo após markPaid()
+        $gatewayProvider = $enrollment['gateway_provider'] ?? '';
+        $isLocalPaid = ($gatewayProvider === 'local' && ($enrollment['gateway_last_status'] ?? '') === 'paid');
+        
+        if ($isLocalPaid) {
+            // Manter outstanding_amount atual (já está zerado pelo markPaid)
+            $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? 0);
+        } else {
+            // Recalcular normalmente
+            $outstandingAmount = $entryAmount > 0 ? max(0, $finalPrice - $entryAmount) : $finalPrice;
+        }
         
         // Recalcular financial_status baseado em outstanding_amount (coerência)
         // Se outstanding_amount > 0 e não está bloqueado, deve ser 'pendente'
@@ -774,8 +787,10 @@ class AlunosController extends Controller
                     $installments = isset($enrollment['installments']) ? intval($enrollment['installments']) : null;
                 }
                 
-                if (!$installments || $installments < 1 || $installments > 12) {
-                    $_SESSION['error'] = 'Número de parcelas deve ser entre 1 e 12.';
+                // Validação dinâmica de parcelas conforme método de pagamento
+                $maxInstallments = ($paymentMethod === 'cartao') ? 24 : 12;
+                if (!$installments || $installments < 1 || $installments > $maxInstallments) {
+                    $_SESSION['error'] = "Número de parcelas deve ser entre 1 e {$maxInstallments}.";
                     redirect(base_url("matriculas/{$id}"));
                 }
             }

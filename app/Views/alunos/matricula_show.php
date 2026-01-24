@@ -167,11 +167,11 @@
                         name="installments" 
                         class="form-input"
                         min="1"
-                        max="12"
+                        max="<?= ($enrollment['payment_method'] ?? '') === 'cartao' ? 24 : 12 ?>"
                         value="<?= !empty($enrollment['installments']) ? $enrollment['installments'] : 1 ?>"
                         required
                     >
-                    <small class="text-muted">Número de parcelas para o saldo devedor (entre 1 e 12)</small>
+                    <small class="text-muted" id="installments_help">Número de parcelas para o saldo devedor</small>
                 </div>
 
                 <!-- Campo Data do Primeiro Vencimento (para Boleto e PIX) -->
@@ -577,8 +577,14 @@
                                    $enrollment['billing_status'] === 'generated' &&
                                    !in_array($enrollment['gateway_last_status'] ?? '', ['canceled', 'expired', 'error']);
                 
-                // Botão Gerar Cobrança: aparece se tem parcelas, saldo > 0, e não tem cobrança ativa
-                if (!empty($enrollment['installments']) && $hasOutstanding && !$hasActiveCharge && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error')): 
+                <?php 
+                // Ocultar botões EFI quando payment_method = 'cartao'
+                $isCartao = ($enrollment['payment_method'] ?? '') === 'cartao';
+                ?>
+                
+                <?php if (!$isCartao): ?>
+                <!-- Botão Gerar Cobrança: aparece se tem parcelas, saldo > 0, e não tem cobrança ativa -->
+                <?php if (!empty($enrollment['installments']) && $hasOutstanding && !$hasActiveCharge && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error')): 
                 ?>
                 <button type="button" class="btn btn-secondary" id="btnGerarCobranca" onclick="gerarCobrancaEfi()" style="margin-left: 0.5rem;">
                     Gerar Cobrança Efí
@@ -595,6 +601,16 @@
                 ?>
                 <button type="button" class="btn btn-outline" id="btnSincronizarCobranca" onclick="sincronizarCobrancaEfi()" style="margin-left: 0.5rem;">
                     Sincronizar Cobrança
+                </button>
+                <?php endif; ?>
+                <?php endif; ?>
+                
+                <?php 
+                // Botão Confirmar Pagamento: aparece apenas para cartão com saldo devedor
+                if ($isCartao && $hasOutstanding && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error' || ($enrollment['gateway_provider'] ?? '') === 'local')): 
+                ?>
+                <button type="button" class="btn btn-success" id="btnConfirmarPagamento" onclick="confirmarPagamentoCartao()" style="margin-left: 0.5rem;">
+                    ✅ Confirmar Pagamento
                 </button>
                 <?php endif; ?>
                 <a href="<?= base_path("alunos/{$enrollment['student_id']}?tab=matricula") ?>" class="btn btn-outline">
@@ -741,6 +757,8 @@ function updatePaymentPlanFields() {
     const paymentMethod = document.getElementById('payment_method')?.value || '';
     const installmentsField = document.getElementById('installments_field');
     const firstDueDateField = document.getElementById('first_due_date_field');
+    const installmentsInput = document.getElementById('installments');
+    const installmentsHelp = document.getElementById('installments_help');
     
     if (!installmentsField || !firstDueDateField) {
         return; // Campos não existem (modo somente leitura)
@@ -751,7 +769,24 @@ function updatePaymentPlanFields() {
     
     if (methodsWithInstallments.includes(paymentMethod)) {
         installmentsField.style.display = 'block';
-        installmentsField.querySelector('#installments').setAttribute('required', 'required');
+        if (installmentsInput) {
+            installmentsInput.setAttribute('required', 'required');
+            
+            // Ajustar max dinamicamente: 24 para cartão, 12 para outros
+            const maxInstallments = (paymentMethod === 'cartao') ? 24 : 12;
+            installmentsInput.setAttribute('max', maxInstallments);
+            
+            // Se valor atual > max novo, reduzir para o max
+            const currentValue = parseInt(installmentsInput.value) || 1;
+            if (currentValue > maxInstallments) {
+                installmentsInput.value = maxInstallments;
+            }
+            
+            // Atualizar help text
+            if (installmentsHelp) {
+                installmentsHelp.textContent = `Número de parcelas para o saldo devedor (entre 1 e ${maxInstallments})`;
+            }
+        }
         
         // Métodos que requerem data do primeiro vencimento
         if (['boleto', 'pix'].includes(paymentMethod)) {
@@ -764,13 +799,30 @@ function updatePaymentPlanFields() {
     } else {
         installmentsField.style.display = 'none';
         firstDueDateField.style.display = 'none';
-        installmentsField.querySelector('#installments').removeAttribute('required');
+        if (installmentsInput) {
+            installmentsInput.removeAttribute('required');
+        }
         firstDueDateField.querySelector('#first_due_date').removeAttribute('required');
     }
 }
 
 // Adicionar listener ao campo de forma de pagamento
-document.getElementById('payment_method')?.addEventListener('change', updatePaymentPlanFields);
+document.getElementById('payment_method')?.addEventListener('change', function() {
+    const paymentMethod = this.value || '';
+    
+    // Atualizar campos de parcelamento
+    updatePaymentPlanFields();
+    
+    // Se selecionou Cartão, mostrar popup "Já está pago?"
+    if (paymentMethod === 'cartao') {
+        const isPaid = confirm('Pagamento na maquininha local.\n\nJá está pago?\n\n- OK = Sim, já foi pago\n- Cancelar = Não, ainda não foi pago');
+        
+        if (isPaid) {
+            // Chamar função de confirmar pagamento
+            confirmarPagamentoCartao();
+        }
+    }
+});
 
 function gerarCobrancaEfi() {
     const enrollmentId = <?= $enrollment['id'] ?>;
@@ -1056,6 +1108,96 @@ function atualizarStatusCarne(enrollmentId) {
     .finally(() => {
         btn.disabled = false;
         btn.textContent = '🔄 Atualizar Status';
+    });
+}
+
+function confirmarPagamentoCartao() {
+    const enrollmentId = <?= $enrollment['id'] ?>;
+    const outstandingAmount = <?= $enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0 ?>;
+    const installmentsInput = document.getElementById('installments');
+    const installments = installmentsInput ? parseInt(installmentsInput.value) || 1 : <?= $enrollment['installments'] ?? 1 ?>;
+    
+    // Validações
+    if (outstandingAmount <= 0) {
+        alert('Não há saldo devedor para confirmar pagamento.');
+        return;
+    }
+    
+    if (installments < 1 || installments > 24) {
+        alert('Número de parcelas deve ser entre 1 e 24 para cartão.');
+        return;
+    }
+    
+    // Confirmação final
+    const confirmMsg = `Confirmar pagamento de R$ ${outstandingAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}?\n\n` +
+                      `Parcelas: ${installments}x\n` +
+                      `Valor por parcela: R$ ${(outstandingAmount / installments).toLocaleString('pt-BR', {minimumFractionDigits: 2})}\n\n` +
+                      `Este pagamento foi realizado na maquininha local e será registrado imediatamente.`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    // Desabilitar botão durante processamento
+    const btn = document.getElementById('btnConfirmarPagamento');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Confirmando...';
+    }
+    
+    // Preparar dados
+    const payload = {
+        enrollment_id: enrollmentId,
+        payment_method: 'cartao',
+        installments: installments,
+        confirm_amount: outstandingAmount
+    };
+    
+    // Chamar endpoint de baixa manual
+    fetch('<?= base_path('api/payments/mark-paid') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const raw = await response.text();
+        let data;
+        
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            console.error('Resposta não é JSON válido:', raw);
+            throw new Error('Servidor retornou resposta inválida. Status: ' + response.status);
+        }
+        
+        if (!response.ok) {
+            const errorMsg = data.message || data.error || 'Erro desconhecido';
+            throw new Error(`Erro ${response.status}: ${errorMsg}`);
+        }
+        
+        return data;
+    })
+    .then(data => {
+        if (data.ok) {
+            alert('✅ Pagamento confirmado com sucesso!\n\nO financeiro foi atualizado imediatamente.');
+            // Recarregar página para atualizar status
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'Erro ao confirmar pagamento');
+        }
+    })
+    .catch(error => {
+        console.error('Erro completo:', error);
+        console.error('Stack:', error.stack);
+        alert('Erro ao confirmar pagamento: ' + (error.message || 'Erro desconhecido') + '\n\nVerifique o console para mais detalhes.');
+        
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '✅ Confirmar Pagamento';
+        }
     });
 }
 

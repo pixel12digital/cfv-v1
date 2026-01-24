@@ -771,4 +771,206 @@ class PaymentsController extends Controller
         
         exit;
     }
+    
+    /**
+     * POST /api/payments/mark-paid
+     * Marca pagamento como pago (baixa manual, sem gateway)
+     * Usado apenas para payment_method = 'cartao' (pagamento na maquininha local)
+     */
+    public function markPaid()
+    {
+        // Sempre retornar JSON, mesmo em erro
+        try {
+            // Definir header JSON ANTES de qualquer saída
+            header('Content-Type: application/json; charset=utf-8');
+
+            // Verificar autenticação
+            if (empty($_SESSION['user_id'])) {
+                http_response_code(401);
+                echo json_encode(['ok' => false, 'message' => 'Você precisa fazer login para continuar'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Verificar permissão (admin ou secretaria)
+            $currentRole = $_SESSION['current_role'] ?? '';
+            if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'message' => 'Você não tem permissão para realizar esta ação'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Validar método
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['ok' => false, 'message' => 'Operação não permitida'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Obter dados do POST
+            $input = json_decode(file_get_contents('php://input'), true);
+            $enrollmentId = $input['enrollment_id'] ?? null;
+            $paymentMethod = $input['payment_method'] ?? null;
+            $installments = isset($input['installments']) ? intval($input['installments']) : null;
+            $confirmAmount = isset($input['confirm_amount']) ? floatval($input['confirm_amount']) : null;
+
+            // Validações obrigatórias
+            if (!$enrollmentId) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'É necessário informar o ID da matrícula'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            if ($paymentMethod !== 'cartao') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Baixa manual só é permitida para cartão de crédito'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            if (!$installments || $installments < 1 || $installments > 24) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Número de parcelas deve ser entre 1 e 24 para cartão'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Buscar matrícula com detalhes
+            $enrollment = $this->enrollmentModel->findWithDetails($enrollmentId);
+            if (!$enrollment) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'message' => 'Matrícula não encontrada'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Verificar se matrícula pertence ao CFC do usuário
+            $cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
+            if ($enrollment['cfc_id'] != $cfcId) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'message' => 'Acesso negado a esta matrícula'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Validar que payment_method da matrícula é cartão
+            if ($enrollment['payment_method'] !== 'cartao') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Esta matrícula não está configurada para pagamento com cartão'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Sanity check: validar valor se fornecido
+            $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0);
+            if ($confirmAmount !== null && abs($confirmAmount - $outstandingAmount) > 0.01) {
+                http_response_code(400);
+                echo json_encode([
+                    'ok' => false,
+                    'message' => 'Valor informado não confere com o saldo devedor atual. Recarregue a página e tente novamente.'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Verificar se já está pago
+            if ($outstandingAmount <= 0) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Esta matrícula já está quitada'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // Obter conexão do banco
+            $db = \App\Config\Database::getInstance()->getConnection();
+            
+            // Iniciar transação para garantir consistência
+            $db->beginTransaction();
+            
+            try {
+                // Calcular entry_amount necessário para zerar outstanding_amount
+                // outstanding_amount = final_price - entry_amount
+                // Para zerar: entry_amount = final_price
+                $finalPrice = floatval($enrollment['final_price']);
+                
+                // Atualizar matrícula de forma consistente
+                // CRÍTICO: Ajustar entry_amount para evitar recálculo de outstanding_amount
+                $stmt = $db->prepare("
+                    UPDATE enrollments 
+                    SET 
+                        payment_method = 'cartao',
+                        installments = ?,
+                        outstanding_amount = 0,
+                        entry_amount = ?,
+                        financial_status = 'em_dia',
+                        billing_status = 'generated',
+                        gateway_provider = 'local',
+                        gateway_last_status = 'paid',
+                        gateway_last_event_at = NOW(),
+                        gateway_charge_id = NULL,
+                        gateway_payment_url = NULL,
+                        gateway_pix_code = NULL,
+                        gateway_barcode = NULL
+                    WHERE id = ?
+                ");
+                
+                $stmt->execute([
+                    $installments,
+                    $finalPrice, // entry_amount = final_price para evitar recálculo
+                    $enrollmentId
+                ]);
+                
+                // Commit transação
+                $db->commit();
+                
+                // Log de sucesso
+                error_log(sprintf(
+                    "PAYMENTS-MARK-PAID: enrollment_id=%d, installments=%d, amount=%.2f",
+                    $enrollmentId,
+                    $installments,
+                    $outstandingAmount
+                ));
+                
+                http_response_code(200);
+                echo json_encode([
+                    'ok' => true,
+                    'message' => 'Pagamento confirmado com sucesso',
+                    'enrollment_id' => $enrollmentId,
+                    'outstanding_amount' => 0,
+                    'financial_status' => 'em_dia'
+                ], JSON_UNESCAPED_UNICODE);
+                
+            } catch (\Exception $e) {
+                // Rollback em caso de erro
+                $db->rollBack();
+                throw $e;
+            }
+            
+        } catch (\Throwable $e) {
+            // Capturar qualquer erro (Exception, Error, etc)
+            http_response_code(500);
+            
+            // Log com prefixo PAYMENTS-ERROR
+            $logFile = __DIR__ . '/../../storage/logs/php_errors.log';
+            $timestamp = date('Y-m-d H:i:s');
+            $logMessage = sprintf(
+                "[%s] PAYMENTS-ERROR: PaymentsController::markPaid() - %s in %s:%d\nStack trace:\n%s\n",
+                $timestamp,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine(),
+                $e->getTraceAsString()
+            );
+            @file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+            
+            // Garantir que header JSON foi enviado
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Ocorreu um erro ao confirmar o pagamento. Por favor, tente novamente.',
+                'details' => [
+                    'error' => $e->getMessage(),
+                    'file' => basename($e->getFile()),
+                    'line' => $e->getLine()
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        }
+        
+        exit;
+    }
 }

@@ -166,8 +166,19 @@ class InstallmentsViewService
         $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? 
                                      ($enrollment['final_price'] - ($enrollment['entry_amount'] ?? 0)));
         
-        if ($outstandingAmount <= 0) {
+        // Caso especial: Cartão pago localmente (gateway_provider='local')
+        // Exibir parcelas informativas mesmo com outstanding_amount=0
+        $isCartaoLocalPaid = ($enrollment['payment_method'] ?? '') === 'cartao' && 
+                             ($enrollment['gateway_provider'] ?? '') === 'local' &&
+                             $outstandingAmount <= 0;
+        
+        if ($outstandingAmount <= 0 && !$isCartaoLocalPaid) {
             return $installments; // Sem saldo devedor, sem parcelas
+        }
+        
+        // Para cartão pago localmente, usar final_price para cálculo informativo
+        if ($isCartaoLocalPaid) {
+            $outstandingAmount = floatval($enrollment['final_price'] ?? 0);
         }
         
         // Verificar se tem entrada separada
@@ -200,7 +211,8 @@ class InstallmentsViewService
                        $enrollment['first_due_date'] !== '0000-00-00' 
                        ? $enrollment['first_due_date'] : null;
         
-        if ($installmentsCount > 1 && $firstDueDate && $outstandingAmount > 0) {
+        // Para cartão pago localmente, permitir cálculo mesmo sem outstanding_amount
+        if ($installmentsCount > 1 && $firstDueDate && ($outstandingAmount > 0 || $isCartaoLocalPaid)) {
             // Dividir saldo restante em parcelas
             $parcelAmount = round($outstandingAmount / $installmentsCount, 2);
             
@@ -225,11 +237,11 @@ class InstallmentsViewService
                     'number' => $parcelNumber,
                     'due_date' => $dueDate,
                     'amount' => round($amount, 2),
-                    'status' => $this->getStatusByDueDate($dueDate),
-                    'gateway_status' => null,
+                    'status' => $isCartaoLocalPaid ? 'paid' : $this->getStatusByDueDate($dueDate),
+                    'gateway_status' => $isCartaoLocalPaid ? 'paid_local' : null,
                     'payment_url' => null,
                     'charge_id' => null,
-                    'source' => 'calculated'
+                    'source' => $isCartaoLocalPaid ? 'calculated_local' : 'calculated'
                 ];
             }
         } elseif ($outstandingAmount > 0) {
