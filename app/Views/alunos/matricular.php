@@ -183,7 +183,7 @@
                         <label class="form-label" for="installments_cartao">Parcelas *</label>
                         <select id="installments_cartao" name="installments" class="form-select" required>
                             <option value="">Selecione</option>
-                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                            <?php for ($i = 1; $i <= 24; $i++): ?>
                             <option value="<?= $i ?>"><?= $i ?>x</option>
                             <?php endfor; ?>
                         </select>
