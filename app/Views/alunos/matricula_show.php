@@ -1134,8 +1134,22 @@ function atualizarStatusCarne(enrollmentId) {
 function confirmarPagamentoCartao() {
     const enrollmentId = <?= $enrollment['id'] ?>;
     const outstandingAmount = <?= $enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0 ?>;
+    
+    // Buscar parcelas: primeiro tenta do campo, depois do valor salvo na matrícula
     const installmentsInput = document.getElementById('installments');
-    const installments = installmentsInput ? parseInt(installmentsInput.value) || 1 : <?= $enrollment['installments'] ?? 1 ?>;
+    let installments = null;
+    
+    if (installmentsInput && installmentsInput.value) {
+        installments = parseInt(installmentsInput.value);
+    } else {
+        // Se campo não existe ou está vazio, usar valor salvo na matrícula
+        installments = <?= !empty($enrollment['installments']) ? intval($enrollment['installments']) : 1 ?>;
+    }
+    
+    // Garantir que installments é válido
+    if (!installments || isNaN(installments) || installments < 1) {
+        installments = 1; // Valor padrão
+    }
     
     // Validações
     if (outstandingAmount <= 0) {
@@ -1190,11 +1204,26 @@ function confirmarPagamentoCartao() {
             data = JSON.parse(raw);
         } catch (e) {
             console.error('Resposta não é JSON válido:', raw);
-            throw new Error('Servidor retornou resposta inválida. Status: ' + response.status);
+            console.error('Erro ao parsear:', e);
+            throw new Error('Servidor retornou resposta inválida. Status: ' + response.status + '. Verifique o console para mais detalhes.');
         }
         
         if (!response.ok) {
-            const errorMsg = data.message || data.error || 'Erro desconhecido';
+            // Tentar extrair mensagem de erro
+            const errorMsg = data?.message || data?.error || `Erro HTTP ${response.status}`;
+            
+            // Mensagens específicas para erros comuns
+            if (response.status === 400) {
+                throw new Error(errorMsg);
+            } else if (response.status === 403) {
+                throw new Error('Você não tem permissão para realizar esta ação.');
+            } else if (response.status === 404) {
+                throw new Error('Matrícula não encontrada.');
+            } else if (response.status === 500) {
+                const details = data?.details ? `\n\nDetalhes: ${data.details.error || ''}` : '';
+                throw new Error('Erro interno do servidor. Por favor, tente novamente.' + details);
+            }
+            
             throw new Error(`Erro ${response.status}: ${errorMsg}`);
         }
         
