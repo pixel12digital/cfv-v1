@@ -37,6 +37,20 @@
   gap: var(--spacing-sm);
 }
 
+.topbar-logo-image {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background-color: #ffffff;
+}
+
+.topbar-logo-text {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-light);
+}
+
 .topbar-search {
   flex: 1;
   max-width: 400px;
@@ -261,6 +275,14 @@
   color: var(--color-text-light);
 }
 
+.role-label-desktop {
+  display: inline;
+}
+
+.role-label-mobile {
+  display: none;
+}
+
 /* Main Layout */
 .app-main {
   display: flex;
@@ -476,5 +498,19 @@
 
   .topbar-role-dropdown {
     min-width: 180px;
+  }
+
+  /* Mobile: mostrar apenas chip curto do modo (ADMIN/INSTRUTOR) */
+  .role-label-desktop {
+    display: none;
+  }
+
+  .role-label-mobile {
+    display: inline;
+  }
+
+  /* No mobile, esconder texto da logo para ganhar espaço (ficar só o ícone) */
+  .topbar-logo-text {
+    display: none;
   }
 }

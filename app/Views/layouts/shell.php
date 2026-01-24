@@ -41,7 +41,13 @@
                 </button>
                 
                 <a href="<?= base_url('dashboard') ?>" class="topbar-logo">
-                    CFC Sistema
+                    <img 
+                        src="<?= base_url('login/cfc-logo') ?>" 
+                        alt="Logo do CFC" 
+                        class="topbar-logo-image"
+                        onerror="this.style.display='none'; if (this.nextElementSibling) { this.nextElementSibling.style.display='inline-block'; }"
+                    >
+                    <span class="topbar-logo-text">CFC</span>
                 </a>
                 
                 <div class="topbar-search">
@@ -75,15 +81,15 @@
                 $availableRolesRaw = $_SESSION['available_roles'] ?? [];
                 $normalizedRoles = [];
 
-                if (is_array($availableRolesRaw)) {
-                    // Mapa simples de nomes amigáveis (fallback)
-                    $roleNameMap = [
-                        'ADMIN'      => 'Administrador',
-                        'SECRETARIA' => 'Secretaria',
-                        'INSTRUTOR'  => 'Instrutor',
-                        'ALUNO'      => 'Aluno',
-                    ];
+                // Mapa simples de nomes amigáveis (fallback)
+                $roleNameMap = [
+                    'ADMIN'      => 'Admin',
+                    'SECRETARIA' => 'Secretaria',
+                    'INSTRUTOR'  => 'Instrutor',
+                    'ALUNO'      => 'Aluno',
+                ];
 
+                if (is_array($availableRolesRaw)) {
                     foreach ($availableRolesRaw as $item) {
                         if (is_array($item)) {
                             $code = $item['role'] ?? null;
@@ -101,11 +107,19 @@
                 }
 
                 $hasMultipleRoles = count($normalizedRoles) > 1;
+                // Determinar label amigável para o papel atual
+                $currentRoleCode = strtoupper($_SESSION['active_role'] ?? $_SESSION['current_role'] ?? 'ALUNO');
+                $currentRoleLabel = $roleNameMap[$currentRoleCode] ?? $currentRoleCode;
                 ?>
                 <?php if ($hasMultipleRoles): ?>
                 <div class="topbar-role-selector">
                     <button class="topbar-role-selector-btn" id="roleSelectorBtn">
-                        <span>Atuando como: <strong><?= htmlspecialchars($_SESSION['current_role'] ?? 'ALUNO') ?></strong></span>
+                        <span class="role-label-desktop">
+                            Modo: <strong><?= htmlspecialchars($currentRoleLabel) ?></strong>
+                        </span>
+                        <span class="role-label-mobile">
+                            <?= htmlspecialchars($currentRoleCode) ?>
+                        </span>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
