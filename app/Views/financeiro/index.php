@@ -638,6 +638,16 @@
                             </td>
                             <td>
                                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <!-- Ícone de olho para ver resumo financeiro do cliente -->
+                                    <a 
+                                        href="<?= base_path("financeiro?student_id={$enr['student_id']}") ?>" 
+                                        class="btn btn-sm btn-outline"
+                                        title="Ver resumo financeiro do cliente"
+                                        style="padding: 0.25rem 0.5rem; min-width: auto;"
+                                    >
+                                        👁️
+                                    </a>
+                                    
                                     <?php if ($hasCharge): ?>
                                         <?php if (!empty($paymentUrl)): ?>
                                         <a 
