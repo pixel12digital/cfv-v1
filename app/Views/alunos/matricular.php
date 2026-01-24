@@ -478,6 +478,29 @@ function togglePaymentConditions() {
         conditionsSection.style.display = 'block';
         cartaoDiv.style.display = 'block';
         document.getElementById('installments_cartao').setAttribute('required', 'required');
+        
+        // Popup automático: "Já está pago?"
+        const isPaid = confirm('Pagamento na maquininha local.\n\nJá está pago?\n\n- OK = Sim, já foi pago\n- Cancelar = Não, ainda não foi pago');
+        if (isPaid) {
+            // Adicionar campo hidden para indicar que pagamento foi confirmado
+            let hiddenInput = document.getElementById('cartao_paid_confirmed');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'cartao_paid_confirmed';
+                hiddenInput.name = 'cartao_paid_confirmed';
+                hiddenInput.value = '1';
+                document.getElementById('enrollmentForm').appendChild(hiddenInput);
+            } else {
+                hiddenInput.value = '1';
+            }
+        } else {
+            // Remover campo se existir
+            const hiddenInput = document.getElementById('cartao_paid_confirmed');
+            if (hiddenInput) {
+                hiddenInput.remove();
+            }
+        }
     } else if (paymentMethod === 'entrada_parcelas') {
         conditionsSection.style.display = 'block';
         entradaParcelasDiv.style.display = 'block';

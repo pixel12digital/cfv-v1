@@ -302,23 +302,116 @@
     <?php endif; ?>
 <?php else: ?>
     <?php if (!$isAluno && !$student && (!isset($students) || empty($students))): ?>
+    <!-- Abas de Filtro -->
+    <?php 
+    $currentFilter = $filter ?? 'pending';
+    $baseUrl = base_path('financeiro');
+    $queryParams = [];
+    if (!empty($search)) {
+        $queryParams['q'] = $search;
+    }
+    ?>
+    <div style="margin-bottom: var(--spacing-md);">
+        <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--color-border);">
+            <a 
+                href="<?= $baseUrl . ($queryParams ? '?' . http_build_query(array_merge($queryParams, ['filter' => 'pending'])) : '?filter=pending') ?>"
+                style="
+                    padding: 0.75rem 1.5rem;
+                    text-decoration: none;
+                    color: <?= $currentFilter === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>;
+                    border-bottom: 2px solid <?= $currentFilter === 'pending' ? 'var(--color-primary)' : 'transparent' ?>;
+                    margin-bottom: -2px;
+                    font-weight: <?= $currentFilter === 'pending' ? '600' : '400' ?>;
+                    transition: all 0.2s;
+                "
+                onmouseover="this.style.color='var(--color-primary)'"
+                onmouseout="this.style.color='<?= $currentFilter === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>'"
+            >
+                Pendentes
+                <?php if ($currentFilter === 'pending' && isset($pendingTotal)): ?>
+                <span style="margin-left: 0.5rem; font-size: var(--font-size-sm); opacity: 0.7;">
+                    (<?= $pendingTotal ?>)
+                </span>
+                <?php endif; ?>
+            </a>
+            <a 
+                href="<?= $baseUrl . ($queryParams ? '?' . http_build_query(array_merge($queryParams, ['filter' => 'paid'])) : '?filter=paid') ?>"
+                style="
+                    padding: 0.75rem 1.5rem;
+                    text-decoration: none;
+                    color: <?= $currentFilter === 'paid' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>;
+                    border-bottom: 2px solid <?= $currentFilter === 'paid' ? 'var(--color-primary)' : 'transparent' ?>;
+                    margin-bottom: -2px;
+                    font-weight: <?= $currentFilter === 'paid' ? '600' : '400' ?>;
+                    transition: all 0.2s;
+                "
+                onmouseover="this.style.color='var(--color-primary)'"
+                onmouseout="this.style.color='<?= $currentFilter === 'paid' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>'"
+            >
+                Pagas
+                <?php if ($currentFilter === 'paid' && isset($pendingTotal)): ?>
+                <span style="margin-left: 0.5rem; font-size: var(--font-size-sm); opacity: 0.7;">
+                    (<?= $pendingTotal ?>)
+                </span>
+                <?php endif; ?>
+            </a>
+            <a 
+                href="<?= $baseUrl . ($queryParams ? '?' . http_build_query(array_merge($queryParams, ['filter' => 'all'])) : '?filter=all') ?>"
+                style="
+                    padding: 0.75rem 1.5rem;
+                    text-decoration: none;
+                    color: <?= $currentFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>;
+                    border-bottom: 2px solid <?= $currentFilter === 'all' ? 'var(--color-primary)' : 'transparent' ?>;
+                    margin-bottom: -2px;
+                    font-weight: <?= $currentFilter === 'all' ? '600' : '400' ?>;
+                    transition: all 0.2s;
+                "
+                onmouseover="this.style.color='var(--color-primary)'"
+                onmouseout="this.style.color='<?= $currentFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>'"
+            >
+                Todas
+                <?php if ($currentFilter === 'all' && isset($pendingTotal)): ?>
+                <span style="margin-left: 0.5rem; font-size: var(--font-size-sm); opacity: 0.7;">
+                    (<?= $pendingTotal ?>)
+                </span>
+                <?php endif; ?>
+            </a>
+        </div>
+    </div>
+    
     <!-- Lista de Matrículas com Saldo Devedor -->
     <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h3>Matrículas com Saldo Devedor<?= !empty($search) ? ' (Filtrado)' : '' ?></h3>
+                <h3>
+                    <?php if ($currentFilter === 'pending'): ?>
+                        Matrículas com Saldo Devedor
+                    <?php elseif ($currentFilter === 'paid'): ?>
+                        Matrículas Pagas
+                    <?php else: ?>
+                        Todas as Matrículas
+                    <?php endif; ?>
+                    <?= !empty($search) ? ' (Filtrado)' : '' ?>
+                </h3>
                 <p class="text-muted" style="margin: 0; font-size: var(--font-size-sm);">
-                    Total: <?= $pendingTotal ?> matrícula(s) com saldo devedor
+                    Total: <?= $pendingTotal ?> matrícula(s)
+                    <?php if ($currentFilter === 'pending'): ?>
+                        com saldo devedor
+                    <?php elseif ($currentFilter === 'paid'): ?>
+                        pagas
+                    <?php else: ?>
+                        cadastradas
+                    <?php endif; ?>
                     <?php if (!empty($search)): ?>
                     <br>Filtro: "<?= htmlspecialchars($search) ?>"
                     <?php endif; ?>
-                    <?php if (isset($pendingSyncableCount) && $pendingSyncableCount > 0): ?>
+                    <?php if (isset($pendingSyncableCount) && $pendingSyncableCount > 0 && $currentFilter === 'pending'): ?>
                     <br>Sincronizáveis: <?= $pendingSyncableCount ?>
                     <?php endif; ?>
                 </p>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <?php if (isset($pendingSyncableCount) && $pendingSyncableCount > 0): ?>
+                <?php if (isset($pendingSyncableCount) && $pendingSyncableCount > 0 && $currentFilter === 'pending'): ?>
                 <button type="button" class="btn btn-primary" id="btnSyncPendings" onclick="sincronizarPendentes()">
                     Sincronizar Pendentes desta Página
                 </button>
@@ -338,8 +431,12 @@
                 <p class="text-muted">
                     <?php if (!empty($search)): ?>
                     Nenhum resultado encontrado com o termo "<?= htmlspecialchars($search) ?>".
-                    <?php else: ?>
+                    <?php elseif ($currentFilter === 'pending'): ?>
                     Nenhuma matrícula com saldo devedor encontrada.
+                    <?php elseif ($currentFilter === 'paid'): ?>
+                    Nenhuma matrícula paga encontrada.
+                    <?php else: ?>
+                    Nenhuma matrícula cadastrada.
                     <?php endif; ?>
                 </p>
             </div>
@@ -352,6 +449,8 @@
                             <th>CPF</th>
                             <th>Serviço</th>
                             <th>Saldo Devedor</th>
+                            <th>Forma de Pagamento</th>
+                            <th>Parcelas</th>
                             <th>Vencimento</th>
                             <th>Status Financeiro</th>
                             <th>Cobrança</th>
@@ -365,6 +464,30 @@
                         <?php
                         $studentName = $enr['student_full_name'] ?: $enr['student_name'];
                         $cpfFormatted = \App\Helpers\ValidationHelper::formatCpf($enr['student_cpf'] ?? '');
+                        
+                        // Verificar se é cartão pago localmente
+                        $isCartaoLocalPaid = ($enr['payment_method'] ?? '') === 'cartao' && 
+                                            ($enr['gateway_provider'] ?? '') === 'local' &&
+                                            ($enr['gateway_last_status'] ?? '') === 'paid';
+                        
+                        // Forma de pagamento (traduzir)
+                        $paymentMethodLabels = [
+                            'pix' => 'PIX',
+                            'boleto' => 'Boleto',
+                            'cartao' => 'Cartão',
+                            'entrada_parcelas' => 'Entrada + Parcelas'
+                        ];
+                        $paymentMethodLabel = $paymentMethodLabels[$enr['payment_method'] ?? ''] ?? ($enr['payment_method'] ?? '-');
+                        
+                        // Número de parcelas
+                        $installmentsCount = !empty($enr['installments']) ? intval($enr['installments']) : 1;
+                        $installmentsDisplay = $installmentsCount > 1 ? "{$installmentsCount}x" : 'À vista';
+                        
+                        // Data de pagamento (se cartão pago localmente)
+                        $paymentDate = null;
+                        if ($isCartaoLocalPaid && !empty($enr['gateway_last_event_at'])) {
+                            $paymentDate = date('d/m/Y H:i', strtotime($enr['gateway_last_event_at']));
+                        }
                         
                         // Saldo devedor calculado
                         $outstandingAmount = floatval($enr['calculated_outstanding'] ?? $enr['outstanding_amount'] ?? ($enr['final_price'] - ($enr['entry_amount'] ?? 0)));
@@ -447,6 +570,17 @@
                             <td style="font-weight: 600; color: <?= $outstandingAmount > 0 ? '#ef4444' : '#10b981' ?>;">
                                 R$ <?= number_format($outstandingAmount, 2, ',', '.') ?>
                             </td>
+                            <td>
+                                <div style="font-weight: 500;"><?= htmlspecialchars($paymentMethodLabel) ?></div>
+                                <?php if ($isCartaoLocalPaid && $paymentDate): ?>
+                                <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 2px;">
+                                    Pago em: <?= htmlspecialchars($paymentDate) ?>
+                                </div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span style="font-weight: 500;"><?= htmlspecialchars($installmentsDisplay) ?></span>
+                            </td>
                             <td style="<?= $isOverdue ? 'color: #ef4444; font-weight: 600;' : '' ?>">
                                 <?= $dueDate ?: '-' ?>
                                 <?php if ($isOverdue): ?>
@@ -522,6 +656,11 @@
                                             Sincronizar
                                         </button>
                                     <?php else: ?>
+                                        <?php if ($isCartaoLocalPaid): ?>
+                                        <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">
+                                            Pagamento local (maquininha)
+                                        </span>
+                                        <?php else: ?>
                                         <a 
                                             href="<?= base_path("matriculas/{$enr['id']}") ?>" 
                                             class="btn btn-sm btn-primary"
@@ -529,6 +668,7 @@
                                         >
                                             Gerar Cobrança
                                         </a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -538,11 +678,11 @@
                 </table>
             </div>
             
-            <!-- Paginação -->
+            // Paginação - preservar filtro e busca
             <?php if ($pendingTotal > $pendingPerPage): ?>
             <?php
             $totalPages = ceil($pendingTotal / $pendingPerPage);
-            $paginationParams = ['page' => $pendingPage];
+            $paginationParams = ['page' => $pendingPage, 'filter' => $currentFilter];
             if (!empty($search)) {
                 $paginationParams['q'] = $search;
             }
@@ -837,6 +977,7 @@ function sincronizarPendentes() {
     const page = <?= $pendingPage ?>;
     const perPage = <?= $pendingPerPage ?>;
     const search = '<?= htmlspecialchars($search ?? '', ENT_QUOTES) ?>';
+    const filter = '<?= htmlspecialchars($currentFilter ?? 'pending', ENT_QUOTES) ?>';
     
     if (!confirm('Deseja sincronizar todas as cobranças pendentes desta página?\n\nIsso irá consultar o status atual na EFI para cada matrícula.')) {
         return;
@@ -854,7 +995,8 @@ function sincronizarPendentes() {
         body: JSON.stringify({
             page: page,
             per_page: perPage,
-            search: search
+            search: search,
+            filter: filter
         })
     })
     .then(response => response.json())

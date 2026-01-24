@@ -82,6 +82,7 @@ class FinanceiroController extends Controller
             $search = $_GET['q'] ?? '';
             $studentId = $_GET['student_id'] ?? null;
             $pendingPage = max(1, intval($_GET['page'] ?? 1));
+            $filter = $_GET['filter'] ?? 'pending'; // 'pending', 'paid', 'all'
             
             if ($studentId) {
                 $student = $studentModel->find($studentId);
@@ -106,9 +107,9 @@ class FinanceiroController extends Controller
                 // Se não, aplicar filtro na lista de pendentes
                 $students = $studentModel->findByCfc($this->cfcId, $search);
                 
-                // Se não encontrou alunos, aplicar filtro na lista de pendentes
+                // Se não encontrou alunos, aplicar filtro na lista conforme filtro selecionado
                 if (empty($students)) {
-                    $pendingResult = $this->getPendingEnrollments($pendingPage, $pendingPerPage, $search);
+                    $pendingResult = $this->getEnrollmentsByFilter($filter, $pendingPage, $pendingPerPage, $search);
                     $pendingEnrollments = $pendingResult['items'];
                     $pendingTotal = $pendingResult['total'];
                     $pendingSyncableCount = $pendingResult['syncable_count'] ?? 0;
@@ -119,8 +120,8 @@ class FinanceiroController extends Controller
                 }
             } else {
                 $students = [];
-                // Carregar lista de pendentes (padrão) - matrículas com saldo devedor
-                $pendingResult = $this->getPendingEnrollments($pendingPage, $pendingPerPage, '');
+                // Carregar lista conforme filtro selecionado
+                $pendingResult = $this->getEnrollmentsByFilter($filter, $pendingPage, $pendingPerPage, '');
                 $pendingEnrollments = $pendingResult['items'];
                 $pendingTotal = $pendingResult['total'];
                 $pendingSyncableCount = $pendingResult['syncable_count'] ?? 0;
@@ -145,7 +146,8 @@ class FinanceiroController extends Controller
             'pendingPerPage' => $pendingPerPage,
             'pendingSyncableCount' => $pendingSyncableCount ?? 0,
             'installmentsByEnrollment' => $installmentsByEnrollment ?? [],
-            'allInstallments' => $allInstallments ?? []
+            'allInstallments' => $allInstallments ?? [],
+            'filter' => $filter ?? 'pending'
         ];
         
         $this->view('financeiro/index', $data);
@@ -284,27 +286,39 @@ class FinanceiroController extends Controller
     }
 
     /**
-     * Busca matrículas com saldo devedor (para listagem padrão)
+     * Busca matrículas conforme filtro (pending/paid/all)
      * 
+     * @param string $filter 'pending', 'paid', ou 'all'
      * @param int $page Página atual
      * @param int $perPage Itens por página
      * @param string $search Filtro por nome/CPF
      * @return array {items: [], total: int, syncable_count: int}
      */
-    private function getPendingEnrollments($page = 1, $perPage = 10, $search = '')
+    private function getEnrollmentsByFilter($filter = 'pending', $page = 1, $perPage = 10, $search = '')
     {
         $offset = ($page - 1) * $perPage;
         
         // Verificar se coluna outstanding_amount existe
         $hasOutstandingAmount = $this->columnExists('enrollments', 'outstanding_amount');
         
-        // Base da query: matrículas com saldo devedor
-        // Critério: outstanding_amount > 0 OU (se coluna não existir, usar final_price - entry_amount)
-        if ($hasOutstandingAmount) {
-            $whereClause = "AND (e.outstanding_amount > 0 OR (e.outstanding_amount IS NULL AND e.final_price > COALESCE(e.entry_amount, 0)))";
+        // Construir WHERE clause conforme filtro
+        if ($filter === 'paid') {
+            // Matrículas pagas: outstanding_amount = 0 ou (final_price - entry_amount) = 0
+            if ($hasOutstandingAmount) {
+                $whereClause = "AND (e.outstanding_amount = 0 OR (e.outstanding_amount IS NULL AND e.final_price <= COALESCE(e.entry_amount, 0)))";
+            } else {
+                $whereClause = "AND (e.final_price <= COALESCE(e.entry_amount, 0))";
+            }
+        } elseif ($filter === 'all') {
+            // Todas as matrículas (sem filtro de saldo)
+            $whereClause = "";
         } else {
-            // Fallback: calcular saldo devedor na query
-            $whereClause = "AND (e.final_price > COALESCE(e.entry_amount, 0))";
+            // Padrão: matrículas com saldo devedor (pending)
+            if ($hasOutstandingAmount) {
+                $whereClause = "AND (e.outstanding_amount > 0 OR (e.outstanding_amount IS NULL AND e.final_price > COALESCE(e.entry_amount, 0)))";
+            } else {
+                $whereClause = "AND (e.final_price > COALESCE(e.entry_amount, 0))";
+            }
         }
         
         // Verificar se colunas do gateway existem (migration 030)

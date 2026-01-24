@@ -464,9 +464,17 @@ class AlunosController extends Controller
         // Calcular saldo devedor
         $outstandingAmount = $entryAmount > 0 ? max(0, $finalPrice - $entryAmount) : $finalPrice;
         
-        // Recalcular financial_status baseado em outstanding_amount (coerência)
-        // Se outstanding_amount > 0, deve ser 'pendente' (padrão inicial)
-        $financialStatus = $outstandingAmount > 0 ? 'pendente' : 'em_dia';
+        // Tratamento especial para Cartão: se pagamento foi confirmado no popup
+        $cartaoPaidConfirmed = !empty($_POST['cartao_paid_confirmed']) && $_POST['cartao_paid_confirmed'] === '1';
+        if ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) {
+            // Cartão pago localmente: zerar saldo devedor e marcar como em_dia
+            $outstandingAmount = 0;
+            $financialStatus = 'em_dia';
+        } else {
+            // Recalcular financial_status baseado em outstanding_amount (coerência)
+            // Se outstanding_amount > 0, deve ser 'pendente' (padrão inicial)
+            $financialStatus = $outstandingAmount > 0 ? 'pendente' : 'em_dia';
+        }
 
         // Processar campos de parcelamento
         $installments = null;
@@ -565,9 +573,13 @@ class AlunosController extends Controller
             'down_payment_amount' => $downPaymentAmount,
             'down_payment_due_date' => $downPaymentDueDate,
             'first_due_date' => $firstDueDate,
-            'billing_status' => 'draft', // Status inicial: rascunho (pronto para gerar cobrança)
+            'billing_status' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? 'generated' : 'draft', // Se cartão pago, já está gerado (pago localmente)
             'theory_course_id' => $theoryCourseId,
-            'theory_class_id' => $theoryClassId
+            'theory_class_id' => $theoryClassId,
+            // Campos específicos para cartão pago localmente
+            'gateway_provider' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? 'local' : null,
+            'gateway_last_status' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? 'paid' : null,
+            'gateway_last_event_at' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? date('Y-m-d H:i:s') : null
         ];
 
         // Validar curso/turma teórica se informado
