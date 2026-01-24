@@ -55,12 +55,25 @@ class FinanceiroController extends Controller
                     $enrollments = $enrollmentModel->findByStudent($studentId);
                     
                     // Calcular totais (usando entry_amount para total pago e outstanding_amount para saldo)
+                    // IMPORTANTE: Excluir matrículas canceladas do cálculo
                     foreach ($enrollments as $enr) {
+                        // Pular matrículas canceladas
+                        if ($enr['status'] === 'cancelada') {
+                            continue;
+                        }
+                        
                         $finalPrice = (float)$enr['final_price'];
                         $entryAmount = (float)($enr['entry_amount'] ?? 0);
                         
+                        // Usar outstanding_amount se disponível, senão calcular
+                        if (isset($enr['outstanding_amount']) && $enr['outstanding_amount'] !== null) {
+                            $outstanding = (float)$enr['outstanding_amount'];
+                        } else {
+                            $outstanding = max(0, $finalPrice - $entryAmount);
+                        }
+                        
                         $totalPaid += $entryAmount;
-                        $totalDebt += max(0, $finalPrice - $entryAmount);
+                        $totalDebt += $outstanding;
                     }
                     
                     // Calcular parcelas virtuais para o aluno
@@ -93,12 +106,25 @@ class FinanceiroController extends Controller
                     $this->recordRecentQuery($studentId);
                     
                     // Calcular totais (usando entry_amount para total pago e outstanding_amount para saldo)
+                    // IMPORTANTE: Excluir matrículas canceladas do cálculo
                     foreach ($enrollments as $enr) {
+                        // Pular matrículas canceladas
+                        if ($enr['status'] === 'cancelada') {
+                            continue;
+                        }
+                        
                         $finalPrice = (float)$enr['final_price'];
                         $entryAmount = (float)($enr['entry_amount'] ?? 0);
                         
+                        // Usar outstanding_amount se disponível, senão calcular
+                        if (isset($enr['outstanding_amount']) && $enr['outstanding_amount'] !== null) {
+                            $outstanding = (float)$enr['outstanding_amount'];
+                        } else {
+                            $outstanding = max(0, $finalPrice - $entryAmount);
+                        }
+                        
                         $totalPaid += $entryAmount;
-                        $totalDebt += max(0, $finalPrice - $entryAmount);
+                        $totalDebt += $outstanding;
                     }
                 }
             } elseif ($search) {

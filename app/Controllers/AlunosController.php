@@ -1586,7 +1586,14 @@ class AlunosController extends Controller
             $db->commit();
             
             $_SESSION['success'] = 'Matrícula excluída com sucesso!';
-            redirect(base_url("alunos/{$studentId}?tab=matricula"));
+            
+            // Verificar se veio da página financeira para redirecionar de volta
+            $referer = $_SERVER['HTTP_REFERER'] ?? '';
+            if (strpos($referer, '/financeiro') !== false) {
+                redirect(base_url("financeiro?student_id={$studentId}"));
+            } else {
+                redirect(base_url("alunos/{$studentId}?tab=matricula"));
+            }
             
         } catch (\Exception $e) {
             $db->rollBack();
