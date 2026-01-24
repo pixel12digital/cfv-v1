@@ -574,10 +574,9 @@
                 
                 // Mostrar botão apenas se não houver cobrança ativa
                 $hasActiveCharge = !empty($enrollment['gateway_charge_id']) && 
-                                   $enrollment['billing_status'] === 'generated' &&
-                                   !in_array($enrollment['gateway_last_status'] ?? '', ['canceled', 'expired', 'error']);
+                                  $enrollment['billing_status'] === 'generated' &&
+                                  !in_array($enrollment['gateway_last_status'] ?? '', ['canceled', 'expired', 'error']);
                 
-                <?php 
                 // Ocultar botões EFI quando payment_method = 'cartao'
                 $isCartao = ($enrollment['payment_method'] ?? '') === 'cartao';
                 ?>
@@ -613,6 +612,27 @@
                     ✅ Confirmar Pagamento
                 </button>
                 <?php endif; ?>
+                
+                <?php 
+                // Botão Excluir Matrícula (apenas ADMIN)
+                $currentRole = $_SESSION['current_role'] ?? '';
+                $isAdmin = ($currentRole === \App\Config\Constants::ROLE_ADMIN);
+                if ($isAdmin && $enrollment['status'] !== 'cancelada'):
+                    // Verificar se pode excluir (não tem cobrança ativa na EFI)
+                    $canDelete = empty($enrollment['gateway_charge_id']) || 
+                                in_array(strtolower($enrollment['gateway_last_status'] ?? ''), ['canceled', 'expired', 'cancelado', 'expirado']);
+                ?>
+                <button 
+                    type="button" 
+                    class="btn btn-danger" 
+                    onclick="excluirMatricula()" 
+                    style="margin-left: 0.5rem;"
+                    <?= !$canDelete ? 'disabled title="Não é possível excluir: há cobrança ativa na EFI. Cancele na EFI primeiro, sincronize e depois exclua."' : '' ?>
+                >
+                    🗑️ Excluir Matrícula
+                </button>
+                <?php endif; ?>
+                
                 <a href="<?= base_path("alunos/{$enrollment['student_id']}?tab=matricula") ?>" class="btn btn-outline">
                     Cancelar
                 </a>
@@ -1250,5 +1270,37 @@ function cancelarCarne(enrollmentId) {
         btn.disabled = false;
         btn.textContent = '❌ Cancelar Carnê';
     });
+}
+
+function excluirMatricula() {
+    const reason = prompt('Digite o motivo da exclusão (opcional):\n\nEsta ação não pode ser desfeita. A matrícula será marcada como cancelada e o saldo devedor será zerado.');
+    
+    if (reason === null) {
+        return; // Usuário cancelou
+    }
+    
+    if (!confirm('Tem certeza que deseja EXCLUIR esta matrícula?\n\nEsta ação irá:\n- Marcar a matrícula como cancelada\n- Zerar o saldo devedor\n- Limpar dados da cobrança EFI\n\nEsta ação não pode ser desfeita!')) {
+        return;
+    }
+    
+    // Criar formulário para enviar POST
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<?= base_path("matriculas/{$enrollment['id']}/excluir") ?>';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '<?= csrf_token() ?>';
+    form.appendChild(csrfToken);
+    
+    const reasonInput = document.createElement('input');
+    reasonInput.type = 'hidden';
+    reasonInput.name = 'delete_reason';
+    reasonInput.value = reason || 'Exclusão manual pelo usuário';
+    form.appendChild(reasonInput);
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>

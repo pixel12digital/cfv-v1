@@ -69,6 +69,7 @@ $router->post('/alunos/{id}/historico/observacao', [AlunosController::class, 'ad
 // Matrículas
 $router->get('/matriculas/{id}', [AlunosController::class, 'showMatricula'], [AuthMiddleware::class]);
 $router->post('/matriculas/{id}/atualizar', [AlunosController::class, 'atualizarMatricula'], [AuthMiddleware::class]);
+$router->post('/matriculas/{id}/excluir', [AlunosController::class, 'excluirMatricula'], [AuthMiddleware::class]);
 
 // Etapas
 $router->post('/student-steps/{id}/toggle', [AlunosController::class, 'toggleStep'], [AuthMiddleware::class]);

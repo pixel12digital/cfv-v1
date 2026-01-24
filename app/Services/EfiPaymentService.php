@@ -1998,16 +1998,26 @@ class EfiPaymentService
      */
     private function mapGatewayStatusToBillingStatus($gatewayStatus)
     {
+        $status = strtolower($gatewayStatus);
+        
         // Status que indicam sucesso/gerado
         $successStatuses = ['paid', 'settled', 'waiting'];
-        // Status que indicam erro
-        $errorStatuses = ['unpaid', 'refunded', 'canceled', 'expired'];
+        // Status que indicam erro/cancelado
+        $errorStatuses = ['unpaid', 'refunded', 'canceled', 'expired', 'cancelado', 'expirado'];
         
-        if (in_array(strtolower($gatewayStatus), $successStatuses)) {
+        // Tratar "finished" - pode ser status final (verificar contexto)
+        // Se vier "finished" mas a API retornar status cancelado, tratar como erro
+        if ($status === 'finished') {
+            // "finished" pode ser status intermediário, tratar como 'ready' por padrão
+            // Mas se vier cancelado da API, será tratado como 'canceled' acima
+            return 'ready';
+        }
+        
+        if (in_array($status, $successStatuses)) {
             return 'generated';
         }
         
-        if (in_array(strtolower($gatewayStatus), $errorStatuses)) {
+        if (in_array($status, $errorStatuses)) {
             return 'error';
         }
         
@@ -2030,9 +2040,21 @@ class EfiPaymentService
             return 'em_dia';
         }
         
-        // Status que indicam cancelamento/expirado (mantém pendente, permite gerar nova)
-        if (in_array($status, ['canceled', 'expired'])) {
-            return 'pendente';
+        // Status que indicam cancelamento/expirado
+        // IMPORTANTE: Quando cancelado, outstanding_amount será zerado em syncCharge()
+        // Então financial_status deve ser 'em_dia' (sem saldo devedor)
+        if (in_array($status, ['canceled', 'expired', 'cancelado', 'expirado'])) {
+            // Retornar null aqui - o syncCharge() vai zerar outstanding_amount e forçar 'em_dia'
+            // Isso permite que o recalculateFinancialStatus() calcule corretamente baseado em outstanding_amount = 0
+            return null; // Será recalculado baseado em outstanding_amount = 0
+        }
+        
+        // Tratar "finished" - pode ser status final
+        // Se for "finished" mas não cancelado, tratar como aguardando ou não alterar
+        if ($status === 'finished') {
+            // Não alterar - pode ser status intermediário
+            // Se for cancelado, a API deve retornar "canceled" explicitamente
+            return null;
         }
         
         // Status aguardando pagamento (mantém pendente)
@@ -2442,7 +2464,7 @@ class EfiPaymentService
         // Preparar dados de atualização
         $updateData = [
             'billing_status' => $billingStatus,
-            'gateway_last_status' => $status,
+            'gateway_last_status' => $status, // Sempre atualizar com status real da API (não manter "finished" se vier "canceled")
             'gateway_last_event_at' => $eventAt,
             'gateway_provider' => 'efi'
         ];
@@ -2450,6 +2472,17 @@ class EfiPaymentService
         // Atualizar payment_url se fornecido e ainda não existir
         if ($paymentUrl && empty($enrollment['gateway_payment_url'])) {
             $updateData['gateway_payment_url'] = $paymentUrl;
+        }
+
+        // Se cobrança foi cancelada ou expirada, zerar outstanding_amount
+        $statusLower = strtolower($status);
+        if (in_array($statusLower, ['canceled', 'expired', 'cancelado', 'expirado'])) {
+            // Cobrança cancelada: zerar saldo devedor (não deve mais contabilizar)
+            $updateData['outstanding_amount'] = 0;
+            // Se não tinha mapeamento de financial_status, forçar 'em_dia' (sem saldo)
+            if ($financialStatus === null) {
+                $financialStatus = 'em_dia';
+            }
         }
 
         // Atualizar financial_status se mapeado

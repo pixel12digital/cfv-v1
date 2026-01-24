@@ -304,20 +304,22 @@ class FinanceiroController extends Controller
         // Construir WHERE clause conforme filtro
         if ($filter === 'paid') {
             // Matrículas pagas: outstanding_amount = 0 ou (final_price - entry_amount) = 0
+            // IMPORTANTE: Excluir matrículas canceladas (status = 'cancelada')
             if ($hasOutstandingAmount) {
-                $whereClause = "AND (e.outstanding_amount = 0 OR (e.outstanding_amount IS NULL AND e.final_price <= COALESCE(e.entry_amount, 0)))";
+                $whereClause = "AND e.status != 'cancelada' AND (e.outstanding_amount = 0 OR (e.outstanding_amount IS NULL AND e.final_price <= COALESCE(e.entry_amount, 0)))";
             } else {
-                $whereClause = "AND (e.final_price <= COALESCE(e.entry_amount, 0))";
+                $whereClause = "AND e.status != 'cancelada' AND (e.final_price <= COALESCE(e.entry_amount, 0))";
             }
         } elseif ($filter === 'all') {
-            // Todas as matrículas (sem filtro de saldo)
-            $whereClause = "";
+            // Todas as matrículas (sem filtro de saldo, mas excluir canceladas da listagem de saldo devedor)
+            $whereClause = "AND e.status != 'cancelada'";
         } else {
             // Padrão: matrículas com saldo devedor (pending)
+            // IMPORTANTE: Excluir matrículas canceladas e com cobrança cancelada
             if ($hasOutstandingAmount) {
-                $whereClause = "AND (e.outstanding_amount > 0 OR (e.outstanding_amount IS NULL AND e.final_price > COALESCE(e.entry_amount, 0)))";
+                $whereClause = "AND e.status != 'cancelada' AND (e.outstanding_amount > 0 OR (e.outstanding_amount IS NULL AND e.final_price > COALESCE(e.entry_amount, 0)))";
             } else {
-                $whereClause = "AND (e.final_price > COALESCE(e.entry_amount, 0))";
+                $whereClause = "AND e.status != 'cancelada' AND (e.final_price > COALESCE(e.entry_amount, 0))";
             }
         }
         

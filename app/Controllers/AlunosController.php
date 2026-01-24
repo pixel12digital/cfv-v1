@@ -1470,4 +1470,126 @@ class AlunosController extends Controller
         $_SESSION['success'] = 'Observação adicionada com sucesso!';
         redirect(base_url("alunos/{$id}?tab=historico"));
     }
+
+    /**
+     * Exclui uma matrícula (soft delete)
+     * 
+     * @param int $id ID da matrícula
+     */
+    public function excluirMatricula($id)
+    {
+        // Apenas ADMIN pode excluir (verificar role diretamente)
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if ($currentRole !== Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Apenas administradores podem excluir matrículas.';
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        $enrollmentModel = new Enrollment();
+        $enrollment = $enrollmentModel->findWithDetails($id);
+
+        if (!$enrollment || $enrollment['cfc_id'] != $this->cfcId) {
+            $_SESSION['error'] = 'Matrícula não encontrada.';
+            redirect(base_url('alunos'));
+        }
+
+        // Validação 1: Não pode excluir se já está cancelada
+        if ($enrollment['status'] === 'cancelada') {
+            $_SESSION['error'] = 'Esta matrícula já está cancelada.';
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        // Validação 2: Não pode excluir se tiver cobrança ativa na EFI
+        $hasActiveCharge = !empty($enrollment['gateway_charge_id']) && 
+                          !in_array(strtolower($enrollment['gateway_last_status'] ?? ''), ['canceled', 'expired', 'cancelado', 'expirado']);
+        
+        if ($hasActiveCharge) {
+            $_SESSION['error'] = 'Não é possível excluir matrícula com cobrança ativa na EFI. Primeiro cancele a cobrança na EFI, sincronize e depois exclua no sistema.';
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        // Validação 3: Verificar se tem aulas agendadas ou em andamento
+        $db = \App\Config\Database::getInstance()->getConnection();
+        $stmt = $db->prepare("
+            SELECT COUNT(*) as total 
+            FROM lessons 
+            WHERE enrollment_id = ? 
+            AND status IN ('agendada', 'em_andamento')
+        ");
+        $stmt->execute([$id]);
+        $lessonsCount = $stmt->fetch()['total'] ?? 0;
+
+        if ($lessonsCount > 0) {
+            $_SESSION['error'] = "Não é possível excluir matrícula com {$lessonsCount} aula(s) agendada(s) ou em andamento. Cancele ou conclua as aulas primeiro.";
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        // Obter motivo da exclusão (opcional)
+        $deleteReason = trim($_POST['delete_reason'] ?? '');
+        if (empty($deleteReason)) {
+            $deleteReason = 'Exclusão manual pelo usuário';
+        }
+
+        $dataBefore = $enrollment;
+        $studentId = $enrollment['student_id'];
+
+        $db->beginTransaction();
+        
+        try {
+            // Soft delete: atualizar status e zerar saldo devedor
+            $updateData = [
+                'status' => 'cancelada',
+                'outstanding_amount' => 0,
+                'financial_status' => 'em_dia', // Sem saldo, está em dia
+                'gateway_charge_id' => null, // Limpar referência à cobrança EFI
+                'gateway_payment_url' => null,
+                'gateway_pix_code' => null,
+                'gateway_barcode' => null,
+                'billing_status' => 'error' // Marcar como erro (cancelada)
+            ];
+
+            $setParts = [];
+            $params = [];
+            foreach ($updateData as $key => $value) {
+                $setParts[] = "`{$key}` = ?";
+                $params[] = $value;
+            }
+            $params[] = $id;
+
+            $sql = "UPDATE enrollments SET " . implode(', ', $setParts) . " WHERE id = ?";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+
+            // Registrar no histórico do aluno
+            $historyService = new StudentHistoryService();
+            $historyService->logFinancialEvent(
+                $studentId, 
+                "Matrícula #{$id} excluída: {$enrollment['service_name']}. Motivo: {$deleteReason}"
+            );
+
+            // Auditoria
+            $auditService = new AuditService();
+            $auditService->logUpdate('enrollments', $id, $dataBefore, $updateData, "Exclusão: {$deleteReason}");
+
+            $db->commit();
+            
+            $_SESSION['success'] = 'Matrícula excluída com sucesso!';
+            redirect(base_url("alunos/{$studentId}?tab=matricula"));
+            
+        } catch (\Exception $e) {
+            $db->rollBack();
+            error_log("Erro ao excluir matrícula: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao excluir matrícula: ' . $e->getMessage();
+            redirect(base_url("matriculas/{$id}"));
+        }
+    }
 }
