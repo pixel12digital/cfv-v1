@@ -70,16 +70,48 @@
                 </a>
                 
                 <!-- Seletor de Papel -->
-                <?php if (!empty($_SESSION['available_roles']) && count($_SESSION['available_roles']) > 1): ?>
+                <?php
+                // Normalizar available_roles para aceitar tanto strings quanto arrays ['role' => 'ADMIN', 'nome' => 'Administrador']
+                $availableRolesRaw = $_SESSION['available_roles'] ?? [];
+                $normalizedRoles = [];
+
+                if (is_array($availableRolesRaw)) {
+                    // Mapa simples de nomes amigáveis (fallback)
+                    $roleNameMap = [
+                        'ADMIN'      => 'Administrador',
+                        'SECRETARIA' => 'Secretaria',
+                        'INSTRUTOR'  => 'Instrutor',
+                        'ALUNO'      => 'Aluno',
+                    ];
+
+                    foreach ($availableRolesRaw as $item) {
+                        if (is_array($item)) {
+                            $code = $item['role'] ?? null;
+                            if ($code) {
+                                $code = strtoupper($code);
+                                $name = (string)($item['nome'] ?? ($roleNameMap[$code] ?? $code));
+                                $normalizedRoles[] = ['role' => $code, 'nome' => $name];
+                            }
+                        } elseif (is_string($item) && $item !== '') {
+                            $code = strtoupper($item);
+                            $name = $roleNameMap[$code] ?? $code;
+                            $normalizedRoles[] = ['role' => $code, 'nome' => $name];
+                        }
+                    }
+                }
+
+                $hasMultipleRoles = count($normalizedRoles) > 1;
+                ?>
+                <?php if ($hasMultipleRoles): ?>
                 <div class="topbar-role-selector">
                     <button class="topbar-role-selector-btn" id="roleSelectorBtn">
-                        <span>Atuando como: <strong><?= $_SESSION['current_role'] ?? 'ALUNO' ?></strong></span>
+                        <span>Atuando como: <strong><?= htmlspecialchars($_SESSION['current_role'] ?? 'ALUNO') ?></strong></span>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
                     <div class="topbar-role-dropdown" id="roleDropdown">
-                        <?php foreach ($_SESSION['available_roles'] as $role): ?>
+                        <?php foreach ($normalizedRoles as $role): ?>
                             <div class="topbar-role-dropdown-item <?= ($_SESSION['current_role'] ?? '') === $role['role'] ? 'active' : '' ?>" 
                                  data-role="<?= htmlspecialchars($role['role']) ?>">
                                 <?= htmlspecialchars($role['role']) ?> - <?= htmlspecialchars($role['nome']) ?>
