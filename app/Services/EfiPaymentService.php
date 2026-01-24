@@ -2454,7 +2454,32 @@ class EfiPaymentService
             }
         }
 
-        // Mapear status
+        // Verificar se status "finished" foi cancelado/expirado ou pago ANTES de mapear
+        $statusLower = strtolower($status);
+        $isFinished = ($statusLower === 'finished');
+        
+        if ($isFinished) {
+            // Verificar campos adicionais na resposta da API
+            $hasCanceledAt = !empty($chargeData['canceled_at'] ?? null);
+            $hasExpiredAt = !empty($chargeData['expired_at'] ?? null);
+            $hasPaidAt = !empty($chargeData['paid_at'] ?? null);
+            
+            // Se tem canceled_at ou expired_at, foi cancelada/expirada
+            if ($hasCanceledAt || $hasExpiredAt) {
+                $status = $hasCanceledAt ? 'canceled' : 'expired';
+            } 
+            // Se tem paid_at, foi paga
+            elseif ($hasPaidAt) {
+                $status = 'paid';
+            }
+            // Se não tem nenhum desses campos, assumir que foi cancelada/expirada
+            // (pois "finished" sem paid_at geralmente indica cancelamento/expirado)
+            else {
+                $status = 'canceled'; // Assumir cancelado se não há informação de pagamento
+            }
+        }
+
+        // Mapear status (agora com status corrigido se era "finished")
         $billingStatus = $this->mapGatewayStatusToBillingStatus($status);
         $financialStatus = $this->mapGatewayStatusToFinancialStatus($status);
 
@@ -2474,11 +2499,23 @@ class EfiPaymentService
             $updateData['gateway_payment_url'] = $paymentUrl;
         }
 
-        // Se cobrança foi cancelada ou expirada, zerar outstanding_amount
+        // Se cobrança foi cancelada, expirada ou paga, zerar outstanding_amount
         $statusLower = strtolower($status);
-        if (in_array($statusLower, ['canceled', 'expired', 'cancelado', 'expirado'])) {
-            // Cobrança cancelada: zerar saldo devedor (não deve mais contabilizar)
+        $isCanceledOrExpired = in_array($statusLower, ['canceled', 'expired', 'cancelado', 'expirado']);
+        $isPaid = in_array($statusLower, ['paid', 'settled', 'approved']);
+        
+        if ($isCanceledOrExpired || $isPaid) {
+            // Cobrança cancelada/expirada ou paga: zerar saldo devedor
             $updateData['outstanding_amount'] = 0;
+            
+            if ($isCanceledOrExpired) {
+                // Atualizar billing_status para 'error' se cancelada/expirada
+                if ($billingStatus !== 'error') {
+                    $billingStatus = 'error';
+                    $updateData['billing_status'] = $billingStatus;
+                }
+            }
+            
             // Se não tinha mapeamento de financial_status, forçar 'em_dia' (sem saldo)
             if ($financialStatus === null) {
                 $financialStatus = 'em_dia';
@@ -2507,12 +2544,13 @@ class EfiPaymentService
 
         // Log (sem dados sensíveis)
         error_log(sprintf(
-            "EFI Sync: enrollment_id=%d, charge_id=%s, status=%s, billing_status=%s, financial_status=%s",
+            "EFI Sync: enrollment_id=%d, charge_id=%s, status=%s, billing_status=%s, financial_status=%s, outstanding_amount=%s",
             $enrollment['id'],
             $chargeId,
             $status,
             $billingStatus,
-            $financialStatus ?? 'não alterado'
+            $financialStatus ?? 'não alterado',
+            isset($updateData['outstanding_amount']) ? $updateData['outstanding_amount'] : 'não alterado'
         ));
 
         return [
