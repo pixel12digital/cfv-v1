@@ -249,6 +249,7 @@
   cursor: pointer;
   transition: background-color var(--transition-base);
   font-size: var(--font-size-sm);
+  color: var(--color-text);
 }
 
 .topbar-role-dropdown-item:hover {
@@ -442,5 +443,38 @@
 
   .content-area {
     padding: var(--spacing-md);
+  }
+}
+
+/* Header / role selector ajustes finos para mobile estreito (ex.: 375px) */
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .topbar-left {
+    gap: var(--spacing-sm);
+  }
+
+  .topbar-right {
+    gap: var(--spacing-sm);
+  }
+
+  .topbar-role-selector-btn {
+    max-width: 150px;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-xs);
+  }
+
+  .topbar-role-selector-btn span {
+    display: block;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-role-dropdown {
+    min-width: 180px;
   }
 }
