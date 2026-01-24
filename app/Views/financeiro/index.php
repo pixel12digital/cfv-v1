@@ -643,7 +643,8 @@
                                         href="<?= base_path("financeiro?student_id={$enr['student_id']}") ?>" 
                                         class="btn btn-sm btn-outline"
                                         title="Ver resumo financeiro do cliente"
-                                        style="padding: 0.25rem 0.5rem; min-width: auto;"
+                                        aria-label="Ver resumo financeiro do cliente"
+                                        style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                     >
                                         👁️
                                     </a>
@@ -655,61 +656,59 @@
                                             target="_blank" 
                                             class="btn btn-sm btn-outline"
                                             title="<?= $isCarnet ? 'Ver carnê (capa)' : 'Abrir cobrança' ?>"
+                                            aria-label="<?= $isCarnet ? 'Ver carnê (capa)' : 'Abrir cobrança' ?>"
+                                            style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                         >
-                                            <?= $isCarnet ? 'Ver Carnê' : 'Abrir Cobrança' ?>
+                                            🔗
                                         </a>
                                         <?php if ($isCarnet && !empty($carnetData['download_link'])): ?>
                                         <a 
                                             href="<?= htmlspecialchars($carnetData['download_link']) ?>" 
                                             target="_blank" 
-                                            class="btn btn-sm btn-primary"
+                                            class="btn btn-sm btn-outline"
                                             title="Baixar carnê em PDF"
+                                            aria-label="Baixar carnê em PDF"
+                                            style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                         >
-                                            📥 Baixar Carnê
+                                            📥
                                         </a>
                                         <?php else: ?>
                                         <button 
                                             type="button" 
-                                            class="btn btn-sm btn-primary" 
+                                            class="btn btn-sm btn-outline" 
                                             onclick="imprimirBoleto('<?= htmlspecialchars($paymentUrl, ENT_QUOTES) ?>')"
                                             title="Imprimir boleto"
+                                            aria-label="Imprimir boleto"
+                                            style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                         >
-                                            🖨️ Imprimir
+                                            🖨️
                                         </button>
                                         <?php endif; ?>
                                         <?php endif; ?>
                                         <button 
                                             type="button" 
-                                            class="btn btn-sm btn-secondary" 
+                                            class="btn btn-sm btn-outline" 
                                             onclick="sincronizarIndividual(<?= $enr['id'] ?>)"
                                             id="btn-sync-<?= $enr['id'] ?>"
+                                            title="Sincronizar cobrança"
+                                            aria-label="Sincronizar cobrança"
+                                            style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                         >
-                                            Sincronizar
+                                            🔄
                                         </button>
                                     <?php else: ?>
-                                        <?php if ($isCartaoLocalPaid): ?>
-                                        <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">
-                                            Pagamento local (maquininha)
-                                        </span>
-                                        <?php else: ?>
+                                        <?php if (!$isCartaoLocalPaid): ?>
                                         <a 
                                             href="<?= base_path("matriculas/{$enr['id']}") ?>" 
-                                            class="btn btn-sm btn-primary"
+                                            class="btn btn-sm btn-outline"
                                             title="Gerar cobrança"
+                                            aria-label="Gerar cobrança"
+                                            style="padding: 0.25rem 0.5rem; min-width: auto; color: inherit;"
                                         >
-                                            Gerar Cobrança
+                                            ➕
                                         </a>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <button 
-                                        type="button" 
-                                        class="btn btn-sm btn-danger" 
-                                        onclick="cancelarMatricula(<?= $enr['id'] ?>, '<?= htmlspecialchars($enr['service_name'] ?? 'Matrícula', ENT_QUOTES) ?>', <?= $canCancel ? 'true' : 'false' ?>, '<?= htmlspecialchars($cancelReason, ENT_QUOTES) ?>')"
-                                        <?= !$canCancel ? 'disabled title="' . htmlspecialchars($cancelReason) . '"' : 'title="Cancelar esta matrícula"' ?>
-                                        style="margin-left: auto;"
-                                    >
-                                        🗑️ Cancelar
-                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1077,7 +1076,8 @@ function sincronizarIndividual(enrollmentId) {
     }
     
     btn.disabled = true;
-    btn.textContent = 'Sincronizando...';
+    // Manter ícone ao invés de texto
+    const originalContent = btn.innerHTML;
     
     fetch('<?= base_path('api/payments/sync') ?>', {
         method: 'POST',
@@ -1110,14 +1110,14 @@ function sincronizarIndividual(enrollmentId) {
         } else {
             alert('Não foi possível sincronizar: ' + (data.message || 'Ocorreu um erro desconhecido. Por favor, tente novamente.'));
             btn.disabled = false;
-            btn.textContent = 'Sincronizar';
+            btn.innerHTML = originalContent;
         }
     })
     .catch(error => {
         console.error('Erro:', error);
         alert('Não foi possível comunicar com o servidor. Por favor, tente novamente.');
         btn.disabled = false;
-        btn.textContent = 'Sincronizar';
+        btn.innerHTML = originalContent;
     });
 }
 
