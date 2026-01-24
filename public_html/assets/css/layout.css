@@ -488,14 +488,6 @@
     padding: var(--spacing-xs) var(--spacing-xs);
   }
 
-  .topbar-role-selector-btn .role-label-desktop {
-    display: block;
-    max-width: 120px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .topbar-role-dropdown {
     min-width: 180px;
   }
