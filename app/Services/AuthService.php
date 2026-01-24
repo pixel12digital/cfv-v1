@@ -30,27 +30,61 @@ class AuthService
         $_SESSION['cfc_id'] = $user['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
         $_SESSION['must_change_password'] = !empty($user['must_change_password']) && $user['must_change_password'] == 1;
         
-        // Definir papel inicial (primeiro papel do usuário ou o último usado)
+        // Definir perfis disponíveis do usuário (RBAC quando existir, fallback para tipo)
         $roles = User::getUserRoles($user['id']);
+        $availableRoles = [];
+
         if (!empty($roles)) {
-            $_SESSION['available_roles'] = $roles;
-            $_SESSION['current_role'] = $_SESSION['last_role'] ?? $roles[0]['role'];
-        } else {
-            // Se não há roles na tabela usuario_roles, usar o campo 'tipo' do usuário (sistema antigo)
+            // $roles pode vir como array de arrays ['role' => 'ADMIN', ...]
+            foreach ($roles as $role) {
+                if (is_array($role) && isset($role['role'])) {
+                    $availableRoles[] = $role['role'];
+                } elseif (is_string($role)) {
+                    $availableRoles[] = $role;
+                }
+            }
+        }
+
+        // Fallback para o campo 'tipo' quando não houver RBAC configurado
+        if (empty($availableRoles)) {
             $tipo = strtolower($user['tipo'] ?? '');
-            
-            // Mapear tipo do sistema antigo para current_role (Constants usa maiúsculas)
             $roleMap = [
-                'admin' => Constants::ROLE_ADMIN,           // 'admin' -> 'ADMIN'
-                'secretaria' => Constants::ROLE_SECRETARIA, // 'secretaria' -> 'SECRETARIA'
-                'instrutor' => Constants::ROLE_INSTRUTOR,   // 'instrutor' -> 'INSTRUTOR'
-                'aluno' => Constants::ROLE_ALUNO            // 'aluno' -> 'ALUNO'
+                'admin'      => Constants::ROLE_ADMIN,
+                'secretaria' => Constants::ROLE_SECRETARIA,
+                'instrutor'  => Constants::ROLE_INSTRUTOR,
+                'aluno'      => Constants::ROLE_ALUNO,
             ];
-            
-            $_SESSION['current_role'] = $roleMap[$tipo] ?? Constants::ROLE_ALUNO;
-            
+
+            $fallbackRole = $roleMap[$tipo] ?? Constants::ROLE_ALUNO;
+            $availableRoles = [$fallbackRole];
+
             // Log para debug
-            error_log('[AuthService] Usuário sem roles na tabela usuario_roles. Usando tipo: ' . $tipo . ' -> current_role: ' . $_SESSION['current_role']);
+            error_log('[AuthService] Usuário sem roles na tabela usuario_roles. Usando tipo: ' . $tipo . ' -> role: ' . $fallbackRole);
+        }
+
+        // Padronizar na sessão como lista de strings (perfis disponíveis)
+        $_SESSION['available_roles'] = $availableRoles;
+
+        // Definir papel atual mantendo comportamento legado (web/painel)
+        // current_role continua sendo a base de decisão para quem ainda não usa active_role
+        $currentRole = $_SESSION['current_role'] ?? null;
+        if (!$currentRole) {
+            // Se havia um último papel salvo compatível, reutilizar
+            $lastRole = $_SESSION['last_role'] ?? null;
+            if ($lastRole && in_array($lastRole, $availableRoles, true)) {
+                $currentRole = $lastRole;
+            } else {
+                // Caso contrário, usar o primeiro disponível
+                $currentRole = $availableRoles[0];
+            }
+        }
+
+        $_SESSION['current_role'] = $currentRole;
+
+        // Novo: modo ativo (active_role) – por padrão, segue o comportamento atual do painel/web
+        // PWA/App poderá sobrescrever esse valor conforme o contexto (ex.: sempre INSTRUTOR)
+        if (empty($_SESSION['active_role']) || !in_array($_SESSION['active_role'], $availableRoles, true)) {
+            $_SESSION['active_role'] = $currentRole;
         }
     }
 
@@ -67,21 +101,33 @@ class AuthService
         }
 
         $availableRoles = $_SESSION['available_roles'] ?? [];
-        $roleExists = false;
-        
+        if (empty($availableRoles)) {
+            return false;
+        }
+
+        // Normalizar lista de perfis (aceita tanto ['ADMIN', 'INSTRUTOR'] quanto [['role' => 'ADMIN'], ...])
+        $normalized = [];
         foreach ($availableRoles as $userRole) {
-            if ($userRole['role'] === $role) {
-                $roleExists = true;
-                break;
+            if (is_array($userRole) && isset($userRole['role'])) {
+                $normalized[] = $userRole['role'];
+            } elseif (is_string($userRole)) {
+                $normalized[] = $userRole;
             }
         }
 
-        if ($roleExists) {
-            $_SESSION['current_role'] = $role;
-            $_SESSION['last_role'] = $role;
-            return true;
+        if (!in_array($role, $normalized, true)) {
+            return false;
         }
 
-        return false;
+        // Atualizar role atual e modo ativo
+        $_SESSION['current_role'] = $role;
+        $_SESSION['active_role'] = $role;
+        $_SESSION['last_role'] = $role;
+
+        // Memorizar último modo em cookie simples (sem mexer em modelo de dados)
+        $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+        @setcookie('last_active_role', $role, time() + (365 * 24 * 60 * 60), '/', '', $isHttps, true);
+
+        return true;
     }
 }

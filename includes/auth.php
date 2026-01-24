@@ -392,6 +392,35 @@ class Auth {
     // Buscar tipo do usuário (compatibilidade com sistema antigo e novo RBAC)
     private function getUserType($userId) {
         try {
+            // 1) Priorizar modo ativo na sessão (novo conceito)
+            if (!empty($_SESSION['active_role'])) {
+                $role = strtoupper($_SESSION['active_role']);
+                $roleMap = [
+                    'ADMIN'      => 'admin',
+                    'SECRETARIA' => 'secretaria',
+                    'INSTRUTOR'  => 'instrutor',
+                    'ALUNO'      => 'aluno'
+                ];
+                if (isset($roleMap[$role])) {
+                    return $roleMap[$role];
+                }
+            }
+
+            // 2) Fallback para current_role quando active_role ainda não existe
+            if (!empty($_SESSION['current_role'])) {
+                $role = strtoupper($_SESSION['current_role']);
+                $roleMap = [
+                    'ADMIN'      => 'admin',
+                    'SECRETARIA' => 'secretaria',
+                    'INSTRUTOR'  => 'instrutor',
+                    'ALUNO'      => 'aluno'
+                ];
+                if (isset($roleMap[$role])) {
+                    return $roleMap[$role];
+                }
+            }
+
+            // 3) Compatibilidade: buscar em RBAC/banco quando ainda não há nada na sessão
             // Primeiro, tentar buscar da tabela usuario_roles (sistema novo RBAC)
             $sql = "SELECT ur.role FROM usuario_roles ur WHERE ur.usuario_id = :id ORDER BY ur.id LIMIT 1";
             $role = $this->db->fetch($sql, ['id' => $userId]);
@@ -424,6 +453,36 @@ class Auth {
             return 'aluno';
         }
     }
+
+    /**
+     * Obter todos os perfis (roles) disponíveis do usuário a partir do RBAC,
+     * com fallback para o tipo legado quando a tabela usuario_roles não estiver populada.
+     *
+     * Retorna uma lista de strings como ['ADMIN', 'INSTRUTOR', ...]
+     */
+    private function getUserRolesList($userId) {
+        $roles = [];
+
+        try {
+            // Tentar buscar todos os roles do RBAC
+            $sql = "SELECT ur.role FROM usuario_roles ur WHERE ur.usuario_id = :id ORDER BY ur.id";
+            $rows = $this->db->fetchAll($sql, ['id' => $userId]);
+
+            foreach ($rows as $row) {
+                if (!empty($row['role'])) {
+                    $roles[] = strtoupper($row['role']);
+                }
+            }
+        } catch (Exception $e) {
+            if (LOG_ENABLED) {
+                error_log('Erro ao buscar roles do usuário: ' . $e->getMessage());
+            }
+        }
+
+        // Se não encontrou nada em usuario_roles, manter lista vazia e deixar
+        // o caller decidir o fallback (ex.: a partir de $tipo legado)
+        return array_values(array_unique($roles));
+    }
     
     // Criar nova sessão
     private function createSession($usuario, $remember = false) {
@@ -440,27 +499,40 @@ class Auth {
         $_SESSION['ip_address'] = $this->getClientIP();
         $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
         
-        // CORREÇÃO: Definir current_role para compatibilidade com sistema novo
-        // Mapear tipo do sistema antigo para current_role (usando constantes se disponíveis)
-        
-        // Tentar usar constantes do sistema novo se disponíveis
-        if (class_exists('\App\Config\Constants')) {
+        // Definir perfis disponíveis na sessão (available_roles)
+        // 1) Tentar RBAC (usuario_roles)
+        $availableRoles = $this->getUserRolesList($usuario['id']);
+
+        // 2) Fallback para tipo legado quando não houver RBAC configurado
+        if (empty($availableRoles)) {
             $roleMap = [
-                'admin' => \App\Config\Constants::ROLE_ADMIN,
-                'secretaria' => \App\Config\Constants::ROLE_SECRETARIA,
-                'instrutor' => \App\Config\Constants::ROLE_INSTRUTOR,
-                'aluno' => \App\Config\Constants::ROLE_ALUNO
-            ];
-            $_SESSION['current_role'] = $roleMap[$tipo] ?? \App\Config\Constants::ROLE_ALUNO;
-        } else {
-            // Fallback: usar strings maiúsculas compatíveis com Constants
-            $roleMap = [
-                'admin' => 'ADMIN',
+                'admin'      => 'ADMIN',
                 'secretaria' => 'SECRETARIA',
-                'instrutor' => 'INSTRUTOR',
-                'aluno' => 'ALUNO'
+                'instrutor'  => 'INSTRUTOR',
+                'aluno'      => 'ALUNO'
             ];
-            $_SESSION['current_role'] = $roleMap[$tipo] ?? 'ALUNO';
+            $fallbackRole = $roleMap[$tipo] ?? 'ALUNO';
+            $availableRoles = [$fallbackRole];
+        }
+
+        $_SESSION['available_roles'] = $availableRoles;
+
+        // Definir current_role mantendo compatibilidade com fluxo legado
+        $currentRole = $_SESSION['current_role'] ?? null;
+        if (!$currentRole) {
+            $lastRole = $_SESSION['last_role'] ?? null;
+            if ($lastRole && in_array($lastRole, $availableRoles, true)) {
+                $currentRole = $lastRole;
+            } else {
+                $currentRole = $availableRoles[0];
+            }
+        }
+
+        $_SESSION['current_role'] = $currentRole;
+
+        // Novo: modo ativo (active_role) – por padrão, segue o mesmo role atual
+        if (empty($_SESSION['active_role']) || !in_array($_SESSION['active_role'], $availableRoles, true)) {
+            $_SESSION['active_role'] = $currentRole;
         }
         
         // Criar token de "lembrar-me" se solicitado

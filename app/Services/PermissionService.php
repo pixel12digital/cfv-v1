@@ -15,16 +15,19 @@ class PermissionService
 
     public function hasPermission($module, $action)
     {
-        if (empty($_SESSION['user_id']) || empty($_SESSION['current_role'])) {
+        // Determinar o papel efetivo do usuário:
+        // 1) Prioriza active_role (modo ativo)
+        // 2) Fallback para current_role (comportamento legado)
+        $role = $_SESSION['active_role'] ?? $_SESSION['current_role'] ?? null;
+
+        if (empty($_SESSION['user_id']) || empty($role)) {
             return false;
         }
 
         // ADMIN tem todas as permissões
-        if ($_SESSION['current_role'] === 'ADMIN') {
+        if ($role === 'ADMIN') {
             return true;
         }
-
-        $role = $_SESSION['current_role'];
 
         $sql = "SELECT COUNT(*) as count
                 FROM role_permissoes rp

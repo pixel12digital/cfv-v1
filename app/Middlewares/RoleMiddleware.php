@@ -15,12 +15,17 @@ class RoleMiddleware implements MiddlewareInterface
 
     public function handle(): bool
     {
-        if (empty($_SESSION['current_role'])) {
+        // Determinar o papel efetivo do usuário:
+        // 1) Prioriza active_role (modo ativo)
+        // 2) Fallback para current_role (comportamento legado)
+        $role = $_SESSION['active_role'] ?? $_SESSION['current_role'] ?? null;
+
+        if (empty($role)) {
             header('Location: ' . base_url('login'));
             exit;
         }
 
-        if (!in_array($_SESSION['current_role'], $this->allowedRoles)) {
+        if (!in_array($role, $this->allowedRoles, true)) {
             http_response_code(403);
             echo "Acesso negado";
             return false;
