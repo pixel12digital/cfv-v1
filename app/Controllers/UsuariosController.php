@@ -489,6 +489,11 @@ class UsuariosController extends Controller
             $dataAfter = array_merge($user, ['email' => $email, 'status' => $status, 'role' => $role]);
             $this->auditService->logUpdate('usuarios', $id, $dataBefore, $dataAfter);
 
+            // Etapa B: se o usuário for ADMIN e tiver vínculo com instrutor, garantir também role INSTRUTOR
+            if ($role === 'ADMIN') {
+                $this->syncAdminInstructorRoles($id, $email);
+            }
+
             $_SESSION['success'] = 'Usuário atualizado com sucesso!';
             redirect(base_url('usuarios'));
             
@@ -503,6 +508,52 @@ class UsuariosController extends Controller
             
             $_SESSION['error'] = 'Erro ao atualizar usuário: ' . $e->getMessage();
             redirect(base_url("usuarios/{$id}/editar"));
+        }
+    }
+
+    /**
+     * Se o usuário é ADMIN e possui vínculo com instrutor (por user_id ou por e-mail),
+     * garantir que ele também tenha a role INSTRUTOR em usuario_roles.
+     */
+    private function syncAdminInstructorRoles($userId, $userEmail)
+    {
+        $db = Database::getInstance()->getConnection();
+
+        // Preferir vínculo explícito por user_id
+        $stmt = $db->prepare("SELECT id, email, user_id FROM instructors WHERE user_id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $instructor = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$instructor) {
+            // Fallback seguro: tentar por e-mail igual
+            $stmt = $db->prepare("SELECT id, email, user_id FROM instructors WHERE email = ? LIMIT 1");
+            $stmt->execute([$userEmail]);
+            $instructor = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($instructor) {
+                // Apenas vincular automaticamente se não houver user_id ou se já apontar para este usuário
+                if (empty($instructor['user_id']) || (int)$instructor['user_id'] === (int)$userId) {
+                    $stmtUpdate = $db->prepare("UPDATE instructors SET user_id = ? WHERE id = ?");
+                    $stmtUpdate->execute([$userId, $instructor['id']]);
+                } else {
+                    // E-mail diferente / vínculo ambíguo – não tentar adivinhar
+                    error_log("[UsuariosController] syncAdminInstructorRoles: instrutor {$instructor['id']} já vinculado a outro usuário ({$instructor['user_id']}). Nenhuma alteração automática.");
+                    return;
+                }
+            }
+        }
+
+        // Se após as verificações temos um instrutor vinculado a este usuário, garantir role INSTRUTOR
+        if ($instructor) {
+            $stmt = $db->prepare("SELECT 1 FROM usuario_roles WHERE usuario_id = ? AND role = 'INSTRUTOR' LIMIT 1");
+            $stmt->execute([$userId]);
+            $exists = $stmt->fetchColumn();
+
+            if (!$exists) {
+                $stmtInsert = $db->prepare("INSERT INTO usuario_roles (usuario_id, role) VALUES (?, 'INSTRUTOR')");
+                $stmtInsert->execute([$userId]);
+                error_log("[UsuariosController] syncAdminInstructorRoles: role INSTRUTOR adicionada ao usuário {$userId}");
+            }
         }
     }
 

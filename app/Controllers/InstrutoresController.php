@@ -10,6 +10,7 @@ use App\Services\AuditService;
 use App\Services\UserCreationService;
 use App\Services\EmailService;
 use App\Config\Constants;
+use App\Config\Database;
 
 class InstrutoresController extends Controller
 {
@@ -96,13 +97,9 @@ class InstrutoresController extends Controller
             redirect(base_url('instrutores/novo'));
         }
         
-        // Verificar se e-mail já está em uso
+        // Verificar se já existe usuário com este e-mail
         $userModel = new \App\Models\User();
         $existingUser = $userModel->findByEmail($email);
-        if ($existingUser) {
-            $_SESSION['error'] = 'Este e-mail já está em uso por outro usuário do sistema.';
-            redirect(base_url('instrutores/novo'));
-        }
         
         if (empty($phone)) {
             $_SESSION['error'] = 'Telefone é obrigatório.';
@@ -138,6 +135,14 @@ class InstrutoresController extends Controller
         ];
         
         $instructorId = $instructorModel->create($data);
+
+        // Se já existe usuário com este e-mail, vincular e garantir role INSTRUTOR
+        if ($existingUser) {
+            // Regra: e-mail igual -> vínculo automático
+            $instructorModel->update($instructorId, ['user_id' => $existingUser['id']]);
+            $this->ensureInstructorRole($existingUser['id']);
+            $_SESSION['success'] = 'Instrutor cadastrado e vinculado ao usuário existente com sucesso.';
+        }
         
         // Processar upload de foto se houver
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
@@ -159,31 +164,33 @@ class InstrutoresController extends Controller
         }
         
         $this->auditService->logCreate('instrutores', $instructorId, $data);
-        
-        // Criar usuário automaticamente
-        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            try {
-                $userService = new UserCreationService();
-                $userData = $userService->createForInstructor($instructorId, $email, $name);
-                
-                // Tentar enviar e-mail com credenciais (não bloqueia se falhar)
+
+        // Se NÃO existe usuário com este e-mail, manter fluxo atual de criação automática
+        if (!$existingUser) {
+            if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 try {
-                    $emailService = new EmailService();
-                    $loginUrl = base_url('/login');
-                    $emailService->sendAccessCreated($email, $userData['temp_password'], $loginUrl);
+                    $userService = new UserCreationService();
+                    $userData = $userService->createForInstructor($instructorId, $email, $name);
+                    
+                    // Tentar enviar e-mail com credenciais (não bloqueia se falhar)
+                    try {
+                        $emailService = new EmailService();
+                        $loginUrl = base_url('/login');
+                        $emailService->sendAccessCreated($email, $userData['temp_password'], $loginUrl);
+                    } catch (\Exception $e) {
+                        // Log mas não bloqueia
+                        error_log("Erro ao enviar e-mail de acesso: " . $e->getMessage());
+                    }
+                    
+                    $_SESSION['success'] = 'Instrutor cadastrado com sucesso! Acesso ao sistema criado automaticamente.';
                 } catch (\Exception $e) {
-                    // Log mas não bloqueia
-                    error_log("Erro ao enviar e-mail de acesso: " . $e->getMessage());
+                    // Se falhar, apenas logar mas não bloquear criação do instrutor
+                    error_log("Erro ao criar acesso para instrutor: " . $e->getMessage());
+                    $_SESSION['success'] = 'Instrutor cadastrado com sucesso! (Aviso: não foi possível criar acesso automático - ' . $e->getMessage() . ')';
                 }
-                
-                $_SESSION['success'] = 'Instrutor cadastrado com sucesso! Acesso ao sistema criado automaticamente.';
-            } catch (\Exception $e) {
-                // Se falhar, apenas logar mas não bloquear criação do instrutor
-                error_log("Erro ao criar acesso para instrutor: " . $e->getMessage());
-                $_SESSION['success'] = 'Instrutor cadastrado com sucesso! (Aviso: não foi possível criar acesso automático - ' . $e->getMessage() . ')';
+            } else {
+                $_SESSION['success'] = 'Instrutor cadastrado com sucesso! (Acesso não criado: e-mail inválido)';
             }
-        } else {
-            $_SESSION['success'] = 'Instrutor cadastrado com sucesso! (Acesso não criado: e-mail inválido)';
         }
         
         redirect(base_url('instrutores'));
@@ -278,11 +285,26 @@ class InstrutoresController extends Controller
             redirect(base_url('instrutores/' . $id . '/editar'));
         }
         
-        // Verificar se e-mail já está em uso por outro usuário
+        // Verificar vínculos de usuário/e-mail
         $userModel = new \App\Models\User();
         $existingUser = $userModel->findByEmail($email);
-        if ($existingUser && $existingUser['id'] != $instructor['user_id']) {
-            $_SESSION['error'] = 'Este e-mail já está em uso por outro usuário do sistema.';
+        $linkedUser = !empty($instructor['user_id']) ? $userModel->find($instructor['user_id']) : null;
+
+        // Regra: se já existe vínculo por user_id e o e-mail desse usuário é diferente do informado, bloquear
+        if ($linkedUser && strcasecmp($linkedUser['email'], $email) !== 0) {
+            $_SESSION['error'] = 'E-mail diferente do usuário já vinculado. Ajuste o vínculo em "Gerenciamento de Usuários" antes de alterar o e-mail do instrutor.';
+            redirect(base_url('instrutores/' . $id . '/editar'));
+        }
+
+        // Se não há vínculo (user_id vazio) mas já existe usuário com este e-mail, vincular automaticamente
+        if (!$linkedUser && $existingUser) {
+            $instructorModel->update($id, ['user_id' => $existingUser['id']]);
+            $this->ensureInstructorRole($existingUser['id']);
+        }
+
+        // Se há vínculo (user_id) mas nenhum usuário com este e-mail, não tentar "adivinhar"
+        if ($linkedUser && !$existingUser && strcasecmp($linkedUser['email'], $email) !== 0) {
+            $_SESSION['error'] = 'E-mail informado não existe em nenhum usuário e diverge do usuário vinculado. Faça o ajuste manual no usuário antes de alterar o e-mail.';
             redirect(base_url('instrutores/' . $id . '/editar'));
         }
         
@@ -656,5 +678,22 @@ class InstrutoresController extends Controller
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt;
+    }
+
+    /**
+     * Garante que o usuário tenha o papel INSTRUTOR em usuario_roles (upsert idempotente).
+     */
+    private function ensureInstructorRole($userId)
+    {
+        $db = Database::getInstance()->getConnection();
+
+        $stmt = $db->prepare("SELECT 1 FROM usuario_roles WHERE usuario_id = ? AND role = 'INSTRUTOR' LIMIT 1");
+        $stmt->execute([$userId]);
+        $exists = $stmt->fetchColumn();
+
+        if (!$exists) {
+            $stmt = $db->prepare("INSERT INTO usuario_roles (usuario_id, role) VALUES (?, 'INSTRUTOR')");
+            $stmt->execute([$userId]);
+        }
     }
 }
