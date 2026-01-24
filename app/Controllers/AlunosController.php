@@ -1509,8 +1509,11 @@ class AlunosController extends Controller
         }
 
         // Validação 2: Não pode excluir se tiver cobrança ativa na EFI
+        // Status considerados inativos: canceled, expired, finished, settled, paid
+        $gatewayStatusLower = strtolower($enrollment['gateway_last_status'] ?? '');
+        $inactiveStatuses = ['canceled', 'expired', 'cancelado', 'expirado', 'finished', 'settled', 'paid'];
         $hasActiveCharge = !empty($enrollment['gateway_charge_id']) && 
-                          !in_array(strtolower($enrollment['gateway_last_status'] ?? ''), ['canceled', 'expired', 'cancelado', 'expirado']);
+                          !in_array($gatewayStatusLower, $inactiveStatuses);
         
         if ($hasActiveCharge) {
             $_SESSION['error'] = 'Não é possível excluir matrícula com cobrança ativa na EFI. Primeiro cancele a cobrança na EFI, sincronize e depois exclua no sistema.';

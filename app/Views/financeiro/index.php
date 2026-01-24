@@ -558,6 +558,27 @@
                         $lastEvent = !empty($enr['gateway_last_event_at']) 
                             ? date('d/m/Y H:i', strtotime($enr['gateway_last_event_at'])) 
                             : '-';
+                        
+                        // Verificar se pode cancelar a matrícula
+                        $canCancel = true;
+                        $cancelReason = '';
+                        
+                        // Não pode cancelar se já está cancelada
+                        if ($enr['status'] === 'cancelada') {
+                            $canCancel = false;
+                            $cancelReason = 'Matrícula já está cancelada';
+                        }
+                        
+                        // Não pode cancelar se tem cobrança ativa na EFI
+                        // Status considerados inativos: canceled, expired, finished, settled
+                        if ($hasCharge && $canCancel) {
+                            $gatewayStatusLower = strtolower($gatewayStatusRaw ?? '');
+                            $inactiveStatuses = ['canceled', 'expired', 'cancelado', 'expirado', 'finished', 'settled', 'paid'];
+                            if (!in_array($gatewayStatusLower, $inactiveStatuses)) {
+                                $canCancel = false;
+                                $cancelReason = 'Há cobrança ativa na EFI. Cancele a cobrança primeiro, sincronize e depois cancele a matrícula.';
+                            }
+                        }
                         ?>
                         <tr id="enrollment-row-<?= $enr['id'] ?>" style="<?= $isOverdue ? 'background-color: #fef2f2;' : '' ?>">
                             <td><?= htmlspecialchars($studentName) ?></td>
@@ -670,6 +691,15 @@
                                         </a>
                                         <?php endif; ?>
                                     <?php endif; ?>
+                                    <button 
+                                        type="button" 
+                                        class="btn btn-sm btn-danger" 
+                                        onclick="cancelarMatricula(<?= $enr['id'] ?>, '<?= htmlspecialchars($enr['service_name'] ?? 'Matrícula', ENT_QUOTES) ?>', <?= $canCancel ? 'true' : 'false' ?>, '<?= htmlspecialchars($cancelReason, ENT_QUOTES) ?>')"
+                                        <?= !$canCancel ? 'disabled title="' . htmlspecialchars($cancelReason) . '"' : 'title="Cancelar esta matrícula"' ?>
+                                        style="margin-left: auto;"
+                                    >
+                                        🗑️ Cancelar
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1105,5 +1135,43 @@ function imprimirBoleto(paymentUrl) {
             printWindow.print();
         }, 500);
     }
+}
+
+// Cancelar matrícula
+function cancelarMatricula(enrollmentId, serviceName, canCancel, cancelReason) {
+    if (!canCancel) {
+        alert('Não é possível cancelar esta matrícula:\n\n' + cancelReason);
+        return;
+    }
+    
+    const reason = prompt('Digite o motivo do cancelamento (opcional):\n\nEsta ação não pode ser desfeita. A matrícula será marcada como cancelada e o saldo devedor será zerado.');
+    
+    if (reason === null) {
+        return; // Usuário cancelou
+    }
+    
+    if (!confirm('Tem certeza que deseja CANCELAR esta matrícula?\n\nServiço: ' + serviceName + '\n\nEsta ação irá:\n- Marcar a matrícula como cancelada\n- Zerar o saldo devedor\n- Limpar dados da cobrança EFI\n\nEsta ação não pode ser desfeita!')) {
+        return;
+    }
+    
+    // Criar formulário para enviar POST
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '<?= base_path("matriculas") ?>/' + enrollmentId + '/excluir';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrf_token';
+    csrfToken.value = '<?= csrf_token() ?>';
+    form.appendChild(csrfToken);
+    
+    const reasonInput = document.createElement('input');
+    reasonInput.type = 'hidden';
+    reasonInput.name = 'delete_reason';
+    reasonInput.value = reason || 'Cancelamento manual pelo usuário';
+    form.appendChild(reasonInput);
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
