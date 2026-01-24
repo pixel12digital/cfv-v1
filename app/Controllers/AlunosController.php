@@ -782,8 +782,16 @@ class AlunosController extends Controller
 
             // Validações específicas por método
             if (in_array($paymentMethod, ['boleto', 'pix'])) {
-                $firstDueDate = !empty($_POST['first_due_date']) ? $_POST['first_due_date'] : null;
-                if (!$firstDueDate) {
+                // Se não veio no POST, usar o valor já salvo na matrícula
+                if (isset($_POST['first_due_date']) && $_POST['first_due_date'] !== '') {
+                    $firstDueDate = $_POST['first_due_date'];
+                } else {
+                    $firstDueDate = $enrollment['first_due_date'] ?? null;
+                }
+                
+                // Validar como obrigatório apenas se pode editar (não gerou cobrança ainda)
+                // Se já gerou cobrança, usa o valor existente (não precisa validar)
+                if ($canEditPaymentPlan && !$firstDueDate) {
                     $_SESSION['error'] = 'Data de vencimento da primeira parcela é obrigatória.';
                     redirect(base_url("matriculas/{$id}"));
                 }

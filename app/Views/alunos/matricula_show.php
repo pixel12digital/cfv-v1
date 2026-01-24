@@ -120,6 +120,7 @@
                         class="form-input"
                         value="<?= !empty($enrollment['entry_payment_date']) ? $enrollment['entry_payment_date'] : date('Y-m-d') ?>"
                     >
+                    <small class="text-muted">Data em que a entrada foi/será recebida</small>
                 </div>
 
                 <div class="form-group">
@@ -137,64 +138,12 @@
                 </div>
             </div>
 
-            <!-- Seção Entrada e Saldo Devedor (Exibição) -->
-            <?php if (!empty($enrollment['entry_amount']) || !empty($enrollment['outstanding_amount'])): ?>
-            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--border-radius);">
-                <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: var(--font-size-md); font-weight: var(--font-weight-semibold);">Entrada e Saldo Devedor</h3>
-                
-                <?php if (!empty($enrollment['entry_amount'])): ?>
-                <div class="form-group">
-                    <label class="form-label">Valor da Entrada</label>
-                    <input 
-                        type="text" 
-                        class="form-input" 
-                        value="R$ <?= number_format($enrollment['entry_amount'], 2, ',', '.') ?>" 
-                        readonly
-                        style="background-color: var(--color-bg);"
-                    >
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Forma de Pagamento da Entrada</label>
-                    <input 
-                        type="text" 
-                        class="form-input" 
-                        value="<?= 
-                            $enrollment['entry_payment_method'] === 'dinheiro' ? 'Dinheiro' : 
-                            ($enrollment['entry_payment_method'] === 'pix' ? 'PIX' : 
-                            ($enrollment['entry_payment_method'] === 'cartao' ? 'Cartão' : 
-                            ($enrollment['entry_payment_method'] === 'boleto' ? 'Boleto' : 'N/A'))) 
-                        ?>" 
-                        readonly
-                        style="background-color: var(--color-bg);"
-                    >
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Data da Entrada</label>
-                    <input 
-                        type="text" 
-                        class="form-input" 
-                        value="<?= !empty($enrollment['entry_payment_date']) ? date('d/m/Y', strtotime($enrollment['entry_payment_date'])) : '' ?>" 
-                        readonly
-                        style="background-color: var(--color-bg);"
-                    >
-                </div>
-                <?php endif; ?>
 
-                <?php if (!empty($enrollment['outstanding_amount'])): ?>
-                <div class="form-group">
-                    <label class="form-label">Saldo Devedor</label>
-                    <input 
-                        type="text" 
-                        class="form-input" 
-                        value="R$ <?= number_format($enrollment['outstanding_amount'], 2, ',', '.') ?>" 
-                        readonly
-                        style="background-color: var(--color-bg); font-weight: var(--font-weight-semibold); font-size: var(--font-size-md); color: var(--color-primary);"
-                    >
-                    <small class="text-muted">Valor que será cobrado no Gateway (Efí)</small>
-                </div>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
+            <?php
+            // Verificar se pode editar condições de pagamento (não pode se já gerou cobrança)
+            $billingStatus = $enrollment['billing_status'] ?? 'draft';
+            $canEditPaymentPlan = ($billingStatus === 'draft' || $billingStatus === 'ready' || $billingStatus === 'error');
+            ?>
 
             <div class="form-group">
                 <label class="form-label" for="payment_method">Forma de Pagamento *</label>
@@ -206,8 +155,42 @@
                 </select>
             </div>
 
-            <!-- Seção Condições de Pagamento (Exibição) -->
-            <?php if (!empty($enrollment['installments']) || !empty($enrollment['down_payment_amount'])): ?>
+            <!-- Campos de Parcelamento (Editáveis quando permitido) -->
+            <?php if ($canEditPaymentPlan): ?>
+            <div id="payment_plan_fields" style="margin-top: 1.5rem;">
+                <!-- Campo Parcelas -->
+                <div class="form-group" id="installments_field" style="display: none;">
+                    <label class="form-label" for="installments">Número de Parcelas *</label>
+                    <input 
+                        type="number" 
+                        id="installments" 
+                        name="installments" 
+                        class="form-input"
+                        min="1"
+                        max="12"
+                        value="<?= !empty($enrollment['installments']) ? $enrollment['installments'] : 1 ?>"
+                        required
+                    >
+                    <small class="text-muted">Número de parcelas para o saldo devedor (entre 1 e 12)</small>
+                </div>
+
+                <!-- Campo Data do Primeiro Vencimento (para Boleto e PIX) -->
+                <div class="form-group" id="first_due_date_field" style="display: none;">
+                    <label class="form-label" for="first_due_date">Data do Primeiro Vencimento *</label>
+                    <input 
+                        type="date" 
+                        id="first_due_date" 
+                        name="first_due_date" 
+                        class="form-input"
+                        value="<?= !empty($enrollment['first_due_date']) ? $enrollment['first_due_date'] : '' ?>"
+                    >
+                    <small class="text-muted">Data de vencimento da primeira parcela do saldo devedor (boleto/pix)</small>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Seção Condições de Pagamento (Exibição - Somente Leitura quando não pode editar) -->
+            <?php if (!$canEditPaymentPlan && (!empty($enrollment['installments']) || !empty($enrollment['down_payment_amount']))): ?>
             <div style="margin-top: 1.5rem; padding: 1rem; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--border-radius);">
                 <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: var(--font-size-md); font-weight: var(--font-weight-semibold);">Condições de Pagamento</h3>
                 
@@ -705,6 +688,28 @@ document.getElementById('enrollmentForm')?.addEventListener('submit', function(e
             return false;
         }
     }
+    
+    // Validar campos de parcelamento se estiverem visíveis
+    const installmentsField = document.getElementById('installments_field');
+    const firstDueDateField = document.getElementById('first_due_date_field');
+    
+    if (installmentsField && installmentsField.style.display !== 'none') {
+        const installments = document.getElementById('installments').value;
+        if (!installments || installments < 1 || installments > 12) {
+            e.preventDefault();
+            alert('Número de parcelas deve ser entre 1 e 12.');
+            return false;
+        }
+    }
+    
+    if (firstDueDateField && firstDueDateField.style.display !== 'none') {
+        const firstDueDate = document.getElementById('first_due_date').value;
+        if (!firstDueDate) {
+            e.preventDefault();
+            alert('Data do primeiro vencimento é obrigatória para boleto e PIX.');
+            return false;
+        }
+    }
 });
 
 function toggleDetranSection() {
@@ -726,7 +731,46 @@ document.addEventListener('DOMContentLoaded', function() {
     if (renach || numeroProcesso || detranProtocolo || situacaoProcesso !== 'nao_iniciado') {
         toggleDetranSection();
     }
+    
+    // Inicializar campos de parcelamento conforme método de pagamento selecionado
+    updatePaymentPlanFields();
 });
+
+// Função para mostrar/ocultar campos de parcelamento conforme método de pagamento
+function updatePaymentPlanFields() {
+    const paymentMethod = document.getElementById('payment_method')?.value || '';
+    const installmentsField = document.getElementById('installments_field');
+    const firstDueDateField = document.getElementById('first_due_date_field');
+    
+    if (!installmentsField || !firstDueDateField) {
+        return; // Campos não existem (modo somente leitura)
+    }
+    
+    // Métodos que requerem parcelas
+    const methodsWithInstallments = ['boleto', 'pix', 'cartao', 'entrada_parcelas'];
+    
+    if (methodsWithInstallments.includes(paymentMethod)) {
+        installmentsField.style.display = 'block';
+        installmentsField.querySelector('#installments').setAttribute('required', 'required');
+        
+        // Métodos que requerem data do primeiro vencimento
+        if (['boleto', 'pix'].includes(paymentMethod)) {
+            firstDueDateField.style.display = 'block';
+            firstDueDateField.querySelector('#first_due_date').setAttribute('required', 'required');
+        } else {
+            firstDueDateField.style.display = 'none';
+            firstDueDateField.querySelector('#first_due_date').removeAttribute('required');
+        }
+    } else {
+        installmentsField.style.display = 'none';
+        firstDueDateField.style.display = 'none';
+        installmentsField.querySelector('#installments').removeAttribute('required');
+        firstDueDateField.querySelector('#first_due_date').removeAttribute('required');
+    }
+}
+
+// Adicionar listener ao campo de forma de pagamento
+document.getElementById('payment_method')?.addEventListener('change', updatePaymentPlanFields);
 
 function gerarCobrancaEfi() {
     const enrollmentId = <?= $enrollment['id'] ?>;
