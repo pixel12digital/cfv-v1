@@ -204,7 +204,8 @@ class EfiPaymentService
             $isCarnet = ($paymentMethod === 'boleto') && $installments > 1;
             
             if ($isCreditCard || $isCreditCardSingle) {
-                // Cartão de crédito (parcelado): customer vai no root do payload
+                // Cartão de crédito (parcelado ou à vista)
+                // A API de Cobranças EFI exige o campo customer em /payment/credit_card/customer
                 if (!empty($student['cpf'])) {
                     $cpf = preg_replace('/[^0-9]/', '', $student['cpf']);
                     if (strlen($cpf) === 11) {
@@ -231,6 +232,12 @@ class EfiPaymentService
                         ]
                     ]
                 ];
+
+                // Replicar customer também dentro de payment.credit_card,
+                // evitando o erro "A propriedade [customer] é obrigatória."
+                if (!empty($payload['customer'])) {
+                    $payload['payment']['credit_card']['customer'] = $payload['customer'];
+                }
             } elseif ($isBoletoSingle) {
                 // Boleto à vista (payment_method = 'boleto' + installments = 1)
                 // IMPORTANTE: customer NÃO deve estar no root do payload para boleto
