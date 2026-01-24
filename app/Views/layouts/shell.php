@@ -128,7 +128,7 @@
                         <?php foreach ($normalizedRoles as $role): ?>
                             <div class="topbar-role-dropdown-item <?= ($_SESSION['current_role'] ?? '') === $role['role'] ? 'active' : '' ?>" 
                                  data-role="<?= htmlspecialchars($role['role']) ?>">
-                                <?= htmlspecialchars($role['role']) ?> - <?= htmlspecialchars($role['nome']) ?>
+                                <?= htmlspecialchars($role['nome']) ?>
                             </div>
                         <?php endforeach; ?>
                     </div>

@@ -41,7 +41,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  object-fit: cover;
+  object-fit: contain;
   background-color: #ffffff;
 }
 
@@ -488,7 +488,7 @@
     padding: var(--spacing-xs) var(--spacing-xs);
   }
 
-  .topbar-role-selector-btn span {
+  .topbar-role-selector-btn .role-label-desktop {
     display: block;
     max-width: 120px;
     white-space: nowrap;
