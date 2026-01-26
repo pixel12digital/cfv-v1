@@ -1816,15 +1816,35 @@ class ConfiguracoesController extends Controller
         }
 
         $pixAccountModel = new CfcPixAccount();
-        $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+        
+        try {
+            $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+        } catch (\Exception $e) {
+            error_log("ConfiguracoesController::pixAccountDefinirPadrao() - Erro ao buscar conta: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao buscar conta PIX. Verifique se as migrations foram executadas.';
+            redirect(base_url('configuracoes/cfc'));
+        }
 
         if (!$account) {
             $_SESSION['error'] = 'Conta PIX não encontrada.';
             redirect(base_url('configuracoes/cfc'));
         }
 
-        $pixAccountModel->setAsDefault($id, $cfc['id']);
-        $_SESSION['success'] = 'Conta PIX definida como padrão!';
+        try {
+            $pixAccountModel->setAsDefault($id, $cfc['id']);
+            $_SESSION['success'] = 'Conta PIX definida como padrão!';
+        } catch (\PDOException $e) {
+            error_log("ConfiguracoesController::pixAccountDefinirPadrao() - Erro SQL: " . $e->getMessage());
+            if ($e->getCode() == '42S02' || strpos($e->getMessage(), "doesn't exist") !== false) {
+                $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations primeiro.';
+            } else {
+                $_SESSION['error'] = 'Erro ao definir conta como padrão: ' . $e->getMessage();
+            }
+        } catch (\Exception $e) {
+            error_log("ConfiguracoesController::pixAccountDefinirPadrao() - Erro: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao definir conta como padrão: ' . $e->getMessage();
+        }
+        
         redirect(base_url('configuracoes/cfc'));
     }
 }
