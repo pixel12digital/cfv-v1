@@ -127,17 +127,25 @@
                     </div>
                     <div class="form-group form-col-2">
                         <label class="form-label" for="birth_city_search">Cidade de Nascimento</label>
-                        <div class="city-autocomplete-wrapper">
-                            <input 
-                                type="text" 
-                                id="birth_city_search" 
-                                class="form-input city-search-input" 
-                                placeholder="Digite para buscar cidade..."
-                                autocomplete="off"
-                                disabled
-                            >
+                        <div class="city-autocomplete-wrapper" data-city-hint="Digite para buscar e clique na cidade na lista.">
+                            <div class="city-input-row">
+                                <input 
+                                    type="text" 
+                                    id="birth_city_search" 
+                                    class="form-input city-search-input" 
+                                    placeholder="Digite para buscar cidade..."
+                                    autocomplete="nope"
+                                    data-lpignore="true"
+                                    data-form-type="other"
+                                    disabled
+                                >
+                                <span class="city-selected-icon" aria-hidden="true" title="Cidade selecionada"></span>
+                                <button type="button" class="city-clear-btn" aria-label="Limpar cidade" title="Limpar e buscar outra">×</button>
+                                <div id="birth_city_dropdown" class="city-dropdown" style="display: none;"></div>
+                            </div>
                             <input type="hidden" id="birth_city_id" name="birth_city_id" value="<?= !empty($currentBirthCity) ? $currentBirthCity['id'] : '' ?>">
-                            <div id="birth_city_dropdown" class="city-dropdown" style="display: none;"></div>
+                            <p class="city-field-hint" id="birth_city_hint"></p>
+                            <p class="city-field-error" id="birth_city_error" role="alert"></p>
                         </div>
                     </div>
                 </div>
@@ -366,17 +374,25 @@
                     </div>
                     <div class="form-group form-col-2">
                         <label class="form-label" for="city_search">Cidade <span id="city_required" style="display: none;">*</span></label>
-                        <div class="city-autocomplete-wrapper">
-                            <input 
-                                type="text" 
-                                id="city_search" 
-                                class="form-input city-search-input" 
-                                placeholder="Digite para buscar cidade..."
-                                autocomplete="off"
-                                disabled
-                            >
+                        <div class="city-autocomplete-wrapper" data-city-hint="Digite para buscar e clique na cidade na lista.">
+                            <div class="city-input-row">
+                                <input 
+                                    type="text" 
+                                    id="city_search" 
+                                    class="form-input city-search-input" 
+                                    placeholder="Digite para buscar cidade..."
+                                    autocomplete="nope"
+                                    data-lpignore="true"
+                                    data-form-type="other"
+                                    disabled
+                                >
+                                <span class="city-selected-icon" aria-hidden="true" title="Cidade selecionada"></span>
+                                <button type="button" class="city-clear-btn" aria-label="Limpar cidade" title="Limpar e buscar outra">×</button>
+                                <div id="city_dropdown" class="city-dropdown" style="display: none;"></div>
+                            </div>
                             <input type="hidden" id="city_id" name="city_id" value="<?= !empty($currentCity) ? $currentCity['id'] : '' ?>">
-                            <div id="city_dropdown" class="city-dropdown" style="display: none;"></div>
+                            <p class="city-field-hint" id="city_hint"></p>
+                            <p class="city-field-error" id="city_error" role="alert"></p>
                         </div>
                     </div>
                 </div>
@@ -469,8 +485,14 @@
     position: relative;
 }
 
+.city-input-row {
+    position: relative;
+    display: block;
+}
+
 .city-search-input {
     width: 100%;
+    padding-right: 2.5rem;
 }
 
 .city-search-input:disabled {
@@ -481,6 +503,77 @@
 
 .city-search-input.form-input-error {
     border-color: var(--color-error, #dc3545);
+}
+
+.city-search-input.city-selected {
+    border-color: var(--color-success, #28a745);
+    background-color: rgba(40, 167, 69, 0.04);
+}
+
+.city-selected-icon {
+    display: none;
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    background: var(--color-success, #28a745);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
+    pointer-events: none;
+}
+
+.city-autocomplete-wrapper.has-selected .city-selected-icon {
+    display: block;
+}
+
+.city-clear-btn {
+    display: none;
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted, #6c757d);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: var(--radius-sm, 2px);
+    transition: color 0.15s, background 0.15s;
+}
+
+.city-clear-btn:hover {
+    color: var(--color-error, #dc3545);
+    background: rgba(220, 53, 69, 0.08);
+}
+
+.city-autocomplete-wrapper.has-selected .city-clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.city-field-hint {
+    margin: var(--spacing-xs, 4px) 0 0;
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-text-muted, #6c757d);
+    line-height: 1.3;
+}
+
+.city-field-error {
+    margin: var(--spacing-xs, 4px) 0 0;
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-error, #dc3545);
+    line-height: 1.3;
+}
+
+.city-field-error:empty {
+    display: none;
 }
 
 .city-dropdown {
@@ -745,7 +838,6 @@ applyPhoneMask(document.getElementById('emergency_contact_phone'));
             
             // Se cidade foi encontrada na base IBGE, preencher
             if (data.city_found && data.city_id && data.city_name) {
-                // Aguardar para o componente de cidade processar a mudança de UF
                 setTimeout(() => {
                     const citySearch = document.getElementById('city_search');
                     const cityId = document.getElementById('city_id');
@@ -756,6 +848,10 @@ applyPhoneMask(document.getElementById('emergency_contact_phone'));
                         citySearch.disabled = false;
                         citySearch.classList.remove('form-input-error');
                         cepFieldsFilled.city = true;
+                        citySearch.dispatchEvent(new CustomEvent('city-set-external', {
+                            bubbles: true,
+                            detail: { cityId: data.city_id, cityName: data.city_name }
+                        }));
                         console.log('[CEP] Preenchida cidade:', data.city_name, 'ID:', data.city_id);
                     } else {
                         console.warn('[CEP] Campos de cidade não encontrados');
@@ -939,30 +1035,61 @@ function initCityAutocomplete(config) {
     const cityRequired = cityRequiredId ? document.getElementById(cityRequiredId) : null;
     
     if (!stateUfSelect || !citySearchInput || !cityIdInput || !cityDropdown) {
-        return; // Elementos não encontrados
+        return;
     }
+    
+    const wrapper = citySearchInput.closest('.city-autocomplete-wrapper');
+    const hintEl = wrapper?.querySelector('.city-field-hint');
+    const errorEl = wrapper?.querySelector('.city-field-error');
+    const clearBtn = wrapper?.querySelector('.city-clear-btn');
+    
+    const HINT_TEXT = 'Digite para buscar e clique na cidade na lista.';
+    const ERROR_MSG = 'Selecione a cidade na lista.';
     
     let searchTimeout = null;
     let selectedCityId = currentCityId || null;
     let selectedCityName = currentCityName || '';
     
-    // Inicializar campo cidade se já houver cidade selecionada
+    function setSelectedState(selected) {
+        if (!wrapper) return;
+        if (selected) {
+            wrapper.classList.add('has-selected');
+            citySearchInput.classList.add('city-selected');
+        } else {
+            wrapper.classList.remove('has-selected');
+            citySearchInput.classList.remove('city-selected');
+        }
+    }
+    
+    function showError(msg) {
+        if (errorEl) {
+            errorEl.textContent = msg || ERROR_MSG;
+        }
+        citySearchInput.classList.add('form-input-error');
+    }
+    
+    function clearError() {
+        if (errorEl) errorEl.textContent = '';
+        citySearchInput.classList.remove('form-input-error');
+    }
+    
+    if (hintEl) hintEl.textContent = HINT_TEXT;
+    
     if (currentCityName && currentStateUf) {
         citySearchInput.value = currentCityName;
         cityIdInput.value = currentCityId || '';
     }
     
-    // Limpar cidade quando UF mudar
     stateUfSelect.addEventListener('change', function() {
         const uf = this.value;
-        
-        // Limpar cidade
         citySearchInput.value = '';
         cityIdInput.value = '';
         citySearchInput.disabled = !uf;
         cityDropdown.style.display = 'none';
         selectedCityId = null;
         selectedCityName = '';
+        setSelectedState(false);
+        clearError();
         
         if (cityRequired) {
             if (uf) {
@@ -975,18 +1102,26 @@ function initCityAutocomplete(config) {
         }
     });
     
-    // Buscar cidades ao digitar (debounce)
     citySearchInput.addEventListener('input', function() {
         const query = this.value.trim();
         const uf = stateUfSelect.value;
         
-        // Limpar seleção se usuário apagar tudo
         if (!query) {
             cityIdInput.value = '';
             selectedCityId = null;
             selectedCityName = '';
+            setSelectedState(false);
+            clearError();
             cityDropdown.style.display = 'none';
             return;
+        }
+        
+        if (selectedCityId && query !== selectedCityName) {
+            cityIdInput.value = '';
+            selectedCityId = null;
+            selectedCityName = '';
+            setSelectedState(false);
+            clearError();
         }
         
         if (!uf || query.length < 2) {
@@ -994,118 +1129,139 @@ function initCityAutocomplete(config) {
             return;
         }
         
-        // Debounce: aguardar 300ms após parar de digitar
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             searchCities(uf, query);
         }, 300);
     });
     
-    // Fechar dropdown ao clicar fora
+    citySearchInput.addEventListener('blur', function() {
+        const uf = stateUfSelect.value;
+        if (uf && !cityIdInput.value && citySearchInput.value.trim()) {
+            showError(ERROR_MSG);
+        }
+    });
+    
+    citySearchInput.addEventListener('focus', function() {
+        clearError();
+    });
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            citySearchInput.value = '';
+            cityIdInput.value = '';
+            selectedCityId = null;
+            selectedCityName = '';
+            setSelectedState(false);
+            clearError();
+            cityDropdown.style.display = 'none';
+            citySearchInput.focus();
+        });
+    }
+    
     const closeDropdown = function(e) {
-        if (!citySearchInput.contains(e.target) && !cityDropdown.contains(e.target)) {
+        const row = citySearchInput.closest('.city-input-row');
+        const inRow = row && row.contains(e.target);
+        const inDropdown = cityDropdown.contains(e.target);
+        if (!inRow && !inDropdown) {
             cityDropdown.style.display = 'none';
         }
     };
     document.addEventListener('click', closeDropdown);
     
-    // Buscar cidades via API
     function searchCities(uf, query) {
         const url = '<?= base_path('api/geo/cidades') ?>?uf=' + encodeURIComponent(uf) + '&q=' + encodeURIComponent(query);
-        
         fetch(url, {
             method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro ao buscar cidades');
-            }
+            if (!response.ok) throw new Error('Erro ao buscar cidades');
             return response.json();
         })
         .then(cidades => {
             displayCities(cidades);
         })
-        .catch(error => {
-            console.error('Erro:', error);
+        .catch(err => {
+            console.error('Erro:', err);
             cityDropdown.innerHTML = '<div class="city-dropdown-item city-dropdown-empty">Erro ao buscar cidades</div>';
             cityDropdown.style.display = 'block';
         });
     }
     
-    // Exibir resultados no dropdown
     function displayCities(cidades) {
         if (cidades.length === 0) {
             cityDropdown.innerHTML = '<div class="city-dropdown-item city-dropdown-empty">Nenhuma cidade encontrada</div>';
             cityDropdown.style.display = 'block';
             return;
         }
-        
         cityDropdown.innerHTML = '';
-        
         cidades.forEach(cidade => {
             const item = document.createElement('div');
             item.className = 'city-dropdown-item';
             item.textContent = cidade.name;
             item.dataset.cityId = cidade.id;
             item.dataset.cityName = cidade.name;
-            
-            // Destacar se for a cidade selecionada
-            if (cidade.id === selectedCityId) {
+            if (String(cidade.id) === String(selectedCityId)) {
                 item.classList.add('city-dropdown-selected');
             }
-            
             item.addEventListener('click', function() {
                 selectCity(cidade.id, cidade.name);
             });
-            
             cityDropdown.appendChild(item);
         });
-        
         cityDropdown.style.display = 'block';
     }
     
-    // Selecionar cidade
     function selectCity(cityId, cityName) {
         selectedCityId = cityId;
         selectedCityName = cityName;
         citySearchInput.value = cityName;
         cityIdInput.value = cityId;
         cityDropdown.style.display = 'none';
-        
-        // Remover classe de erro se houver
-        citySearchInput.classList.remove('form-input-error');
+        setSelectedState(true);
+        clearError();
     }
     
-    // Validar antes de submeter
-    const form = citySearchInput.closest('form');
-    form.addEventListener('submit', function(e) {
-        const uf = stateUfSelect.value;
-        if (uf && !cityIdInput.value) {
-            e.preventDefault();
-            citySearchInput.classList.add('form-input-error');
-            citySearchInput.focus();
-            alert(`Por favor, selecione uma cidade válida${fieldName ? ' para ' + fieldName : ''}.`);
-            return false;
+    citySearchInput.addEventListener('city-set-external', function(e) {
+        const d = e.detail || {};
+        const id = d.cityId ?? d.city_id;
+        const name = d.cityName ?? d.city_name;
+        if (id != null && name) {
+            selectedCityId = id;
+            selectedCityName = name;
+            setSelectedState(true);
+            clearError();
         }
     });
     
-    // Se já houver UF selecionada ao carregar, habilitar campo e garantir que cidade está preenchida
+    const form = citySearchInput.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const uf = stateUfSelect.value;
+            if (uf && !cityIdInput.value) {
+                e.preventDefault();
+                showError(ERROR_MSG);
+                citySearchInput.focus();
+                citySearchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        });
+    }
+    
     if (currentStateUf && stateUfSelect.value === currentStateUf) {
         citySearchInput.disabled = false;
         if (cityRequired) {
             cityRequired.style.display = 'inline';
             citySearchInput.setAttribute('required', 'required');
         }
-        
-        // Garantir que cidade está preenchida se já houver city_id
         if (currentCityName && currentCityId) {
             citySearchInput.value = currentCityName;
             cityIdInput.value = currentCityId;
             selectedCityId = currentCityId;
             selectedCityName = currentCityName;
+            setSelectedState(true);
         }
     }
 }
