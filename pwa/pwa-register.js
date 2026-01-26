@@ -92,20 +92,42 @@ class PWAManager {
     
     async registerServiceWorker() {
         try {
-            console.log('[PWA] Registrando Service Worker...');
+            console.log('[PWA] ===== INICIANDO REGISTRO DO SERVICE WORKER =====');
+            console.log('[PWA] URL atual:', window.location.href);
+            console.log('[PWA] Pathname:', window.location.pathname);
             
             // Verificar se já existe um controller
             if (navigator.serviceWorker.controller) {
-                console.log('[PWA] Service Worker já está controlando:', navigator.serviceWorker.controller.scriptURL);
+                console.log('[PWA] ✅ Service Worker já está controlando:', navigator.serviceWorker.controller.scriptURL);
+                console.log('[PWA] Controller state:', navigator.serviceWorker.controller.state);
                 return;
             }
             
+            // Verificar se há registros existentes
+            const existingRegs = await navigator.serviceWorker.getRegistrations();
+            if (existingRegs.length > 0) {
+                console.log('[PWA] ⚠️ Encontrados', existingRegs.length, 'Service Worker(s) registrado(s):');
+                existingRegs.forEach((reg, idx) => {
+                    console.log(`[PWA]   SW ${idx + 1}:`, {
+                        scope: reg.scope,
+                        active: reg.active?.state,
+                        installing: reg.installing?.state,
+                        waiting: reg.waiting?.state,
+                        scriptURL: reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL
+                    });
+                });
+            }
+            
             // Usar SW do root para garantir scope "/"
-            this.registration = await navigator.serviceWorker.register('/sw.js', {
+            const swPath = '/sw.js';
+            console.log('[PWA] Tentando registrar Service Worker em:', swPath);
+            
+            this.registration = await navigator.serviceWorker.register(swPath, {
                 scope: '/'
             });
             
-            console.log('[PWA] Service Worker registrado:', this.registration);
+            console.log('[PWA] ✅ Service Worker registrado com sucesso!');
+            console.log('[PWA] Registration object:', this.registration);
             console.log('[PWA] SW State:', this.registration.active?.state || this.registration.installing?.state || this.registration.waiting?.state);
             console.log('[PWA] SW Scope:', this.registration.scope);
             
@@ -173,7 +195,21 @@ class PWAManager {
             });
             
         } catch (error) {
-            console.error('[PWA] Erro ao registrar Service Worker:', error);
+            console.error('[PWA] ❌ ERRO ao registrar Service Worker:', error);
+            console.error('[PWA] Erro completo:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            
+            // Tentar diagnosticar o problema
+            if (error.message.includes('Failed to register')) {
+                console.error('[PWA] Diagnóstico: Falha ao registrar - verifique se /sw.js existe e está acessível');
+            } else if (error.message.includes('network')) {
+                console.error('[PWA] Diagnóstico: Erro de rede - verifique conexão e servidor');
+            } else {
+                console.error('[PWA] Diagnóstico: Erro desconhecido - verifique console para detalhes');
+            }
         }
     }
     
@@ -924,18 +960,30 @@ window.resetPWAChoices = function() {
 
 // Inicializar PWA Manager quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[PWA] ===== DOMContentLoaded - Inicializando PWA Manager =====');
+    
     // Verificar se estamos na área admin, instrutor ou login
     const path = window.location.pathname;
     const isAdminArea = path.includes('/admin/');
     const isInstrutorArea = path.includes('/instrutor/');
     const isLoginPage = path.includes('/login.php') || path === '/';
     
+    console.log('[PWA] Path detectado:', path);
+    console.log('[PWA] isAdminArea:', isAdminArea);
+    console.log('[PWA] isInstrutorArea:', isInstrutorArea);
+    console.log('[PWA] isLoginPage:', isLoginPage);
+    
     // Inicializar em todas as áreas (incluindo login para notificações de atualização)
     // O sistema de instalação do login é gerenciado pelo install-footer.js separadamente
     if (isAdminArea || isInstrutorArea || isLoginPage) {
+        console.log('[PWA] ✅ Área válida detectada - inicializando PWAManager');
+        
         // Se já existe, não criar novamente
         if (!window.pwaManager) {
+            console.log('[PWA] Criando nova instância de PWAManager...');
             window.pwaManager = new PWAManager();
+        } else {
+            console.log('[PWA] PWAManager já existe, reutilizando instância');
         }
         
         // Debug: mostrar estado das escolhas do usuário
@@ -945,6 +993,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const expiry = new Date(parseInt(timestamp));
             console.log(`[PWA] Estado anterior: ${choice}, expira em: ${expiry.toLocaleString()}`);
         }
+    } else {
+        console.log('[PWA] ⚠️ Área não reconhecida - PWAManager não será inicializado');
     }
 });
 
