@@ -461,7 +461,9 @@
         
         <form id="salvarPixForm" method="POST" action="<?= base_url('configuracoes/cfc/salvar') ?>">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-
+            <!-- Incluir campo nome (obrigatório) para não quebrar validação -->
+            <input type="hidden" name="nome" value="<?= htmlspecialchars($cfc['nome'] ?? '') ?>">
+            
             <div class="form-group">
                 <label class="form-label" for="pix_banco">Banco/Instituição</label>
                 <input 
