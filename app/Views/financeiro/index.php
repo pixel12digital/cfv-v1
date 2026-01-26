@@ -465,10 +465,15 @@
                         $studentName = $enr['student_full_name'] ?: $enr['student_name'];
                         $cpfFormatted = \App\Helpers\ValidationHelper::formatCpf($enr['student_cpf'] ?? '');
                         
-                        // Verificar se é cartão pago localmente
+                        // Verificar se é pagamento local (cartão ou PIX)
+                        $isLocalPayment = (($enr['payment_method'] ?? '') === 'cartao' || ($enr['payment_method'] ?? '') === 'pix') && 
+                                         ($enr['gateway_provider'] ?? '') === 'local';
                         $isCartaoLocalPaid = ($enr['payment_method'] ?? '') === 'cartao' && 
                                             ($enr['gateway_provider'] ?? '') === 'local' &&
                                             ($enr['gateway_last_status'] ?? '') === 'paid';
+                        $isPixLocalPaid = ($enr['payment_method'] ?? '') === 'pix' && 
+                                         ($enr['gateway_provider'] ?? '') === 'local' &&
+                                         ($enr['gateway_last_status'] ?? '') === 'paid';
                         
                         // Forma de pagamento (traduzir)
                         $paymentMethodLabels = [
@@ -483,9 +488,9 @@
                         $installmentsCount = !empty($enr['installments']) ? intval($enr['installments']) : 1;
                         $installmentsDisplay = $installmentsCount > 1 ? "{$installmentsCount}x" : 'À vista';
                         
-                        // Data de pagamento (se cartão pago localmente)
+                        // Data de pagamento (se pagamento local)
                         $paymentDate = null;
-                        if ($isCartaoLocalPaid && !empty($enr['gateway_last_event_at'])) {
+                        if (($isCartaoLocalPaid || $isPixLocalPaid) && !empty($enr['gateway_last_event_at'])) {
                             $paymentDate = date('d/m/Y H:i', strtotime($enr['gateway_last_event_at']));
                         }
                         
@@ -493,14 +498,19 @@
                         $outstandingAmount = floatval($enr['calculated_outstanding'] ?? $enr['outstanding_amount'] ?? ($enr['final_price'] - ($enr['entry_amount'] ?? 0)));
                         
                         // Data de vencimento
+                        // CORREÇÃO: Não mostrar como vencida se o pagamento já foi realizado
                         $dueDate = null;
                         $isOverdue = false;
+                        $isPaid = ($outstandingAmount <= 0) || ($enr['financial_status'] ?? '') === 'em_dia';
+                        
                         if (!empty($enr['first_due_date']) && $enr['first_due_date'] !== '0000-00-00') {
                             $dueDate = date('d/m/Y', strtotime($enr['first_due_date']));
-                            $isOverdue = strtotime($enr['first_due_date']) < time();
+                            // Só considerar vencida se não estiver pago
+                            $isOverdue = !$isPaid && strtotime($enr['first_due_date']) < time();
                         } elseif (!empty($enr['down_payment_due_date']) && $enr['down_payment_due_date'] !== '0000-00-00') {
                             $dueDate = date('d/m/Y', strtotime($enr['down_payment_due_date']));
-                            $isOverdue = strtotime($enr['down_payment_due_date']) < time();
+                            // Só considerar vencida se não estiver pago
+                            $isOverdue = !$isPaid && strtotime($enr['down_payment_due_date']) < time();
                         }
                         
                         // Status financeiro
@@ -511,8 +521,9 @@
                         ];
                         $financialStatus = $financialStatusConfig[$enr['financial_status']] ?? ['label' => $enr['financial_status'], 'color' => '#666'];
                         
-                        // Verificar se tem cobrança gerada
-                        $hasCharge = !empty($enr['gateway_charge_id']) && $enr['gateway_charge_id'] !== '';
+                        // Verificar se tem cobrança gerada (apenas para pagamentos via gateway EFI)
+                        // Pagamentos locais (cartão/PIX) não têm cobrança gerada via gateway
+                        $hasCharge = !empty($enr['gateway_charge_id']) && $enr['gateway_charge_id'] !== '' && !$isLocalPayment;
                         
                         // Verificar se é Carnê (JSON) ou cobrança única (link direto)
                         $paymentUrl = null;
@@ -593,7 +604,7 @@
                             </td>
                             <td>
                                 <div style="font-weight: 500;"><?= htmlspecialchars($paymentMethodLabel) ?></div>
-                                <?php if ($isCartaoLocalPaid && $paymentDate): ?>
+                                <?php if (($isCartaoLocalPaid || $isPixLocalPaid) && $paymentDate): ?>
                                 <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 2px;">
                                     Pago em: <?= htmlspecialchars($paymentDate) ?>
                                 </div>
@@ -617,6 +628,10 @@
                                 <?php if ($hasCharge): ?>
                                 <span style="color: #10b981; font-weight: 600; font-size: var(--font-size-sm);">
                                     ✓ Gerada
+                                </span>
+                                <?php elseif ($isLocalPayment): ?>
+                                <span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">
+                                    Pagamento Local
                                 </span>
                                 <?php else: ?>
                                 <span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">
@@ -697,7 +712,7 @@
                                             🔄
                                         </button>
                                     <?php else: ?>
-                                        <?php if (!$isCartaoLocalPaid): ?>
+                                        <?php if (!$isLocalPayment): ?>
                                         <a 
                                             href="<?= base_path("matriculas/{$enr['id']}") ?>" 
                                             class="btn btn-sm btn-outline"
