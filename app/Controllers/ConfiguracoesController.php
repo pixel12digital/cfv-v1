@@ -1512,109 +1512,176 @@ class ConfiguracoesController extends Controller
      */
     public function pixAccountCriar()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirect(base_url('configuracoes/cfc'));
-        }
+        // Tratamento de erro global para capturar qualquer exceção antes do Router
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
 
-        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
-            $_SESSION['error'] = 'Token CSRF inválido.';
-            redirect(base_url('configuracoes/cfc'));
-        }
+            if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+                $_SESSION['error'] = 'Token CSRF inválido.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
 
-        $cfcModel = new Cfc();
-        $cfc = $cfcModel->getCurrent();
+            $cfcModel = new Cfc();
+            $cfc = $cfcModel->getCurrent();
 
-        if (!$cfc) {
-            $_SESSION['error'] = 'CFC não encontrado.';
-            redirect(base_url('configuracoes/cfc'));
-        }
+            if (!$cfc) {
+                $_SESSION['error'] = 'CFC não encontrado.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
 
-        $label = trim($_POST['label'] ?? '');
-        $bankCode = trim($_POST['bank_code'] ?? '');
-        $bankName = trim($_POST['bank_name'] ?? '');
-        $agency = trim($_POST['agency'] ?? '');
-        $accountNumber = trim($_POST['account_number'] ?? '');
-        $accountType = trim($_POST['account_type'] ?? '');
-        $holderName = trim($_POST['holder_name'] ?? '');
-        $holderDocument = trim($_POST['holder_document'] ?? '');
-        $pixKey = trim($_POST['pix_key'] ?? '');
-        $pixKeyType = $_POST['pix_key_type'] ?? null;
-        $note = trim($_POST['note'] ?? '');
-        $isDefault = isset($_POST['is_default']) ? 1 : 0;
-        $isActive = isset($_POST['is_active']) ? 1 : 0;
-
-        // Validações obrigatórias
-        if (empty($label)) {
-            $_SESSION['error'] = 'Apelido da conta é obrigatório.';
-            redirect(base_url('configuracoes/cfc'));
-        }
-
-        if (empty($holderName)) {
-            $_SESSION['error'] = 'Nome do titular é obrigatório.';
-            redirect(base_url('configuracoes/cfc'));
-        }
-
-        if (empty($pixKey)) {
-            $_SESSION['error'] = 'Chave PIX é obrigatória.';
-            redirect(base_url('configuracoes/cfc'));
-        }
-
-        $pixAccountModel = new CfcPixAccount();
-        
-        // Se for padrão, remover padrão das outras (com tratamento de erro)
-        if ($isDefault) {
+            // Verificar se a tabela existe antes de tentar criar
             try {
                 $db = \App\Config\Database::getInstance()->getConnection();
-                $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
-                $stmt->execute([$cfc['id']]);
-            } catch (\Exception $e) {
-                // Se a tabela não existir ainda, apenas logar e continuar
-                error_log("ConfiguracoesController::pixAccountCriar() - Erro ao remover padrão (tabela pode não existir ainda): " . $e->getMessage());
-                // Não bloquear criação se for a primeira conta
+                $stmt = $db->query("SHOW TABLES LIKE 'cfc_pix_accounts'");
+                $tableExists = $stmt->rowCount() > 0;
+                
+                if (!$tableExists) {
+                    error_log("ConfiguracoesController::pixAccountCriar() - Tabela cfc_pix_accounts não existe");
+                    $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations 038, 039 e 040 primeiro.';
+                    redirect(base_url('configuracoes/cfc'));
+                    return;
+                }
+            } catch (\PDOException $e) {
+                error_log("ConfiguracoesController::pixAccountCriar() - Erro ao verificar existência da tabela: " . $e->getMessage());
+                $_SESSION['error'] = 'Erro ao verificar estrutura do banco de dados. Verifique se as migrations foram executadas.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
             }
-        }
 
-        $data = [
-            'cfc_id' => $cfc['id'],
-            'label' => $label,
-            'bank_code' => !empty($bankCode) ? $bankCode : null,
-            'bank_name' => !empty($bankName) ? $bankName : null,
-            'agency' => !empty($agency) ? $agency : null,
-            'account_number' => !empty($accountNumber) ? $accountNumber : null,
-            'account_type' => !empty($accountType) ? $accountType : null,
-            'holder_name' => $holderName,
-            'holder_document' => !empty($holderDocument) ? $holderDocument : null,
-            'pix_key' => $pixKey,
-            'pix_key_type' => $pixKeyType,
-            'note' => !empty($note) ? $note : null,
-            'is_default' => $isDefault,
-            'is_active' => $isActive
-        ];
+            $label = trim($_POST['label'] ?? '');
+            $bankCode = trim($_POST['bank_code'] ?? '');
+            $bankName = trim($_POST['bank_name'] ?? '');
+            $agency = trim($_POST['agency'] ?? '');
+            $accountNumber = trim($_POST['account_number'] ?? '');
+            $accountType = trim($_POST['account_type'] ?? '');
+            $holderName = trim($_POST['holder_name'] ?? '');
+            $holderDocument = trim($_POST['holder_document'] ?? '');
+            $pixKey = trim($_POST['pix_key'] ?? '');
+            $pixKeyType = $_POST['pix_key_type'] ?? null;
+            $note = trim($_POST['note'] ?? '');
+            $isDefault = isset($_POST['is_default']) ? 1 : 0;
+            $isActive = isset($_POST['is_active']) ? 1 : 0;
 
-        try {
-            $id = $pixAccountModel->create($data);
-            $this->auditService->logCreate('cfc_pix_accounts', $id, $data);
+            // Validações obrigatórias
+            if (empty($label)) {
+                $_SESSION['error'] = 'Apelido da conta é obrigatório.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
 
-            $_SESSION['success'] = 'Conta PIX criada com sucesso!';
-            redirect(base_url('configuracoes/cfc'));
+            if (empty($holderName)) {
+                $_SESSION['error'] = 'Nome do titular é obrigatório.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
+
+            if (empty($pixKey)) {
+                $_SESSION['error'] = 'Chave PIX é obrigatória.';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
+
+            $pixAccountModel = new CfcPixAccount();
+            
+            // Se for padrão, remover padrão das outras (com tratamento de erro)
+            if ($isDefault) {
+                try {
+                    $db = \App\Config\Database::getInstance()->getConnection();
+                    $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
+                    $stmt->execute([$cfc['id']]);
+                } catch (\Exception $e) {
+                    // Se a tabela não existir ainda, apenas logar e continuar
+                    error_log("ConfiguracoesController::pixAccountCriar() - Erro ao remover padrão: " . $e->getMessage());
+                    // Não bloquear criação se for a primeira conta
+                }
+            }
+
+            $data = [
+                'cfc_id' => $cfc['id'],
+                'label' => $label,
+                'bank_code' => !empty($bankCode) ? $bankCode : null,
+                'bank_name' => !empty($bankName) ? $bankName : null,
+                'agency' => !empty($agency) ? $agency : null,
+                'account_number' => !empty($accountNumber) ? $accountNumber : null,
+                'account_type' => !empty($accountType) ? $accountType : null,
+                'holder_name' => $holderName,
+                'holder_document' => !empty($holderDocument) ? $holderDocument : null,
+                'pix_key' => $pixKey,
+                'pix_key_type' => $pixKeyType,
+                'note' => !empty($note) ? $note : null,
+                'is_default' => $isDefault,
+                'is_active' => $isActive
+            ];
+
+            try {
+                $id = $pixAccountModel->create($data);
+                
+                // Tentar registrar auditoria, mas não bloquear se falhar
+                try {
+                    $this->auditService->logCreate('cfc_pix_accounts', $id, $data);
+                } catch (\Exception $e) {
+                    error_log("ConfiguracoesController::pixAccountCriar() - Erro ao registrar auditoria: " . $e->getMessage());
+                    // Não bloquear criação se auditoria falhar
+                }
+
+                $_SESSION['success'] = 'Conta PIX criada com sucesso!';
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            } catch (\PDOException $e) {
+                // Erro específico de SQL (tabela não existe, erro de sintaxe, etc)
+                error_log("ConfiguracoesController::pixAccountCriar() - Erro SQL no create(): " . $e->getMessage());
+                error_log("SQL State: " . $e->getCode());
+                error_log("SQL Error Info: " . print_r($e->errorInfo ?? [], true));
+                error_log("Dados tentados: " . print_r($data, true));
+                
+                // Verificar se é erro de tabela não encontrada
+                $errorCode = $e->getCode();
+                $errorMessage = $e->getMessage();
+                if ($errorCode == '42S02' || strpos($errorMessage, "doesn't exist") !== false || strpos($errorMessage, "não existe") !== false || strpos($errorMessage, "Table") !== false || strpos($errorMessage, "table") !== false) {
+                    $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations 038, 039 e 040 primeiro.';
+                } elseif (strpos($errorMessage, "Unknown column") !== false || strpos($errorMessage, "coluna desconhecida") !== false) {
+                    $_SESSION['error'] = 'Estrutura da tabela incompleta. Por favor, execute as migrations 038, 039 e 040 primeiro.';
+                } else {
+                    $_SESSION['error'] = 'Erro ao criar conta PIX. Verifique os logs para mais detalhes.';
+                }
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            } catch (\Exception $e) {
+                // Outros erros
+                error_log("ConfiguracoesController::pixAccountCriar() - Erro genérico no create(): " . $e->getMessage());
+                error_log("Stack trace: " . $e->getTraceAsString());
+                $_SESSION['error'] = 'Erro ao criar conta PIX: ' . $e->getMessage();
+                redirect(base_url('configuracoes/cfc'));
+                return;
+            }
         } catch (\PDOException $e) {
-            // Erro específico de SQL (tabela não existe, erro de sintaxe, etc)
-            error_log("ConfiguracoesController::pixAccountCriar() - Erro SQL: " . $e->getMessage());
+            // Capturar qualquer PDOException que possa escapar
+            error_log("ConfiguracoesController::pixAccountCriar() - Erro PDO capturado no nível superior: " . $e->getMessage());
             error_log("SQL State: " . $e->getCode());
             error_log("SQL Error Info: " . print_r($e->errorInfo ?? [], true));
+            error_log("Stack trace: " . $e->getTraceAsString());
             
-            // Verificar se é erro de tabela não encontrada
-            if ($e->getCode() == '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), "não existe") !== false) {
+            $errorCode = $e->getCode();
+            $errorMessage = $e->getMessage();
+            if ($errorCode == '42S02' || strpos($errorMessage, "doesn't exist") !== false || strpos($errorMessage, "Table") !== false || strpos($errorMessage, "table") !== false) {
                 $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations 038, 039 e 040 primeiro.';
             } else {
-                $_SESSION['error'] = 'Erro ao criar conta PIX: ' . $e->getMessage();
+                $_SESSION['error'] = 'Erro ao criar conta PIX. Verifique os logs para mais detalhes.';
             }
             redirect(base_url('configuracoes/cfc'));
+            return;
         } catch (\Exception $e) {
-            // Outros erros
-            error_log("ConfiguracoesController::pixAccountCriar() - Erro: " . $e->getMessage());
+            // Capturar qualquer outra exceção
+            error_log("ConfiguracoesController::pixAccountCriar() - Erro capturado no nível superior: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             $_SESSION['error'] = 'Erro ao criar conta PIX: ' . $e->getMessage();
             redirect(base_url('configuracoes/cfc'));
+            return;
         }
     }
 
