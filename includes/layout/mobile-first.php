@@ -71,6 +71,12 @@
     ?>
     <link rel="stylesheet" href="<?php echo $cssPath; ?>">
     
+    <!-- Theme Overrides Global (dark mode fixes) -->
+    <?php 
+    $themeOverridesPath = rtrim($basePath, '/') . '/assets/css/theme-overrides.css';
+    ?>
+    <link rel="stylesheet" href="<?php echo $themeOverridesPath; ?>">
+    
     <!-- Script para atualizar theme-color dinamicamente -->
     <script>
         (function() {

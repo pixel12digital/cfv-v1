@@ -305,6 +305,13 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     <link rel="apple-touch-icon" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/pwa/icons/icon-192.png'); ?>">
     <link rel="apple-touch-icon" sizes="152x152" href="/pwa/icons/icon-152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/icon-192.png">
+    
+    <!-- Theme Tokens (deve vir primeiro) -->
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-tokens.css'); ?>">
+    
+    <!-- Theme Overrides Global (dark mode fixes) -->
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-overrides.css'); ?>">
+    
     <style>
         * {
             margin: 0;
@@ -835,12 +842,12 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Lembrar de mim</label>
                             </div>
-                    <a href="forgot-password.php<?php echo $hasSpecificType ? '?type=' . htmlspecialchars($userType) : ''; ?>" class="forgot-password">Esqueci minha senha</a>
+                    <a href="forgot-password.php<?php echo $hasSpecificType ? '?type=' . htmlspecialchars($userType) : ''; ?>" class="forgot-password link-theme">Esqueci minha senha</a>
                             </div>
                 <?php else: ?>
                 <div class="form-options">
-                    <div class="form-help" style="text-align: center; margin-top: 10px; color: #7f8c8d;">
-                        <a href="forgot-password.php?type=aluno" style="color: #1A365D; text-decoration: none;">Esqueci minha senha</a>
+                    <div class="form-help" style="text-align: center; margin-top: 10px;">
+                        <a href="forgot-password.php?type=aluno" class="link-theme" style="text-decoration: none;">Esqueci minha senha</a>
                     </div>
                 </div>
                 <?php endif; ?>

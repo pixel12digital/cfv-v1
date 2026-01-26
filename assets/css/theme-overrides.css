@@ -1,0 +1,235 @@
+/* =====================================================
+   THEME OVERRIDES GLOBAL - Dark Mode PWA Android
+   Correções globais para contraste e legibilidade
+   ===================================================== */
+
+/* =====================================================
+   CLASSES UTILITÁRIAS BASEADAS EM TOKENS
+   ===================================================== */
+
+/* Fundo de cards/surfaces */
+.bg-theme-card {
+    background-color: var(--theme-card-bg, var(--theme-surface, #ffffff)) !important;
+}
+
+.bg-theme-surface {
+    background-color: var(--theme-surface, #ffffff) !important;
+}
+
+/* Textos */
+.text-theme {
+    color: var(--theme-text, #1e293b) !important;
+}
+
+.text-theme-muted {
+    color: var(--theme-text-muted, #64748b) !important;
+}
+
+.text-theme-secondary {
+    color: var(--theme-text-secondary, #475569) !important;
+}
+
+/* Links */
+.link-theme {
+    color: var(--theme-link, #2563eb) !important;
+}
+
+.link-theme:hover {
+    color: var(--theme-link-hover, #1d4ed8) !important;
+}
+
+/* =====================================================
+   OVERRIDES GLOBAIS - DARK MODE
+   ===================================================== */
+
+@media (prefers-color-scheme: dark) {
+    /* =====================================================
+       BOTÕES OUTLINE - CRÍTICO (Tela 3: Admin)
+       ===================================================== */
+    
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .btn-outline-info,
+    .btn-outline-warning,
+    .btn-outline-success,
+    .btn-outline-danger {
+        border-color: var(--theme-link, #60a5fa) !important;
+        color: var(--theme-link, #60a5fa) !important;
+        background-color: transparent !important;
+    }
+    
+    .btn-outline-primary:hover,
+    .btn-outline-secondary:hover,
+    .btn-outline-info:hover,
+    .btn-outline-warning:hover,
+    .btn-outline-success:hover,
+    .btn-outline-danger:hover {
+        background-color: var(--theme-link, #60a5fa) !important;
+        color: var(--theme-text-inverse, #0f172a) !important;
+        border-color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    /* Ícones dentro de botões outline herdam a cor */
+    .btn-outline-primary i,
+    .btn-outline-secondary i,
+    .btn-outline-info i,
+    .btn-outline-warning i,
+    .btn-outline-success i,
+    .btn-outline-danger i {
+        color: inherit !important;
+    }
+    
+    /* =====================================================
+       CARDS COM BACKGROUND HARDCODED
+       ===================================================== */
+    
+    /* Forçar cards a usar token de fundo no dark mode */
+    .aula-item,
+    .aula-item-mobile,
+    .aula-card-padronizado,
+    .card:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+    }
+    
+    /* Textos dentro de cards de aulas */
+    .aula-item strong,
+    .aula-item-mobile strong,
+    .aula-card-padronizado strong,
+    .aula-item h6,
+    .aula-item-mobile h6,
+    .aula-card-padronizado h6 {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       PLACEHOLDERS E INPUTS - CRÍTICO (Tela 4: Login)
+       ===================================================== */
+    
+    /* Placeholders legíveis */
+    ::placeholder,
+    input::placeholder,
+    textarea::placeholder,
+    .form-control::placeholder,
+    .form-input::placeholder,
+    .form-field-input::placeholder {
+        color: var(--theme-input-placeholder, #94a3b8) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Inputs com contraste adequado */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select,
+    .form-control,
+    .form-input,
+    .form-field-input {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border, #475569) !important;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    input[type="tel"]:focus,
+    input[type="date"]:focus,
+    input[type="time"]:focus,
+    input[type="datetime-local"]:focus,
+    textarea:focus,
+    select:focus,
+    .form-control:focus,
+    .form-input:focus,
+    .form-field-input:focus {
+        border-color: var(--theme-input-border-focus, #60a5fa) !important;
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       LINKS ESPECÍFICOS - CRÍTICO (Tela 4: Login)
+       ===================================================== */
+    
+    /* Link "Esqueci minha senha" e similares */
+    .forgot-password,
+    a.forgot-password,
+    .text-link,
+    a.text-link {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .forgot-password:hover,
+    a.forgot-password:hover,
+    .text-link:hover,
+    a.text-link:hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Remover roxo de links (se houver) */
+    a[style*="color: #"]:not(.btn):not(.badge) {
+        /* Sobrescrever cores inline específicas de links */
+    }
+    
+    /* =====================================================
+       TEXTOS HARDCODED EM CARDS
+       ===================================================== */
+    
+    /* Sobrescrever cores inline de textos em cards */
+    .card strong[style*="color: #1e293b"],
+    .card h6[style*="color: #1e293b"],
+    .aula-item strong[style*="color: #1e293b"],
+    .aula-item-mobile strong[style*="color: #1e293b"],
+    .aula-card-padronizado strong[style*="color: #1e293b"],
+    .aula-item div[style*="color: #1e293b"],
+    .aula-item-mobile div[style*="color: #1e293b"],
+    .aula-card-padronizado div[style*="color: #1e293b"] {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       DROPDOWNS E ELEMENTOS FLUTUANTES
+       ===================================================== */
+    
+    .dropdown-menu,
+    .instrutor-profile-dropdown {
+        background-color: var(--theme-surface, #1e293b) !important;
+        border-color: var(--theme-border, #334155) !important;
+    }
+    
+    .dropdown-item {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .dropdown-item:hover {
+        background-color: var(--theme-bg-secondary, #334155) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+}
+
+/* =====================================================
+   OVERRIDES GLOBAIS - LIGHT MODE (garantir consistência)
+   ===================================================== */
+
+/* Garantir que elementos usem tokens mesmo no light mode */
+.aula-item,
+.aula-item-mobile,
+.aula-card-padronizado {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Links sempre devem usar token */
+a:not(.btn):not(.badge):not(.nav-link) {
+    color: var(--theme-link, #2563eb);
+    transition: color 0.2s ease;
+}
+
+a:not(.btn):not(.badge):not(.nav-link):hover {
+    color: var(--theme-link-hover, #1d4ed8);
+}
