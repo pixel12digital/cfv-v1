@@ -137,6 +137,12 @@ $router->get('/configuracoes/cfc/logo', [ConfiguracoesController::class, 'logo']
 $router->post('/configuracoes/cfc/logo/upload', [ConfiguracoesController::class, 'uploadLogo'], [AuthMiddleware::class]);
 $router->post('/configuracoes/cfc/logo/remover', [ConfiguracoesController::class, 'removerLogo'], [AuthMiddleware::class]);
 
+// Contas PIX do CFC
+$router->post('/configuracoes/cfc/pix-accounts/criar', [ConfiguracoesController::class, 'pixAccountCriar'], [AuthMiddleware::class]);
+$router->post('/configuracoes/cfc/pix-accounts/{id}/atualizar', [ConfiguracoesController::class, 'pixAccountAtualizar'], [AuthMiddleware::class]);
+$router->post('/configuracoes/cfc/pix-accounts/{id}/excluir', [ConfiguracoesController::class, 'pixAccountExcluir'], [AuthMiddleware::class]);
+$router->post('/configuracoes/cfc/pix-accounts/{id}/definir-padrao', [ConfiguracoesController::class, 'pixAccountDefinirPadrao'], [AuthMiddleware::class]);
+
 // Curso Teórico - Configurações (ADMIN)
 $router->get('/configuracoes/disciplinas', [ConfiguracoesController::class, 'disciplinas'], [AuthMiddleware::class]);
 $router->get('/configuracoes/disciplinas/novo', [ConfiguracoesController::class, 'disciplinaNovo'], [AuthMiddleware::class]);
