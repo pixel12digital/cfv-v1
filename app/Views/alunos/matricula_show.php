@@ -147,12 +147,43 @@
 
             <div class="form-group">
                 <label class="form-label" for="payment_method">Forma de Pagamento *</label>
-                <select id="payment_method" name="payment_method" class="form-select" required>
+                <select id="payment_method" name="payment_method" class="form-select" required onchange="togglePixAccountSelector()">
                     <option value="pix" <?= $enrollment['payment_method'] === 'pix' ? 'selected' : '' ?>>PIX</option>
                     <option value="boleto" <?= $enrollment['payment_method'] === 'boleto' ? 'selected' : '' ?>>Boleto</option>
                     <option value="cartao" <?= $enrollment['payment_method'] === 'cartao' ? 'selected' : '' ?>>Cartão</option>
                     <option value="entrada_parcelas" <?= $enrollment['payment_method'] === 'entrada_parcelas' ? 'selected' : '' ?>>Entrada + Parcelas</option>
                 </select>
+            </div>
+
+            <!-- Seletor de Conta PIX (aparece quando payment_method = 'pix') -->
+            <div id="pixAccountSelector" style="display: <?= $enrollment['payment_method'] === 'pix' ? 'block' : 'none' ?>; margin-top: var(--spacing-md);">
+                <div class="form-group">
+                    <label class="form-label" for="pix_account_id">Conta PIX</label>
+                    <select id="pix_account_id" name="pix_account_id" class="form-select">
+                        <option value="">Selecione uma conta PIX (opcional)</option>
+                        <?php if (!empty($pixAccounts)): ?>
+                            <?php foreach ($pixAccounts as $account): ?>
+                                <option value="<?= $account['id'] ?>" 
+                                    <?= (!empty($enrollment['pix_account_id']) && $enrollment['pix_account_id'] == $account['id']) ? 'selected' : '' ?>
+                                    <?= ($account['is_default'] ?? 0) ? 'data-default="1"' : '' ?>>
+                                    <?= htmlspecialchars($account['label']) ?> 
+                                    <?php if (!empty($account['bank_name'])): ?>
+                                        - <?= htmlspecialchars($account['bank_name']) ?>
+                                    <?php endif; ?>
+                                    <?php if ($account['is_default'] ?? 0): ?>
+                                        (Padrão)
+                                    <?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="" disabled>Nenhuma conta PIX cadastrada</option>
+                        <?php endif; ?>
+                    </select>
+                    <small class="form-hint">
+                        Selecione qual conta PIX será usada para este pagamento. 
+                        Se não selecionar, será usada a conta padrão.
+                    </small>
+                </div>
             </div>
 
             <!-- Campos de Parcelamento (Editáveis quando permitido) -->
@@ -712,6 +743,25 @@ function calculateOutstanding() {
         entryPaymentDate.removeAttribute('required');
     }
 }
+
+// Função para mostrar/esconder seletor de conta PIX
+function togglePixAccountSelector() {
+    const paymentMethod = document.getElementById('payment_method').value;
+    const pixAccountSelector = document.getElementById('pixAccountSelector');
+    
+    if (paymentMethod === 'pix') {
+        pixAccountSelector.style.display = 'block';
+    } else {
+        pixAccountSelector.style.display = 'none';
+        // Limpar seleção quando não for PIX
+        document.getElementById('pix_account_id').value = '';
+    }
+}
+
+// Inicializar visibilidade do seletor ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    togglePixAccountSelector();
+});
 
 document.getElementById('enrollmentForm')?.addEventListener('submit', function(e) {
     calculateFinal();

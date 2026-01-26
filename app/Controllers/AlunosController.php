@@ -738,6 +738,7 @@ class AlunosController extends Controller
         $pixAccountModel = new \App\Models\CfcPixAccount();
         $pixAccount = null;
         $pixAccountSnapshot = null;
+        $pixAccounts = []; // Lista de contas PIX disponíveis para seleção
         
         try {
             if (!empty($enrollment['pix_account_id'])) {
@@ -753,6 +754,9 @@ class AlunosController extends Controller
             if (!$pixAccount && !$pixAccountSnapshot) {
                 $pixAccount = $pixAccountModel->getPixDataForCfc($this->cfcId);
             }
+            
+            // Carregar todas as contas PIX ativas para o seletor
+            $pixAccounts = $pixAccountModel->findByCfc($this->cfcId, true); // true = apenas ativas
         } catch (\Exception $e) {
             // Se a tabela não existir ainda, usar dados antigos do CFC (retrocompatibilidade)
             error_log("AlunosController::showMatricula() - Erro ao buscar conta PIX (tabela pode não existir ainda): " . $e->getMessage());
@@ -760,6 +764,7 @@ class AlunosController extends Controller
             if (!empty($enrollment['pix_account_snapshot'])) {
                 $pixAccountSnapshot = json_decode($enrollment['pix_account_snapshot'], true);
             }
+            $pixAccounts = []; // Array vazio se tabela não existir
         }
 
         $data = [
@@ -767,7 +772,8 @@ class AlunosController extends Controller
             'enrollment' => $enrollment,
             'cfc' => $cfc,
             'pixAccount' => $pixAccount,
-            'pixAccountSnapshot' => $pixAccountSnapshot
+            'pixAccountSnapshot' => $pixAccountSnapshot,
+            'pixAccounts' => $pixAccounts // Contas disponíveis para seleção
         ];
         $this->view('alunos/matricula_show', $data);
     }
@@ -798,6 +804,28 @@ class AlunosController extends Controller
         $paymentMethod = $_POST['payment_method'] ?? 'pix';
         $financialStatus = $_POST['financial_status'] ?? 'em_dia';
         $status = $_POST['status'] ?? 'ativa';
+        
+        // Processar conta PIX selecionada (se payment_method = 'pix')
+        $pixAccountId = null;
+        if ($paymentMethod === 'pix') {
+            $pixAccountId = !empty($_POST['pix_account_id']) ? intval($_POST['pix_account_id']) : null;
+            
+            // Validar se a conta PIX existe e pertence ao CFC
+            if ($pixAccountId) {
+                try {
+                    $pixAccountModel = new \App\Models\CfcPixAccount();
+                    $pixAccount = $pixAccountModel->findByIdAndCfc($pixAccountId, $this->cfcId);
+                    
+                    if (!$pixAccount || !$pixAccount['is_active']) {
+                        $_SESSION['error'] = 'Conta PIX selecionada não encontrada ou inativa.';
+                        redirect(base_url("matriculas/{$id}"));
+                    }
+                } catch (\Exception $e) {
+                    error_log("AlunosController::atualizarMatricula() - Erro ao validar conta PIX: " . $e->getMessage());
+                    // Se a tabela não existir, permitir continuar sem pix_account_id (retrocompatibilidade)
+                }
+            }
+        }
 
         // Processar campos de entrada
         $entryAmount = !empty($_POST['entry_amount']) ? floatval($_POST['entry_amount']) : 0;
@@ -979,7 +1007,9 @@ class AlunosController extends Controller
             'installments' => $installments,
             'down_payment_amount' => $downPaymentAmount,
             'down_payment_due_date' => $downPaymentDueDate,
-            'first_due_date' => $firstDueDate
+            'first_due_date' => $firstDueDate,
+            // Conta PIX selecionada
+            'pix_account_id' => $pixAccountId
         ];
 
         // Registrar mudanças no histórico
