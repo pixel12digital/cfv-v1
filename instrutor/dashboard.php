@@ -602,7 +602,7 @@ if ($instrutorId && !empty($aulasHoje)) {
     <link rel="stylesheet" href="../assets/css/mobile-first.css">
     
     <!-- Theme Overrides Global (dark mode fixes) -->
-    <link rel="stylesheet" href="../assets/css/theme-overrides.css">
+    <link rel="stylesheet" href="../assets/css/theme-overrides.css?v=1.0.10">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     

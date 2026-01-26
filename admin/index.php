@@ -699,7 +699,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
     <link href="../assets/css/theme-tokens.css" rel="stylesheet">
     
     <!-- Theme Overrides Global (dark mode fixes) -->
-    <link href="../assets/css/theme-overrides.css" rel="stylesheet">
+    <link href="../assets/css/theme-overrides.css?v=1.0.10" rel="stylesheet">
     
     <!-- CSS Principal -->
     <link href="assets/css/admin.css?v=<?php echo time(); ?>" rel="stylesheet">

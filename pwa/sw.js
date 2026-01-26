@@ -4,22 +4,18 @@
  * Estratégias de cache otimizadas para PWA
  */
 
-const CACHE_VERSION = 'cfc-v1.0.9';
+const CACHE_VERSION = 'cfc-v1.0.10';
 const CACHE_NAME = `cfc-cache-${CACHE_VERSION}`;
 const OFFLINE_CACHE = 'cfc-offline-v1';
 
-// App Shell - recursos críticos que devem estar sempre disponíveis
+// App Shell - APENAS recursos estáticos críticos (SEM rotas autenticadas)
 const APP_SHELL = [
-  '/instrutor/dashboard.php',
-  '/admin/',
-  '/admin/assets/css/admin.css',
-  '/admin/assets/js/admin.js',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Recursos estáticos que podem ser cacheados
+// Recursos estáticos que podem ser cacheados (CSS/JS/imagens/fonts)
 const STATIC_RESOURCES = [
   '/admin/assets/css/',
   '/admin/assets/js/',
@@ -28,6 +24,23 @@ const STATIC_RESOURCES = [
   '/assets/js/',
   '/assets/img/',
   '/pwa/icons/'
+];
+
+// Rotas autenticadas que NUNCA devem ser cacheadas
+const AUTHENTICATED_ROUTES = [
+  '/admin/',
+  '/admin/index.php',
+  '/admin/dashboard',
+  '/admin/dashboard.php',
+  '/admin/dashboard-mobile.php',
+  '/instrutor/',
+  '/instrutor/dashboard.php',
+  '/instrutor/dashboard-mobile.php',
+  '/aluno/',
+  '/aluno/dashboard.php',
+  '/admin/pages/',
+  '/instrutor/pages/',
+  '/aluno/pages/'
 ];
 
 // Rotas que NÃO devem ser cacheadas (conteúdo sensível)
@@ -146,27 +159,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // CRÍTICO: Rotas autenticadas NUNCA devem ser cacheadas
+  if (isAuthenticatedRoute(url.pathname)) {
+    console.log(`[SW] 🔒 Rota autenticada - SEM cache: ${url.pathname}`);
+    // Sempre buscar da rede, sem cache
+    event.respondWith(fetch(request));
+    return;
+  }
+  
   // Verificar se a rota deve ser excluída do cache
   if (shouldExcludeFromCache(url.pathname)) {
-    console.log(`[SW] Rota excluída do cache: ${url.pathname}`);
+    console.log(`[SW] 🚫 Rota excluída do cache: ${url.pathname}`);
+    event.respondWith(fetch(request));
     return;
   }
   
   // Estratégias baseadas no tipo de recurso
   if (isAppShellRequest(url.pathname)) {
-    // App Shell: Cache First
+    // App Shell (CDN): Cache First
     event.respondWith(cacheFirstStrategy(request));
   } else if (isAPIRequest(url.pathname)) {
-    // APIs: Network First com fallback offline
-    event.respondWith(networkFirstStrategy(request));
+    // APIs: Network First (sem cache)
+    event.respondWith(fetch(request));
   } else if (isImageRequest(url.pathname)) {
     // Imagens: Stale While Revalidate
     event.respondWith(staleWhileRevalidateStrategy(request));
   } else if (isStaticResource(url.pathname)) {
-    // Recursos estáticos: Cache First
+    // Recursos estáticos (CSS/JS/imagens): Cache First
     event.respondWith(cacheFirstStrategy(request));
   } else {
-    // Páginas HTML: Network First com fallback offline
+    // Páginas HTML públicas: Network First (sem cache para evitar problemas)
     event.respondWith(networkFirstWithOfflineFallback(request));
   }
 });
@@ -297,6 +319,16 @@ async function networkFirstWithOfflineFallback(request) {
     
     return new Response('Conteúdo não disponível offline', { status: 503 });
   }
+}
+
+/**
+ * Verificar se é uma rota autenticada (NUNCA cachear)
+ */
+function isAuthenticatedRoute(pathname) {
+  return AUTHENTICATED_ROUTES.some(route => {
+    // Match exato ou começa com a rota
+    return pathname === route || pathname.startsWith(route);
+  });
 }
 
 /**
