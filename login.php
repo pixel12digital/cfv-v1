@@ -1025,7 +1025,8 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
                     <label for="senha" class="form-label">Senha</label>
                                 <input type="password" 
                                        id="senha" 
-                                       name="senha" 
+                                       name="senha"
+                                       autocomplete="current-password" 
                            class="form-control" 
                                        placeholder="Sua senha"
                            required>
