@@ -3,6 +3,9 @@
  * Registra Service Worker e gerencia atualizações
  */
 
+// Log imediato para garantir que o arquivo está sendo carregado
+console.log('[PWA] 📦 pwa-register.js carregado');
+
 class PWAManager {
     constructor() {
         this.registration = null;

@@ -856,28 +856,61 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     
     <!-- Script para forçar dark mode se detectado -->
     <script>
+        // Log imediato para garantir que o script está sendo executado
+        console.log('[Login Dark Mode] 🔍 Script de diagnóstico carregado');
+        
         (function() {
-            // Detectar dark mode imediatamente
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            console.log('[Login Dark Mode] prefers-color-scheme: dark =', prefersDark);
-            
-            if (prefersDark) {
-                // Adicionar classe ao body para garantir que dark mode seja aplicado
-                document.documentElement.classList.add('dark-mode');
-                document.body.classList.add('dark-mode');
-                console.log('[Login Dark Mode] ✅ Dark mode detectado - classes adicionadas');
+            try {
+                console.log('[Login Dark Mode] 🔍 Iniciando detecção de dark mode...');
                 
-                // Verificar se CSS está sendo aplicado
-                setTimeout(() => {
-                    const testInput = document.querySelector('.form-control');
-                    if (testInput) {
-                        const computedStyle = window.getComputedStyle(testInput);
-                        console.log('[Login Dark Mode] Input background:', computedStyle.backgroundColor);
-                        console.log('[Login Dark Mode] Input color:', computedStyle.color);
+                // Detectar dark mode imediatamente
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                console.log('[Login Dark Mode] 📱 prefers-color-scheme: dark =', prefersDark);
+                console.log('[Login Dark Mode] 📱 User Agent:', navigator.userAgent);
+                
+                if (prefersDark) {
+                    console.log('[Login Dark Mode] ✅ DARK MODE DETECTADO - Aplicando estilos...');
+                    
+                    // Adicionar classe ao body para garantir que dark mode seja aplicado
+                    if (document.documentElement) {
+                        document.documentElement.classList.add('dark-mode');
+                        console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <html>');
                     }
-                }, 100);
-            } else {
-                console.log('[Login Dark Mode] ⚠️ Dark mode NÃO detectado - dispositivo está em modo claro');
+                    
+                    if (document.body) {
+                        document.body.classList.add('dark-mode');
+                        console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <body>');
+                    } else {
+                        // Se body ainda não existe, aguardar
+                        document.addEventListener('DOMContentLoaded', function() {
+                            document.body.classList.add('dark-mode');
+                            console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <body> (após DOMContentLoaded)');
+                        });
+                    }
+                    
+                    // Verificar se CSS está sendo aplicado
+                    setTimeout(() => {
+                        const testInput = document.querySelector('.form-control');
+                        if (testInput) {
+                            const computedStyle = window.getComputedStyle(testInput);
+                            console.log('[Login Dark Mode] 🎨 Input background computado:', computedStyle.backgroundColor);
+                            console.log('[Login Dark Mode] 🎨 Input color computado:', computedStyle.color);
+                            console.log('[Login Dark Mode] 🎨 Input border computado:', computedStyle.borderColor);
+                            
+                            // Verificar placeholder
+                            const placeholderStyle = window.getComputedStyle(testInput, '::placeholder');
+                            console.log('[Login Dark Mode] 🎨 Placeholder color:', placeholderStyle.color);
+                        } else {
+                            console.warn('[Login Dark Mode] ⚠️ Input .form-control não encontrado');
+                        }
+                    }, 500);
+                } else {
+                    console.log('[Login Dark Mode] ⚠️ DARK MODE NÃO DETECTADO');
+                    console.log('[Login Dark Mode] 💡 Dispositivo está em modo claro');
+                    console.log('[Login Dark Mode] 💡 Para testar dark mode, ative o tema escuro nas configurações do dispositivo');
+                }
+            } catch (error) {
+                console.error('[Login Dark Mode] ❌ ERRO no script de diagnóstico:', error);
             }
         })();
     </script>
