@@ -203,17 +203,31 @@ class PWAManager {
     }
     
     setupUpdateEvents() {
-        // Verificar se há atualização disponível
+        // Verificar periodicamente por atualizações (a cada 1 hora)
+        setInterval(() => {
+            if (this.registration) {
+                this.registration.update().catch(err => {
+                    console.warn('[PWA] Erro ao verificar atualizações:', err);
+                });
+            }
+        }, 3600000); // 1 hora
+        
+        // Verificar se há atualização disponível imediatamente
         if (this.registration && this.registration.waiting) {
             this.updateAvailable = true;
-            this.showUpdateBanner();
+            // Aguardar um pouco antes de mostrar (para não atrapalhar o carregamento)
+            setTimeout(() => {
+                this.showUpdateBanner();
+            }, 2000);
         }
         
         // Escutar mensagens do Service Worker
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
                 this.updateAvailable = true;
-                this.showUpdateBanner();
+                setTimeout(() => {
+                    this.showUpdateBanner();
+                }, 2000);
             }
         });
     }
@@ -221,12 +235,18 @@ class PWAManager {
     handleUpdateFound() {
         const newWorker = this.registration.installing;
         
+        if (!newWorker) return;
+        
         newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
                     // Nova versão disponível
                     this.updateAvailable = true;
-                    this.showUpdateBanner();
+                    console.log('[PWA] Nova versão instalada e pronta para atualização');
+                    // Aguardar um pouco antes de mostrar
+                    setTimeout(() => {
+                        this.showUpdateBanner();
+                    }, 2000);
                 } else {
                     // Primeira instalação
                     console.log('[PWA] Service Worker instalado pela primeira vez');
@@ -249,28 +269,185 @@ class PWAManager {
     }
     
     showUpdateBanner() {
-        // Criar banner de atualização
-        const banner = this.createBanner({
-            type: 'update',
-            title: 'Nova Versão Disponível',
-            message: 'Uma nova versão do sistema está disponível com melhorias e correções.',
-            buttonText: 'Atualizar',
-            buttonAction: () => this.updateApp()
-        });
+        // Verificar se já existe um banner
+        if (document.getElementById('pwa-update-banner')) {
+            console.log('[PWA] Banner de atualização já existe');
+            return;
+        }
+        
+        console.log('[PWA] Mostrando banner de atualização');
+        
+        // Adicionar estilos se não existirem
+        this.addUpdateBannerStyles();
+        
+        // Criar banner
+        const banner = document.createElement('div');
+        banner.id = 'pwa-update-banner';
+        banner.className = 'pwa-update-banner';
+        banner.innerHTML = `
+            <div class="pwa-update-banner-content">
+                <div class="pwa-update-banner-icon">🔄</div>
+                <div class="pwa-update-banner-text">
+                    <h4>Nova Versão Disponível</h4>
+                    <p>Atualizações e melhorias foram aplicadas. Atualize agora para ter a melhor experiência.</p>
+                </div>
+                <div class="pwa-update-banner-actions">
+                    <button class="pwa-update-btn pwa-update-btn-primary" onclick="window.pwaManager.updateApp()">
+                        Atualizar Agora
+                    </button>
+                    <button class="pwa-update-btn pwa-update-btn-secondary" onclick="window.pwaManager.hideUpdateBanner()">
+                        Depois
+                    </button>
+                </div>
+            </div>
+        `;
         
         document.body.appendChild(banner);
+        
+        // Animação de entrada
+        setTimeout(() => {
+            banner.classList.add('pwa-update-banner-show');
+        }, 100);
     }
     
-    createBanner(options) {
-        // DESABILITADO: Banner removido completamente
-        // Não criar banner - apenas retornar null
-        console.log('[PWA] createBanner() chamado mas desabilitado - banner não será criado');
-        return null;
+    hideUpdateBanner() {
+        const banner = document.getElementById('pwa-update-banner');
+        if (banner) {
+            banner.classList.remove('pwa-update-banner-show');
+            setTimeout(() => {
+                banner.remove();
+            }, 300);
+        }
+    }
+    
+    addUpdateBannerStyles() {
+        if (document.getElementById('pwa-update-banner-styles')) return;
         
-        // Código original comentado:
-        // const banner = document.createElement('div');
-        // banner.className = `pwa-banner pwa-banner-${options.type}`;
-        // ... resto do código comentado
+        const styles = document.createElement('style');
+        styles.id = 'pwa-update-banner-styles';
+        styles.textContent = `
+            .pwa-update-banner {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                max-width: 420px;
+                background: var(--theme-card-bg, #ffffff);
+                color: var(--theme-text, #1e293b);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                z-index: 10000;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                border: 1px solid var(--theme-border, #e2e8f0);
+            }
+            
+            .pwa-update-banner-show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            
+            .pwa-update-banner-content {
+                display: flex;
+                flex-direction: column;
+                padding: 20px;
+                gap: 16px;
+            }
+            
+            .pwa-update-banner-icon {
+                font-size: 32px;
+                text-align: center;
+                line-height: 1;
+            }
+            
+            .pwa-update-banner-text {
+                text-align: center;
+            }
+            
+            .pwa-update-banner-text h4 {
+                margin: 0 0 8px 0;
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--theme-text, #1e293b);
+            }
+            
+            .pwa-update-banner-text p {
+                margin: 0;
+                font-size: 14px;
+                color: var(--theme-text-muted, #64748b);
+                line-height: 1.5;
+            }
+            
+            .pwa-update-banner-actions {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+            
+            .pwa-update-btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex: 1;
+            }
+            
+            .pwa-update-btn-primary {
+                background: var(--theme-primary, #10b981);
+                color: white;
+            }
+            
+            .pwa-update-btn-primary:hover {
+                background: var(--theme-primary-hover, #059669);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            }
+            
+            .pwa-update-btn-secondary {
+                background: var(--theme-bg-secondary, #f8fafc);
+                color: var(--theme-text, #1e293b);
+                border: 1px solid var(--theme-border, #e2e8f0);
+            }
+            
+            .pwa-update-btn-secondary:hover {
+                background: var(--theme-bg-tertiary, #f1f5f9);
+            }
+            
+            @media (prefers-color-scheme: dark) {
+                .pwa-update-banner {
+                    background: var(--theme-card-bg, #1e293b);
+                    color: var(--theme-text, #f1f5f9);
+                    border-color: var(--theme-border, #334155);
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+                }
+                
+                .pwa-update-banner-text h4 {
+                    color: var(--theme-text, #f1f5f9);
+                }
+                
+                .pwa-update-banner-text p {
+                    color: var(--theme-text-muted, #94a3b8);
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .pwa-update-banner {
+                    bottom: 10px;
+                    right: 10px;
+                    left: 10px;
+                    max-width: none;
+                }
+                
+                .pwa-update-banner-actions {
+                    flex-direction: column;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
     }
     
     addBannerStyles() {
@@ -430,22 +607,43 @@ class PWAManager {
     }
     
     async updateApp() {
-        if (!this.registration || !this.registration.waiting) {
-            console.warn('[PWA] Nenhuma atualização disponível');
+        if (!this.registration) {
+            console.warn('[PWA] Service Worker não registrado');
             return;
         }
         
         try {
             console.log('[PWA] Aplicando atualização...');
             
-            // Enviar mensagem para o Service Worker
-            this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            // Esconder banner
+            this.hideUpdateBanner();
             
-            // Recarregar a página
-            window.location.reload();
+            // Se há um SW waiting, enviar mensagem para skipWaiting
+            if (this.registration.waiting) {
+                console.log('[PWA] Enviando SKIP_WAITING para SW waiting...');
+                this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                
+                // Aguardar um pouco antes de recarregar
+                setTimeout(() => {
+                    console.log('[PWA] Recarregando página para aplicar atualização...');
+                    window.location.reload();
+                }, 500);
+            } else {
+                // Forçar verificação de atualização
+                console.log('[PWA] Forçando verificação de atualização...');
+                await this.registration.update();
+                
+                // Se após update ainda não há waiting, recarregar mesmo assim
+                if (!this.registration.waiting) {
+                    console.log('[PWA] Recarregando página para garantir atualização...');
+                    window.location.reload();
+                }
+            }
             
         } catch (error) {
             console.error('[PWA] Erro durante atualização:', error);
+            // Mesmo com erro, tentar recarregar
+            window.location.reload();
         }
     }
     
@@ -732,10 +930,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const isInstrutorArea = path.includes('/instrutor/');
     const isLoginPage = path.includes('/login.php') || path === '/';
     
-    // NÃO inicializar na página de login - o install-footer.js já cuida disso
-    // Isso evita mostrar dois prompts de instalação
-    if (isAdminArea || isInstrutorArea) {
-        window.pwaManager = new PWAManager();
+    // Inicializar em todas as áreas (incluindo login para notificações de atualização)
+    // O sistema de instalação do login é gerenciado pelo install-footer.js separadamente
+    if (isAdminArea || isInstrutorArea || isLoginPage) {
+        // Se já existe, não criar novamente
+        if (!window.pwaManager) {
+            window.pwaManager = new PWAManager();
+        }
         
         // Debug: mostrar estado das escolhas do usuário
         if (localStorage.getItem('pwa-install-user-choice')) {
@@ -744,8 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const expiry = new Date(parseInt(timestamp));
             console.log(`[PWA] Estado anterior: ${choice}, expira em: ${expiry.toLocaleString()}`);
         }
-    } else if (isLoginPage) {
-        console.log('[PWA] Página de login detectada - PWAManager não será inicializado (install-footer.js cuida da instalação)');
     }
 });
 

@@ -308,10 +308,10 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/icon-192.png">
     
     <!-- Theme Tokens (deve vir primeiro) -->
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-tokens.css'); ?>">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-tokens.css'); ?>?v=<?php echo filemtime(__DIR__ . '/assets/css/theme-tokens.css'); ?>">
     
     <!-- Theme Overrides Global (dark mode fixes) -->
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-overrides.css'); ?>">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-overrides.css'); ?>?v=<?php echo filemtime(__DIR__ . '/assets/css/theme-overrides.css'); ?>">
     
     <!-- Script para atualizar theme-color dinamicamente (iOS/Android) -->
     <script>
@@ -748,6 +748,46 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             outline: 2px solid rgba(255, 255, 255, 0.8);
             outline-offset: 2px;
             border-radius: 2px;
+        }
+    </style>
+    
+    <!-- CSS adicional para garantir dark mode (deve vir depois do style inline) -->
+    <style id="login-dark-mode-fix">
+        @media (prefers-color-scheme: dark) {
+            /* Forçar placeholders legíveis */
+            .form-control::placeholder,
+            input.form-control::placeholder,
+            input[type="email"]::placeholder,
+            input[type="password"]::placeholder {
+                color: #94a3b8 !important;
+                opacity: 1 !important;
+            }
+            
+            /* Forçar link "Esqueci minha senha" visível */
+            .forgot-password,
+            a.forgot-password,
+            .link-theme {
+                color: #60a5fa !important;
+            }
+            
+            .forgot-password:hover,
+            a.forgot-password:hover,
+            .link-theme:hover {
+                color: #93c5fd !important;
+            }
+            
+            /* Forçar inputs com contraste */
+            .form-control {
+                background-color: #1e293b !important;
+                color: #f1f5f9 !important;
+                border-color: #475569 !important;
+            }
+            
+            .form-control:focus {
+                background-color: #1e293b !important;
+                color: #f1f5f9 !important;
+                border-color: #60a5fa !important;
+            }
         }
     </style>
 </head>
