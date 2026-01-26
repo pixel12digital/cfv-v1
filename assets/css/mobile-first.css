@@ -895,3 +895,28 @@ input[type="url"] {
         border: 2px solid #000;
     }
 }
+
+/* Dark mode support - Correção de contraste para textos em cards de aulas */
+@media (prefers-color-scheme: dark) {
+    /* Horários e datas dentro de cards de aulas - melhorar contraste */
+    /* Prioridade alta para elementos específicos de aulas */
+    .aula-item .text-muted,
+    .aula-item small.text-muted,
+    .card-mobile .aula-item .text-muted,
+    .card-mobile .aula-item small.text-muted,
+    .aula-list .text-muted,
+    .aula-list small.text-muted {
+        color: #cbd5e1 !important; /* Cinza claro para melhor contraste em fundo escuro */
+    }
+    
+    /* Classe específica para horários de aulas - sobrescreve cor fixa */
+    .aula-hora {
+        color: #cbd5e1 !important; /* Sobrescreve a cor fixa #64748b do modo claro */
+    }
+    
+    /* Textos secundários gerais em cards mobile (exceto badges e botões) */
+    /* Nota: regras acima têm prioridade por serem mais específicas */
+    .card-mobile .card-body .text-muted:not(.badge):not(.btn) {
+        color: #94a3b8 !important; /* Cinza médio-claro para textos secundários */
+    }
+}
