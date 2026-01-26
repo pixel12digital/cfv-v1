@@ -47,14 +47,23 @@
        BOTÕES OUTLINE - CRÍTICO (Tela 3: Admin)
        ===================================================== */
     
+    /* Botões outline - FORÇAR azul claro para contraste */
     .btn-outline-primary,
     .btn-outline-secondary,
     .btn-outline-info,
     .btn-outline-warning,
     .btn-outline-success,
-    .btn-outline-danger {
-        border-color: var(--theme-link, #60a5fa) !important;
-        color: var(--theme-link, #60a5fa) !important;
+    .btn-outline-danger,
+    a.btn-outline-primary,
+    a.btn-outline-secondary,
+    a.btn-outline-info,
+    a.btn-outline-warning,
+    a.btn-outline-success,
+    a.btn-outline-danger,
+    button.btn-outline-primary,
+    button.btn-outline-secondary {
+        border-color: #60a5fa !important;
+        color: #60a5fa !important;
         background-color: transparent !important;
     }
     
@@ -63,10 +72,42 @@
     .btn-outline-info:hover,
     .btn-outline-warning:hover,
     .btn-outline-success:hover,
-    .btn-outline-danger:hover {
-        background-color: var(--theme-link, #60a5fa) !important;
-        color: var(--theme-text-inverse, #0f172a) !important;
-        border-color: var(--theme-link, #60a5fa) !important;
+    .btn-outline-danger:hover,
+    a.btn-outline-primary:hover,
+    a.btn-outline-secondary:hover,
+    a.btn-outline-info:hover,
+    a.btn-outline-warning:hover,
+    a.btn-outline-success:hover,
+    a.btn-outline-danger:hover,
+    button.btn-outline-primary:hover,
+    button.btn-outline-secondary:hover {
+        background-color: #60a5fa !important;
+        color: #0f172a !important;
+        border-color: #60a5fa !important;
+    }
+    
+    /* Forçar texto dos botões outline */
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .btn-outline-info,
+    .btn-outline-warning,
+    .btn-outline-success,
+    .btn-outline-danger,
+    a.btn-outline-primary,
+    a.btn-outline-secondary {
+        color: #60a5fa !important;
+    }
+    
+    /* REGRA GENÉRICA: Qualquer botão outline em dark mode deve ter azul claro */
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) {
+        border-color: #60a5fa !important;
+        color: #60a5fa !important;
+    }
+    
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) i,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) .fas,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) .fa {
+        color: #60a5fa !important;
     }
     
     /* Ícones dentro de botões outline - REMOVIDO inherit, usar regras específicas abaixo */
@@ -335,7 +376,7 @@
        CORREÇÃO CRÍTICA: ÍCONES EM DARK MODE
        ===================================================== */
     
-    /* Ícones em botões outline - devem ser claros */
+    /* Ícones em botões outline - FORÇAR azul claro */
     .btn-outline-primary i,
     .btn-outline-secondary i,
     .btn-outline-info i,
@@ -347,8 +388,16 @@
     .btn-outline-info .fas,
     .btn-outline-warning .fas,
     .btn-outline-success .fas,
-    .btn-outline-danger .fas {
-        color: var(--theme-link, #60a5fa) !important;
+    .btn-outline-danger .fas,
+    .btn-outline-primary .fa,
+    .btn-outline-secondary .fa,
+    a.btn-outline-primary i,
+    a.btn-outline-secondary i,
+    a.btn-outline-primary .fas,
+    a.btn-outline-secondary .fas,
+    button.btn-outline-primary i,
+    button.btn-outline-secondary i {
+        color: #60a5fa !important;
     }
     
     /* Ícones em cards escuros - devem ser brancos ou quase brancos */
@@ -394,33 +443,17 @@
         color: #60a5fa !important;
     }
     
-    /* Ícones em botões outline - garantir que sejam claros */
-    .btn-outline-primary i,
-    .btn-outline-secondary i,
-    .btn-outline-info i,
-    .btn-outline-warning i,
-    .btn-outline-success i,
-    .btn-outline-danger i,
-    .btn-outline-primary .fas,
-    .btn-outline-secondary .fas,
-    .btn-outline-info .fas,
-    .btn-outline-warning .fas,
-    .btn-outline-success .fas,
-    .btn-outline-danger .fas,
-    .btn-outline-primary .fa,
-    .btn-outline-secondary .fa {
-        color: #60a5fa !important;
-    }
-    
-    /* Ícones em botões outline hover - ainda mais claro */
+    /* Ícones em botões outline hover - texto escuro sobre fundo azul claro */
     .btn-outline-primary:hover i,
     .btn-outline-secondary:hover i,
     .btn-outline-info:hover i,
     .btn-outline-warning:hover i,
     .btn-outline-success:hover i,
-    .btn-outline-danger:hover i {
+    .btn-outline-danger:hover i,
+    a.btn-outline-primary:hover i,
+    a.btn-outline-secondary:hover i,
+    button.btn-outline-primary:hover i {
         color: #0f172a !important;
-        /* Texto escuro sobre fundo azul claro no hover */
     }
     
     /* =====================================================
