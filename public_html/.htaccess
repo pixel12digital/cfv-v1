@@ -19,6 +19,13 @@ RewriteRule ^pwa-manifest\.php$ - [L]
 # 2.2) Permitir acesso direto ao sw.js e sw.php (Service Worker PWA)
 RewriteRule ^sw\.(js|php)$ - [L]
 
+# Headers para Service Worker (sw.js)
+<FilesMatch "^sw\.js$">
+    Header set Content-Type "application/javascript; charset=utf-8"
+    Header set Service-Worker-Allowed "/"
+    Header set Cache-Control "public, max-age=3600"
+</FilesMatch>
+
 # 2.3) Permitir acesso direto aos tools (scripts de diagnóstico)
 RewriteRule ^tools/ - [L]
 
