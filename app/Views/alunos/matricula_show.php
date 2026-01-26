@@ -577,11 +577,13 @@
                                   $enrollment['billing_status'] === 'generated' &&
                                   !in_array($enrollment['gateway_last_status'] ?? '', ['canceled', 'expired', 'error']);
                 
-                // Ocultar botões EFI quando payment_method = 'cartao'
+                // Ocultar botões EFI quando payment_method = 'cartao' ou 'pix' (pagamentos locais/manuais)
                 $isCartao = ($enrollment['payment_method'] ?? '') === 'cartao';
+                $isPix = ($enrollment['payment_method'] ?? '') === 'pix';
+                $isLocalPayment = $isCartao || $isPix;
                 ?>
                 
-                <?php if (!$isCartao): ?>
+                <?php if (!$isLocalPayment): ?>
                 <!-- Botão Gerar Cobrança: aparece se tem parcelas, saldo > 0, e não tem cobrança ativa -->
                 <?php if (!empty($enrollment['installments']) && $hasOutstanding && !$hasActiveCharge && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error')): 
                 ?>
@@ -605,11 +607,27 @@
                 <?php endif; ?>
                 
                 <?php 
-                // Botão Confirmar Pagamento: aparece apenas para cartão com saldo devedor
-                if ($isCartao && $hasOutstanding && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error' || ($enrollment['gateway_provider'] ?? '') === 'local')): 
+                // Botão Ver Dados do PIX: aparece apenas para PIX com saldo devedor
+                if ($isPix && $hasOutstanding): 
+                    $pixConfigurado = !empty($cfc['pix_chave']) && !empty($cfc['pix_titular']);
                 ?>
-                <button type="button" class="btn btn-success" id="btnConfirmarPagamento" onclick="confirmarPagamentoCartao()" style="margin-left: 0.5rem;">
-                    ✅ Confirmar Pagamento
+                <?php if ($pixConfigurado): ?>
+                <button type="button" class="btn btn-info" id="btnVerDadosPix" onclick="verDadosPix()" style="margin-left: 0.5rem;">
+                    Ver Dados do PIX
+                </button>
+                <?php else: ?>
+                <span class="btn btn-outline" style="margin-left: 0.5rem; cursor: default;" title="PIX não configurado. Configure nas Configurações do CFC.">
+                    PIX não configurado
+                </span>
+                <?php endif; ?>
+                <?php endif; ?>
+                
+                <?php 
+                // Botão Confirmar Pagamento: aparece para cartão ou PIX com saldo devedor
+                if (($isCartao || $isPix) && $hasOutstanding && ($enrollment['billing_status'] === 'draft' || $enrollment['billing_status'] === 'ready' || $enrollment['billing_status'] === 'error' || ($enrollment['gateway_provider'] ?? '') === 'local')): 
+                ?>
+                <button type="button" class="btn btn-success" id="btnConfirmarPagamento" onclick="<?= $isPix ? 'confirmarPagamentoPix()' : 'confirmarPagamentoCartao()' ?>" style="margin-left: 0.5rem;">
+                    Confirmar Pagamento
                 </button>
                 <?php endif; ?>
                 
@@ -1231,7 +1249,7 @@ function confirmarPagamentoCartao() {
     })
     .then(data => {
         if (data.ok) {
-            alert('✅ Pagamento confirmado com sucesso!\n\nO financeiro foi atualizado imediatamente.');
+            alert('Pagamento confirmado com sucesso!\n\nO financeiro foi atualizado imediatamente.');
             // Recarregar página para atualizar status
             window.location.reload();
         } else {
@@ -1245,7 +1263,7 @@ function confirmarPagamentoCartao() {
         
         if (btn) {
             btn.disabled = false;
-            btn.textContent = '✅ Confirmar Pagamento';
+            btn.textContent = 'Confirmar Pagamento';
         }
     });
 }
@@ -1331,5 +1349,203 @@ function excluirMatricula() {
     
     document.body.appendChild(form);
     form.submit();
+}
+
+// ============================================
+// FUNÇÕES PIX LOCAL/MANUAL
+// ============================================
+
+function verDadosPix() {
+    const pixData = {
+        banco: <?= json_encode($cfc['pix_banco'] ?? '') ?>,
+        titular: <?= json_encode($cfc['pix_titular'] ?? '') ?>,
+        chave: <?= json_encode($cfc['pix_chave'] ?? '') ?>,
+        observacao: <?= json_encode($cfc['pix_observacao'] ?? '') ?>
+    };
+    
+    // Verificar se dados estão configurados
+    if (!pixData.chave || !pixData.titular) {
+        alert('Dados do PIX não estão configurados.\n\nPor favor, configure os dados do PIX nas Configurações do CFC antes de usar esta funcionalidade.');
+        return;
+    }
+    
+    // Criar conteúdo do modal
+    let modalContent = '<div style="padding: 1rem;">';
+    modalContent += '<h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--color-primary);">Dados do PIX</h3>';
+    
+    if (pixData.banco) {
+        modalContent += '<div style="margin-bottom: 1rem;"><strong>Banco/Instituição:</strong><br>' + escapeHtml(pixData.banco) + '</div>';
+    }
+    
+    modalContent += '<div style="margin-bottom: 1rem;"><strong>Titular:</strong><br>' + escapeHtml(pixData.titular) + '</div>';
+    
+    modalContent += '<div style="margin-bottom: 1rem;"><strong>Chave PIX:</strong><br>';
+    modalContent += '<div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">';
+    modalContent += '<code style="flex: 1; padding: 0.5rem; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--border-radius); font-size: 0.9rem; word-break: break-all;">' + escapeHtml(pixData.chave) + '</code>';
+    modalContent += '<button onclick="copiarChavePix(\'' + escapeHtml(pixData.chave) + '\')" class="btn btn-outline" style="white-space: nowrap;">Copiar</button>';
+    modalContent += '</div></div>';
+    
+    if (pixData.observacao) {
+        modalContent += '<div style="margin-bottom: 1rem;"><strong>Observação:</strong><br><small style="color: var(--color-text-muted);">' + escapeHtml(pixData.observacao) + '</small></div>';
+    }
+    
+    modalContent += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">';
+    modalContent += '<small style="color: var(--color-text-muted);">Após receber o pagamento via PIX, clique em "Confirmar Pagamento" para dar baixa manual.</small>';
+    modalContent += '</div>';
+    
+    modalContent += '</div>';
+    
+    // Criar e exibir modal simples
+    const modal = document.createElement('div');
+    modal.id = 'modalPix';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 1rem;';
+    modal.innerHTML = `
+        <div style="background: white; border-radius: var(--border-radius); max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            ${modalContent}
+            <div style="padding: 1rem; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button onclick="fecharModalPix()" class="btn btn-outline">Fechar</button>
+                <a href="<?= base_path('configuracoes/cfc') ?>" class="btn btn-secondary">Configurar PIX</a>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Fechar ao clicar fora
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            fecharModalPix();
+        }
+    });
+}
+
+function fecharModalPix() {
+    const modal = document.getElementById('modalPix');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function copiarChavePix(chave) {
+    navigator.clipboard.writeText(chave).then(function() {
+        alert('Chave PIX copiada para a área de transferência!');
+    }).catch(function() {
+        // Fallback para navegadores antigos
+        const textarea = document.createElement('textarea');
+        textarea.value = chave;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert('Chave PIX copiada para a área de transferência!');
+        } catch (e) {
+            alert('Erro ao copiar. Por favor, copie manualmente.');
+        }
+        document.body.removeChild(textarea);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function confirmarPagamentoPix() {
+    const enrollmentId = <?= $enrollment['id'] ?>;
+    const outstandingAmount = <?= $enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0 ?>;
+    
+    // Validações
+    if (outstandingAmount <= 0) {
+        alert('Não há saldo devedor para confirmar pagamento.');
+        return;
+    }
+    
+    // Confirmação final
+    const confirmMsg = `Confirmar pagamento de R$ ${outstandingAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})} via PIX?\n\n` +
+                      `Este pagamento foi realizado localmente e será registrado imediatamente.`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    // Desabilitar botão durante processamento
+    const btn = document.getElementById('btnConfirmarPagamento');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Confirmando...';
+    }
+    
+    // Preparar dados
+    const payload = {
+        enrollment_id: enrollmentId,
+        payment_method: 'pix',
+        installments: 1, // PIX sempre é à vista
+        confirm_amount: outstandingAmount
+    };
+    
+    // Chamar endpoint de baixa manual
+    fetch('<?= base_path('api/payments/mark-paid') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const raw = await response.text();
+        let data;
+        
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            console.error('Resposta não é JSON válido:', raw);
+            console.error('Erro ao parsear:', e);
+            throw new Error('Servidor retornou resposta inválida. Status: ' + response.status + '. Verifique o console para mais detalhes.');
+        }
+        
+        if (!response.ok) {
+            // Tentar extrair mensagem de erro
+            const errorMsg = data?.message || data?.error || `Erro HTTP ${response.status}`;
+            
+            // Mensagens específicas para erros comuns
+            if (response.status === 400) {
+                throw new Error(errorMsg);
+            } else if (response.status === 403) {
+                throw new Error('Você não tem permissão para realizar esta ação.');
+            } else if (response.status === 404) {
+                throw new Error('Matrícula não encontrada.');
+            } else if (response.status === 500) {
+                const details = data?.details ? `\n\nDetalhes: ${data.details.error || ''}` : '';
+                throw new Error('Erro interno do servidor. Por favor, tente novamente.' + details);
+            }
+            
+            throw new Error(`Erro ${response.status}: ${errorMsg}`);
+        }
+        
+        return data;
+    })
+    .then(data => {
+        if (data.ok) {
+            alert('Pagamento confirmado com sucesso!\n\nO financeiro foi atualizado imediatamente.');
+            // Recarregar página para atualizar status
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'Erro ao confirmar pagamento');
+        }
+    })
+    .catch(error => {
+        console.error('Erro completo:', error);
+        console.error('Stack:', error.stack);
+        alert('Erro ao confirmar pagamento: ' + (error.message || 'Erro desconhecido') + '\n\nVerifique o console para mais detalhes.');
+        
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Confirmar Pagamento';
+        }
+    });
 }
 </script>

@@ -88,6 +88,18 @@ class EfiPaymentService
             ];
         }
 
+        // BLOQUEAR EFI para PIX (fail-safe) - PIX agora é pagamento local/manual
+        if ($paymentMethod === 'pix') {
+            $this->efiLog('WARN', 'createCharge: Tentativa de gerar cobrança EFI para PIX bloqueada', [
+                'enrollment_id' => $enrollment['id'] ?? null,
+                'payment_method' => $paymentMethod
+            ]);
+            return [
+                'ok' => false,
+                'message' => 'PIX é pagamento local/manual. Use a opção "Ver dados do PIX" e "Confirmar Pagamento" para dar baixa manual.'
+            ];
+        }
+
         // Validar saldo devedor
         $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0);
         if ($outstandingAmount <= 0) {

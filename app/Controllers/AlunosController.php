@@ -687,9 +687,14 @@ class AlunosController extends Controller
             redirect(base_url('alunos'));
         }
 
+        // Buscar dados do CFC (incluindo configurações PIX)
+        $cfcModel = new \App\Models\Cfc();
+        $cfc = $cfcModel->getCurrent();
+
         $data = [
             'pageTitle' => 'Matrícula #' . $id,
-            'enrollment' => $enrollment
+            'enrollment' => $enrollment,
+            'cfc' => $cfc
         ];
         $this->view('alunos/matricula_show', $data);
     }

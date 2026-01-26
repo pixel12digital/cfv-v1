@@ -820,16 +820,22 @@ class PaymentsController extends Controller
                 exit;
             }
 
-            if ($paymentMethod !== 'cartao') {
+            if ($paymentMethod !== 'cartao' && $paymentMethod !== 'pix') {
                 http_response_code(400);
-                echo json_encode(['ok' => false, 'message' => 'Baixa manual só é permitida para cartão de crédito'], JSON_UNESCAPED_UNICODE);
+                echo json_encode(['ok' => false, 'message' => 'Baixa manual só é permitida para cartão de crédito ou PIX'], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
-            if (!$installments || $installments < 1 || $installments > 24) {
-                http_response_code(400);
-                echo json_encode(['ok' => false, 'message' => 'Número de parcelas deve ser entre 1 e 24 para cartão'], JSON_UNESCAPED_UNICODE);
-                exit;
+            // Validação de parcelas (só para cartão)
+            if ($paymentMethod === 'cartao') {
+                if (!$installments || $installments < 1 || $installments > 24) {
+                    http_response_code(400);
+                    echo json_encode(['ok' => false, 'message' => 'Número de parcelas deve ser entre 1 e 24 para cartão'], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+            } else {
+                // PIX sempre é à vista (installments = 1)
+                $installments = 1;
             }
 
             // Buscar matrícula com detalhes
@@ -848,10 +854,11 @@ class PaymentsController extends Controller
                 exit;
             }
 
-            // Validar que payment_method da matrícula é cartão
-            if ($enrollment['payment_method'] !== 'cartao') {
+            // Validar que payment_method da matrícula corresponde ao informado
+            if ($enrollment['payment_method'] !== $paymentMethod) {
                 http_response_code(400);
-                echo json_encode(['ok' => false, 'message' => 'Esta matrícula não está configurada para pagamento com cartão'], JSON_UNESCAPED_UNICODE);
+                $methodName = $paymentMethod === 'pix' ? 'PIX' : 'cartão';
+                echo json_encode(['ok' => false, 'message' => "Esta matrícula não está configurada para pagamento com {$methodName}"], JSON_UNESCAPED_UNICODE);
                 exit;
             }
 
@@ -890,7 +897,7 @@ class PaymentsController extends Controller
                 $stmt = $db->prepare("
                     UPDATE enrollments 
                     SET 
-                        payment_method = 'cartao',
+                        payment_method = ?,
                         installments = ?,
                         outstanding_amount = 0,
                         entry_amount = ?,
@@ -907,6 +914,7 @@ class PaymentsController extends Controller
                 ");
                 
                 $stmt->execute([
+                    $paymentMethod, // 'cartao' ou 'pix'
                     $installments,
                     $finalPrice, // entry_amount = final_price para evitar recálculo
                     $enrollmentId
@@ -917,8 +925,9 @@ class PaymentsController extends Controller
                 
                 // Log de sucesso
                 error_log(sprintf(
-                    "PAYMENTS-MARK-PAID: enrollment_id=%d, installments=%d, amount=%.2f",
+                    "PAYMENTS-MARK-PAID: enrollment_id=%d, payment_method=%s, installments=%d, amount=%.2f",
                     $enrollmentId,
+                    $paymentMethod,
                     $installments,
                     $outstandingAmount
                 ));

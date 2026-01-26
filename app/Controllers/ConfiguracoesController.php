@@ -1311,6 +1311,12 @@ class ConfiguracoesController extends Controller
         $endereco_cidade = trim($_POST['endereco_cidade'] ?? '');
         $endereco_uf = trim($_POST['endereco_uf'] ?? '');
         $endereco_cep = trim($_POST['endereco_cep'] ?? '');
+        
+        // Campos PIX
+        $pix_banco = trim($_POST['pix_banco'] ?? '');
+        $pix_titular = trim($_POST['pix_titular'] ?? '');
+        $pix_chave = trim($_POST['pix_chave'] ?? '');
+        $pix_observacao = trim($_POST['pix_observacao'] ?? '');
 
         // Validações
         if (empty($nome)) {
@@ -1385,6 +1391,20 @@ class ConfiguracoesController extends Controller
         }
         if (isset($_POST['endereco_cep'])) {
             $data['endereco_cep'] = !empty($endereco_cep) ? $endereco_cep : null;
+        }
+        
+        // Campos PIX
+        if (isset($_POST['pix_banco'])) {
+            $data['pix_banco'] = !empty($pix_banco) ? $pix_banco : null;
+        }
+        if (isset($_POST['pix_titular'])) {
+            $data['pix_titular'] = !empty($pix_titular) ? $pix_titular : null;
+        }
+        if (isset($_POST['pix_chave'])) {
+            $data['pix_chave'] = !empty($pix_chave) ? $pix_chave : null;
+        }
+        if (isset($_POST['pix_observacao'])) {
+            $data['pix_observacao'] = !empty($pix_observacao) ? $pix_observacao : null;
         }
 
         // Compatibilidade: atualizar campo endereco (TEXT) apenas se algum campo novo vier preenchido

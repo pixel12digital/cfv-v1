@@ -451,3 +451,84 @@
         </form>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-body">
+        <h2 style="margin-bottom: var(--spacing-md); font-size: 1.25rem;">Configurações PIX</h2>
+        <p class="text-muted" style="margin-bottom: var(--spacing-md);">
+            Configure os dados do PIX do CFC para pagamentos locais/manuais nas matrículas. Estes campos são opcionais e só serão necessários se você usar PIX como forma de pagamento.
+        </p>
+        
+        <form id="salvarPixForm" method="POST" action="<?= base_url('configuracoes/cfc/salvar') ?>">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+
+            <div class="form-group">
+                <label class="form-label" for="pix_banco">Banco/Instituição</label>
+                <input 
+                    type="text" 
+                    name="pix_banco"
+                    id="pix_banco"
+                    class="form-input" 
+                    value="<?= htmlspecialchars($cfc['pix_banco'] ?? '') ?>" 
+                    maxlength="255"
+                    placeholder="Ex: Banco do Brasil, Nubank, etc."
+                >
+                <small class="form-hint">
+                    Nome do banco ou instituição financeira.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="pix_titular">Titular</label>
+                <input 
+                    type="text" 
+                    name="pix_titular"
+                    id="pix_titular"
+                    class="form-input" 
+                    value="<?= htmlspecialchars($cfc['pix_titular'] ?? '') ?>" 
+                    maxlength="255"
+                    placeholder="Nome completo do titular da conta"
+                >
+                <small class="form-hint">
+                    Nome completo do titular da conta PIX.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="pix_chave">Chave PIX</label>
+                <input 
+                    type="text" 
+                    name="pix_chave"
+                    id="pix_chave"
+                    class="form-input" 
+                    value="<?= htmlspecialchars($cfc['pix_chave'] ?? '') ?>" 
+                    maxlength="255"
+                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                >
+                <small class="form-hint">
+                    Chave PIX (CPF, CNPJ, e-mail, telefone ou chave aleatória).
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="pix_observacao">Observação</label>
+                <textarea 
+                    name="pix_observacao"
+                    id="pix_observacao"
+                    class="form-input" 
+                    rows="3"
+                    placeholder="Informações adicionais sobre o PIX (opcional)"
+                ><?= htmlspecialchars($cfc['pix_observacao'] ?? '') ?></textarea>
+                <small class="form-hint">
+                    Observação opcional que será exibida junto com os dados do PIX.
+                </small>
+            </div>
+
+            <div class="form-actions">
+                <button id="salvarPixBtn" type="submit" class="btn btn-primary">
+                    Salvar Configurações PIX
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
