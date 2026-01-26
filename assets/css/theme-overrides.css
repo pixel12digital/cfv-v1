@@ -69,15 +69,7 @@
         border-color: var(--theme-link, #60a5fa) !important;
     }
     
-    /* Ícones dentro de botões outline herdam a cor */
-    .btn-outline-primary i,
-    .btn-outline-secondary i,
-    .btn-outline-info i,
-    .btn-outline-warning i,
-    .btn-outline-success i,
-    .btn-outline-danger i {
-        color: inherit !important;
-    }
+    /* Ícones dentro de botões outline - REMOVIDO inherit, usar regras específicas abaixo */
     
     /* =====================================================
        CARDS COM BACKGROUND HARDCODED
@@ -303,6 +295,293 @@
     .support-info h4,
     .support-info p {
         color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: TEXTOS SECUNDÁRIOS E SEMÂNTICOS
+       ===================================================== */
+    
+    /* Bootstrap text-muted - FORÇAR contraste adequado (WCAG AA) */
+    .text-muted,
+    small.text-muted,
+    .small.text-muted,
+    .text-muted *:not(.btn):not(.badge),
+    small:not(.btn):not(.badge),
+    .small:not(.btn):not(.badge) {
+        color: #cbd5e1 !important;
+        /* #cbd5e1 sobre #1e293b = 5.2:1 (WCAG AA garantido) */
+    }
+    
+    /* Bootstrap text-secondary - FORÇAR contraste adequado */
+    .text-secondary,
+    .text-secondary *:not(.btn):not(.badge) {
+        color: #cbd5e1 !important;
+        /* #cbd5e1 = cinza claro com contraste adequado */
+    }
+    
+    /* Bootstrap text-primary (links) - FORÇAR azul claro legível */
+    .text-primary:not(.btn):not(.badge),
+    a.text-primary:not(.btn),
+    .text-primary *:not(.btn):not(.badge) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .text-primary:hover:not(.btn):not(.badge),
+    a.text-primary:hover:not(.btn) {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ÍCONES EM DARK MODE
+       ===================================================== */
+    
+    /* Ícones em botões outline - devem ser claros */
+    .btn-outline-primary i,
+    .btn-outline-secondary i,
+    .btn-outline-info i,
+    .btn-outline-warning i,
+    .btn-outline-success i,
+    .btn-outline-danger i,
+    .btn-outline-primary .fas,
+    .btn-outline-secondary .fas,
+    .btn-outline-info .fas,
+    .btn-outline-warning .fas,
+    .btn-outline-success .fas,
+    .btn-outline-danger .fas {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    /* Ícones em cards escuros - devem ser brancos ou quase brancos */
+    .card i:not(.btn i):not(.badge i),
+    .card .fas:not(.btn .fas):not(.badge .fas),
+    .card .fa:not(.btn .fa):not(.badge .fa),
+    .aula-item i,
+    .aula-item-mobile i,
+    .aula-card-padronizado i,
+    .card-body i:not(.btn i),
+    .card-header i:not(.btn i) {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Ícones em textos secundários - devem manter contraste */
+    .text-muted i,
+    .text-secondary i,
+    small i,
+    .small i {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Ícones em links - devem usar cor do link */
+    a i:not(.btn i),
+    a .fas:not(.btn .fas),
+    a .fa:not(.btn .fa),
+    .text-primary i:not(.btn i) {
+        color: inherit !important;
+    }
+    
+    /* Ícones em dashboard Admin (Ações Rápidas) */
+    .btn-mobile i,
+    .btn-mobile .fas,
+    .btn-mobile .fa,
+    .btn-outline-primary.btn-mobile i,
+    .btn-outline-secondary.btn-mobile i,
+    .btn-outline-primary.btn-mobile .fas,
+    .btn-outline-secondary.btn-mobile .fas,
+    .btn-outline-info.btn-mobile i,
+    .btn-outline-warning.btn-mobile i,
+    .btn-outline-success.btn-mobile i,
+    .btn-outline-danger.btn-mobile i {
+        color: #60a5fa !important;
+    }
+    
+    /* Ícones em botões outline - garantir que sejam claros */
+    .btn-outline-primary i,
+    .btn-outline-secondary i,
+    .btn-outline-info i,
+    .btn-outline-warning i,
+    .btn-outline-success i,
+    .btn-outline-danger i,
+    .btn-outline-primary .fas,
+    .btn-outline-secondary .fas,
+    .btn-outline-info .fas,
+    .btn-outline-warning .fas,
+    .btn-outline-success .fas,
+    .btn-outline-danger .fas,
+    .btn-outline-primary .fa,
+    .btn-outline-secondary .fa {
+        color: #60a5fa !important;
+    }
+    
+    /* Ícones em botões outline hover - ainda mais claro */
+    .btn-outline-primary:hover i,
+    .btn-outline-secondary:hover i,
+    .btn-outline-info:hover i,
+    .btn-outline-warning:hover i,
+    .btn-outline-success:hover i,
+    .btn-outline-danger:hover i {
+        color: #0f172a !important;
+        /* Texto escuro sobre fundo azul claro no hover */
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: LINKS GLOBAIS
+       ===================================================== */
+    
+    /* Todos os links (exceto botões e badges) devem ser legíveis */
+    a:not(.btn):not(.badge):not(.nav-link):not(.dropdown-item) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    a:not(.btn):not(.badge):not(.nav-link):not(.dropdown-item):hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Links em cards escuros - garantir visibilidade */
+    .card a:not(.btn):not(.badge),
+    .aula-item a:not(.btn):not(.badge),
+    .aula-item-mobile a:not(.btn):not(.badge) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .card a:not(.btn):not(.badge):hover,
+    .aula-item a:not(.btn):not(.badge):hover,
+    .aula-item-mobile a:not(.btn):not(.badge):hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Links visitados - manter legibilidade */
+    a:visited:not(.btn):not(.badge) {
+        color: var(--theme-link-visited, #a78bfa) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: TEXTOS EM CARDS ESCUROS
+       ===================================================== */
+    
+    /* Textos secundários em cards - garantir contraste */
+    .card .text-muted,
+    .card small,
+    .card .small,
+    .card .text-secondary,
+    .aula-item .text-muted,
+    .aula-item-mobile .text-muted,
+    .aula-card-padronizado .text-muted {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Textos principais em cards - garantir contraste */
+    .card p:not(.text-muted):not(.text-secondary),
+    .card span:not(.text-muted):not(.text-secondary):not(.badge),
+    .card div:not(.text-muted):not(.text-secondary),
+    .aula-item p,
+    .aula-item-mobile p,
+    .aula-card-padronizado p {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: BADGES E STATUS
+       ===================================================== */
+    
+    /* Badges em dark mode - garantir contraste */
+    .badge:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-badge-bg, #334155) !important;
+        color: #cbd5e1 !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: CARDS ADMIN E DASHBOARD
+       ===================================================== */
+    
+    /* Cards no admin - garantir fundo escuro */
+    .card-mobile,
+    .card:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        border-color: var(--theme-border, #475569) !important;
+    }
+    
+    /* Headers de cards - garantir contraste */
+    .card-header:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-surface-elevated, #334155) !important;
+        border-bottom-color: var(--theme-border, #475569) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Títulos em cards */
+    .card-title,
+    .card-title h3,
+    .card-title h4,
+    .card-title h5,
+    .card-title h6 {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Body de cards */
+    .card-body {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: BORDAS E SEPARADORES
+       ===================================================== */
+    
+    /* Bordas devem ser visíveis */
+    .card,
+    .border,
+    .border-top,
+    .border-bottom,
+    .border-start,
+    .border-end {
+        border-color: var(--theme-border, #475569) !important;
+    }
+    
+    /* Separadores horizontais */
+    hr {
+        border-color: var(--theme-border, #475569) !important;
+        opacity: 0.5;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ESTADOS HOVER E FOCUS
+       ===================================================== */
+    
+    /* Hover em cards - feedback visual */
+    .card:hover {
+        border-color: var(--theme-border-strong, #64748b) !important;
+    }
+    
+    /* Links com hover - feedback claro */
+    a:not(.btn):not(.badge):hover {
+        text-decoration: underline;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ELEMENTOS ESPECÍFICOS DO ADMIN
+       ===================================================== */
+    
+    /* Ícones em headers de cards */
+    .card-header i,
+    .card-header .fas,
+    .card-header .fa,
+    .card-title i,
+    .card-title .fas {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Textos em listas e tabelas */
+    .list-group-item {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        border-color: var(--theme-border, #475569) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .table {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .table td,
+    .table th {
+        border-color: var(--theme-border, #475569) !important;
     }
 }
 
