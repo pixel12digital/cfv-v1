@@ -1482,8 +1482,8 @@ function confirmarPagamentoPix() {
     const payload = {
         enrollment_id: enrollmentId,
         payment_method: 'pix',
-        installments: 1, // PIX sempre é à vista
-        confirm_amount: outstandingAmount
+        installments: 1 // PIX sempre é à vista
+        // Não enviar confirm_amount para PIX (sempre paga saldo total, evita problemas de precisão)
     };
     
     // Chamar endpoint de baixa manual
