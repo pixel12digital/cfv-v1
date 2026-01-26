@@ -883,42 +883,50 @@ class PaymentsController extends Controller
 
             // Para PIX: buscar conta PIX e criar snapshot
             $pixAccountSnapshot = null;
+            $pixAccount = null; // Inicializar variável
             if ($paymentMethod === 'pix') {
-                $pixAccountModel = new \App\Models\CfcPixAccount();
-                
-                // Se accountId fornecido, usar; senão buscar da matrícula ou padrão
-                if (!$pixAccountId && !empty($enrollment['pix_account_id'])) {
-                    $pixAccountId = $enrollment['pix_account_id'];
-                }
-                
-                // Buscar dados da conta PIX
-                $pixAccount = null;
-                if ($pixAccountId) {
-                    $pixAccount = $pixAccountModel->findByIdAndCfc($pixAccountId, $cfcId);
-                }
-                
-                // Se não encontrou, buscar padrão ou fallback
-                if (!$pixAccount) {
-                    $pixAccount = $pixAccountModel->getPixDataForCfc($cfcId, $pixAccountId);
-                }
-                
-                // Criar snapshot dos dados da conta (imutável para histórico)
-                if ($pixAccount) {
-                    $pixAccountSnapshot = json_encode([
-                        'account_id' => $pixAccount['id'] ?? null,
-                        'label' => $pixAccount['label'] ?? null,
-                        'bank_code' => $pixAccount['bank_code'] ?? null,
-                        'bank_name' => $pixAccount['bank_name'] ?? null,
-                        'holder_name' => $pixAccount['holder_name'] ?? null,
-                        'pix_key' => $pixAccount['pix_key'] ?? null,
-                        'pix_key_type' => $pixAccount['pix_key_type'] ?? null,
-                        'snapshot_at' => date('Y-m-d H:i:s')
-                    ], JSON_UNESCAPED_UNICODE);
+                try {
+                    $pixAccountModel = new \App\Models\CfcPixAccount();
                     
-                    // Se não tinha account_id salvo, salvar agora
-                    if (!$pixAccountId && isset($pixAccount['id'])) {
-                        $pixAccountId = $pixAccount['id'];
+                    // Se accountId fornecido, usar; senão buscar da matrícula ou padrão
+                    if (!$pixAccountId && !empty($enrollment['pix_account_id'])) {
+                        $pixAccountId = $enrollment['pix_account_id'];
                     }
+                    
+                    // Buscar dados da conta PIX
+                    if ($pixAccountId) {
+                        $pixAccount = $pixAccountModel->findByIdAndCfc($pixAccountId, $cfcId);
+                    }
+                    
+                    // Se não encontrou, buscar padrão ou fallback
+                    if (!$pixAccount) {
+                        $pixAccount = $pixAccountModel->getPixDataForCfc($cfcId, $pixAccountId);
+                    }
+                    
+                    // Criar snapshot dos dados da conta (imutável para histórico)
+                    if ($pixAccount) {
+                        $pixAccountSnapshot = json_encode([
+                            'account_id' => $pixAccount['id'] ?? null,
+                            'label' => $pixAccount['label'] ?? null,
+                            'bank_code' => $pixAccount['bank_code'] ?? null,
+                            'bank_name' => $pixAccount['bank_name'] ?? null,
+                            'holder_name' => $pixAccount['holder_name'] ?? null,
+                            'pix_key' => $pixAccount['pix_key'] ?? null,
+                            'pix_key_type' => $pixAccount['pix_key_type'] ?? null,
+                            'snapshot_at' => date('Y-m-d H:i:s')
+                        ], JSON_UNESCAPED_UNICODE);
+                        
+                        // Se não tinha account_id salvo, salvar agora
+                        if (!$pixAccountId && isset($pixAccount['id'])) {
+                            $pixAccountId = $pixAccount['id'];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Se a tabela não existir ainda, continuar sem snapshot (retrocompatibilidade)
+                    error_log("PaymentsController::markPaid() - Erro ao buscar conta PIX (tabela pode não existir ainda): " . $e->getMessage());
+                    $pixAccountId = null;
+                    $pixAccountSnapshot = null;
+                    $pixAccount = null;
                 }
             }
 
@@ -971,23 +979,28 @@ class PaymentsController extends Controller
                 
                 // Registrar no histórico do aluno (se PIX, incluir informações da conta)
                 if ($paymentMethod === 'pix' && $pixAccount) {
-                    $historyService = new \App\Services\StudentHistoryService();
-                    $accountLabel = $pixAccount['label'] ?? 'PIX Principal';
-                    $bankInfo = '';
-                    if (!empty($pixAccount['bank_code'])) {
-                        $bankInfo = $pixAccount['bank_code'] . ' - ';
+                    try {
+                        $historyService = new \App\Services\StudentHistoryService();
+                        $accountLabel = $pixAccount['label'] ?? 'PIX Principal';
+                        $bankInfo = '';
+                        if (!empty($pixAccount['bank_code'])) {
+                            $bankInfo = $pixAccount['bank_code'] . ' - ';
+                        }
+                        $bankInfo .= $pixAccount['bank_name'] ?? 'Banco não informado';
+                        $pixKeyDisplay = substr($pixAccount['pix_key'] ?? '', 0, 20) . '...';
+                        
+                        $historyMessage = sprintf(
+                            'PIX local/manual — conta: %s — Banco %s — chave %s',
+                            $accountLabel,
+                            $bankInfo,
+                            $pixKeyDisplay
+                        );
+                        
+                        $historyService->logFinancialEvent($enrollment['student_id'], $historyMessage);
+                    } catch (\Exception $e) {
+                        // Log mas não falha se histórico não puder ser registrado
+                        error_log("PaymentsController::markPaid() - Erro ao registrar histórico: " . $e->getMessage());
                     }
-                    $bankInfo .= $pixAccount['bank_name'] ?? 'Banco não informado';
-                    $pixKeyDisplay = substr($pixAccount['pix_key'] ?? '', 0, 20) . '...';
-                    
-                    $historyMessage = sprintf(
-                        'PIX local/manual — conta: %s — Banco %s — chave %s',
-                        $accountLabel,
-                        $bankInfo,
-                        $pixKeyDisplay
-                    );
-                    
-                    $historyService->logFinancialEvent($enrollment['student_id'], $historyMessage);
                 }
                 
                 // Log de sucesso

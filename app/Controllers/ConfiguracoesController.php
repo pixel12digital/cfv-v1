@@ -761,9 +761,17 @@ class ConfiguracoesController extends Controller
         ];
         @file_put_contents($logFile, "=== DISPLAY LOGO ===\n" . json_encode($displayLog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND);
 
-        // Buscar contas PIX do CFC
-        $pixAccountModel = new CfcPixAccount();
-        $pixAccounts = $pixAccountModel->findByCfc($cfc['id'], false); // false = incluir inativas
+        // Buscar contas PIX do CFC (com tratamento de erro caso tabela não exista ainda)
+        $pixAccounts = [];
+        try {
+            $pixAccountModel = new CfcPixAccount();
+            $pixAccounts = $pixAccountModel->findByCfc($cfc['id'], false); // false = incluir inativas
+        } catch (\Exception $e) {
+            // Se a tabela não existir ainda (migrations não executadas), usar array vazio
+            // Isso permite que a página carregue mesmo sem as migrations
+            error_log("ConfiguracoesController::cfc() - Erro ao buscar contas PIX (tabela pode não existir ainda): " . $e->getMessage());
+            $pixAccounts = [];
+        }
 
         $data = [
             'pageTitle' => 'Configurações do CFC',
