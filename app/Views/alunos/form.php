@@ -215,10 +215,14 @@
                         >
                     </div>
                 </div>
+            </div>
 
+            <!-- Filiação -->
+            <div class="form-section">
+                <h3 class="form-section-title">Filiação</h3>
                 <div class="form-row">
                     <div class="form-group form-col-2">
-                        <label class="form-label" for="nome_mae">Filiação — Mãe</label>
+                        <label class="form-label" for="nome_mae">Nome da mãe</label>
                         <input 
                             type="text" 
                             id="nome_mae" 
@@ -230,7 +234,7 @@
                         >
                     </div>
                     <div class="form-group form-col-2">
-                        <label class="form-label" for="nome_pai">Filiação — Pai</label>
+                        <label class="form-label" for="nome_pai">Nome do pai</label>
                         <input 
                             type="text" 
                             id="nome_pai" 
