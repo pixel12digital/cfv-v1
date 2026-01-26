@@ -90,37 +90,39 @@ try {
         echo "   ⏭️  Tabela 'cfc_pix_accounts' já existe\n";
         echo "   ✅ Migration 038: Já executada\n\n";
     } else {
-        $migration038File = ROOT_PATH . '/database/migrations/038_create_cfc_pix_accounts_table.sql';
-        
-        if (!file_exists($migration038File)) {
-            die("   ❌ ERRO: Arquivo de migration não encontrado: {$migration038File}\n");
-        }
-        
-        echo "   📄 Lendo arquivo de migration...\n";
-        $migrationSQL = file_get_contents($migration038File);
+        echo "   📄 Criando tabela cfc_pix_accounts...\n";
         
         try {
-            // Executar migration (já é idempotente)
             $db->exec("SET FOREIGN_KEY_CHECKS = 0");
             $db->exec("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
             
-            // Executar SQL completo (já tem verificações idempotentes)
-            $statements = explode(';', $migrationSQL);
-            foreach ($statements as $statement) {
-                $statement = trim($statement);
-                if (!empty($statement) && !preg_match('/^--/', $statement)) {
-                    try {
-                        $db->exec($statement);
-                    } catch (\PDOException $e) {
-                        // Ignorar erros de "já existe" ou "prepared statement"
-                        if (strpos($e->getMessage(), 'already exists') === false && 
-                            strpos($e->getMessage(), 'PREPARE') === false) {
-                            throw $e;
-                        }
-                    }
-                }
-            }
+            // Criar tabela diretamente (idempotente com CREATE TABLE IF NOT EXISTS)
+            $createTableSQL = "CREATE TABLE IF NOT EXISTS `cfc_pix_accounts` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `cfc_id` int(11) NOT NULL,
+                `label` varchar(255) NOT NULL COMMENT 'Apelido/nome da conta (ex: PagBank, Efí)',
+                `bank_code` varchar(10) DEFAULT NULL COMMENT 'Código do banco (ex: 290, 364)',
+                `bank_name` varchar(255) DEFAULT NULL COMMENT 'Nome do banco/instituição',
+                `agency` varchar(20) DEFAULT NULL COMMENT 'Agência (opcional)',
+                `account_number` varchar(20) DEFAULT NULL COMMENT 'Número da conta (opcional)',
+                `account_type` varchar(50) DEFAULT NULL COMMENT 'Tipo de conta (corrente, poupança, etc)',
+                `holder_name` varchar(255) NOT NULL COMMENT 'Nome do titular',
+                `holder_document` varchar(20) DEFAULT NULL COMMENT 'CPF/CNPJ do titular',
+                `pix_key` varchar(255) NOT NULL COMMENT 'Chave PIX',
+                `pix_key_type` enum('cpf','cnpj','email','telefone','aleatoria') DEFAULT NULL COMMENT 'Tipo da chave PIX',
+                `note` text DEFAULT NULL COMMENT 'Observações adicionais',
+                `is_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Conta padrão do CFC',
+                `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Conta ativa',
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `cfc_id` (`cfc_id`),
+                KEY `is_default` (`is_default`),
+                KEY `is_active` (`is_active`),
+                CONSTRAINT `cfc_pix_accounts_ibfk_1` FOREIGN KEY (`cfc_id`) REFERENCES `cfcs` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Contas PIX do CFC'";
             
+            $db->exec($createTableSQL);
             $db->exec("SET FOREIGN_KEY_CHECKS = 1");
             
             // Verificar se foi criada
@@ -128,8 +130,8 @@ try {
                 echo "   ✅ Tabela 'cfc_pix_accounts' criada com sucesso\n";
                 echo "   ✅ Migration 038: Executada\n\n";
             } else {
-                echo "   ⚠️  Tabela não foi criada (pode já existir)\n";
-                echo "   ✅ Migration 038: Verificada\n\n";
+                echo "   ⚠️  Tabela não foi criada\n";
+                echo "   ❌ Migration 038: Falhou\n\n";
             }
         } catch (\PDOException $e) {
             $db->exec("SET FOREIGN_KEY_CHECKS = 1");
@@ -165,39 +167,90 @@ try {
         echo "   ⏭️  Não há dados PIX antigos para migrar\n";
         echo "   ✅ Migration 039: Não necessária\n\n";
     } else {
-        $migration039File = ROOT_PATH . '/database/migrations/039_migrate_old_pix_data.sql';
-        
-        if (!file_exists($migration039File)) {
-            die("   ❌ ERRO: Arquivo de migration não encontrado: {$migration039File}\n");
-        }
-        
-        echo "   📄 Lendo arquivo de migration...\n";
-        $migrationSQL = file_get_contents($migration039File);
+        echo "   📄 Migrando dados PIX antigos...\n";
         
         try {
-            // Executar migration (já é idempotente)
-            $statements = explode(';', $migrationSQL);
-            foreach ($statements as $statement) {
-                $statement = trim($statement);
-                if (!empty($statement) && !preg_match('/^--/', $statement)) {
+            // Buscar CFCs com dados PIX antigos
+            $stmt = $db->query("
+                SELECT 
+                    `id` as `cfc_id`,
+                    COALESCE(`pix_banco`, 'PIX Principal') as `label`,
+                    NULL as `bank_code`,
+                    `pix_banco` as `bank_name`,
+                    COALESCE(`pix_titular`, 'Titular não informado') as `holder_name`,
+                    NULL as `holder_document`,
+                    `pix_chave` as `pix_key`,
+                    `pix_observacao` as `note`
+                FROM `cfcs`
+                WHERE (`pix_chave` IS NOT NULL AND `pix_chave` != '') 
+                OR (`pix_titular` IS NOT NULL AND `pix_titular` != '')
+            ");
+            $oldPixData = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            if (empty($oldPixData)) {
+                echo "   ⏭️  Nenhum dado PIX antigo encontrado para migrar\n";
+                echo "   ✅ Migration 039: Não necessária\n\n";
+            } else {
+                // Função para detectar tipo de chave PIX
+                $detectPixKeyType = function($key) {
+                    $key = trim($key);
+                    // CPF: 11 dígitos
+                    if (preg_match('/^[0-9]{11}$/', $key)) {
+                        return 'cpf';
+                    }
+                    // CNPJ: 14 dígitos
+                    if (preg_match('/^[0-9]{14}$/', $key)) {
+                        return 'cnpj';
+                    }
+                    // Email
+                    if (filter_var($key, FILTER_VALIDATE_EMAIL)) {
+                        return 'email';
+                    }
+                    // Telefone: +5511999999999 ou 11999999999 (10-11 dígitos)
+                    if (preg_match('/^\+?[0-9]{10,11}$/', $key)) {
+                        return 'telefone';
+                    }
+                    // Aleatória (chave alfanumérica)
+                    return 'aleatoria';
+                };
+                
+                $migratedCount = 0;
+                foreach ($oldPixData as $row) {
                     try {
-                        $db->exec($statement);
+                        $pixKeyType = $detectPixKeyType($row['pix_key']);
+                        
+                        $insertStmt = $db->prepare("
+                            INSERT INTO `cfc_pix_accounts` (
+                                `cfc_id`, `label`, `bank_code`, `bank_name`, `holder_name`, 
+                                `holder_document`, `pix_key`, `pix_key_type`, `note`, 
+                                `is_default`, `is_active`, `created_at`
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                        ");
+                        $insertStmt->execute([
+                            $row['cfc_id'],
+                            $row['label'],
+                            $row['bank_code'],
+                            $row['bank_name'],
+                            $row['holder_name'],
+                            $row['holder_document'],
+                            $row['pix_key'],
+                            $pixKeyType,
+                            $row['note'],
+                            1, // is_default
+                            1  // is_active
+                        ]);
+                        $migratedCount++;
                     } catch (\PDOException $e) {
-                        // Ignorar erros de "prepared statement" ou "já existe"
-                        if (strpos($e->getMessage(), 'PREPARE') === false && 
-                            strpos($e->getMessage(), 'already exists') === false) {
-                            throw $e;
+                        // Ignorar erros de duplicação (pode já ter sido migrado)
+                        if (strpos($e->getMessage(), 'Duplicate') === false) {
+                            echo "   ⚠️  Erro ao migrar CFC ID {$row['cfc_id']}: " . $e->getMessage() . "\n";
                         }
                     }
                 }
+                
+                echo "   ✅ Migration 039: Executada\n";
+                echo "   📊 Contas migradas: {$migratedCount}\n\n";
             }
-            
-            // Verificar quantas contas foram migradas
-            $stmt = $db->query("SELECT COUNT(*) as cnt FROM `cfc_pix_accounts`");
-            $migratedCount = $stmt->fetch()['cnt'];
-            
-            echo "   ✅ Migration 039: Executada\n";
-            echo "   📊 Contas migradas: {$migratedCount}\n\n";
         } catch (\PDOException $e) {
             echo "   ❌ Erro ao executar migration 039: " . $e->getMessage() . "\n";
             echo "   ⚠️  Migration 039: Falhou\n\n";
@@ -212,12 +265,6 @@ try {
     echo "MIGRATION 040: Adicionar campos em enrollments\n";
     echo "═══════════════════════════════════════════════════════════════\n\n";
     
-    $migration040File = ROOT_PATH . '/database/migrations/040_add_pix_account_fields_to_enrollments.sql';
-    
-    if (!file_exists($migration040File)) {
-        die("   ❌ ERRO: Arquivo de migration não encontrado: {$migration040File}\n");
-    }
-    
     // Verificar se colunas já existem
     $pixAccountIdExists = $columnExists('enrollments', 'pix_account_id');
     $pixAccountSnapshotExists = $columnExists('enrollments', 'pix_account_snapshot');
@@ -226,28 +273,52 @@ try {
         echo "   ⏭️  Colunas 'pix_account_id' e 'pix_account_snapshot' já existem\n";
         echo "   ✅ Migration 040: Já executada\n\n";
     } else {
-        echo "   📄 Lendo arquivo de migration...\n";
-        $migrationSQL = file_get_contents($migration040File);
+        echo "   📄 Adicionando colunas em enrollments...\n";
         
         try {
             $db->exec("SET FOREIGN_KEY_CHECKS = 0");
             
-            // Executar migration (já é idempotente)
-            $statements = explode(';', $migrationSQL);
-            foreach ($statements as $statement) {
-                $statement = trim($statement);
-                if (!empty($statement) && !preg_match('/^--/', $statement)) {
-                    try {
-                        $db->exec($statement);
-                    } catch (\PDOException $e) {
-                        // Ignorar erros de "prepared statement" ou "já existe"
-                        if (strpos($e->getMessage(), 'PREPARE') === false && 
-                            strpos($e->getMessage(), 'already exists') === false &&
-                            strpos($e->getMessage(), 'Duplicate column') === false) {
-                            throw $e;
-                        }
+            // Adicionar pix_account_id se não existir
+            if (!$pixAccountIdExists) {
+                try {
+                    $db->exec("
+                        ALTER TABLE `enrollments` 
+                        ADD COLUMN `pix_account_id` int(11) DEFAULT NULL 
+                        COMMENT 'ID da conta PIX usada no pagamento' 
+                        AFTER `payment_method`,
+                        ADD KEY `pix_account_id` (`pix_account_id`),
+                        ADD CONSTRAINT `enrollments_ibfk_pix_account` 
+                        FOREIGN KEY (`pix_account_id`) REFERENCES `cfc_pix_accounts` (`id`) ON DELETE SET NULL
+                    ");
+                    echo "   ✅ Coluna 'pix_account_id' adicionada\n";
+                } catch (\PDOException $e) {
+                    if (strpos($e->getMessage(), 'Duplicate column') === false) {
+                        throw $e;
                     }
+                    echo "   ⏭️  Coluna 'pix_account_id' já existe\n";
                 }
+            } else {
+                echo "   ⏭️  Coluna 'pix_account_id' já existe\n";
+            }
+            
+            // Adicionar pix_account_snapshot se não existir
+            if (!$pixAccountSnapshotExists) {
+                try {
+                    $db->exec("
+                        ALTER TABLE `enrollments` 
+                        ADD COLUMN `pix_account_snapshot` JSON DEFAULT NULL 
+                        COMMENT 'Snapshot dos dados da conta PIX no momento do pagamento (para histórico imutável)' 
+                        AFTER `pix_account_id`
+                    ");
+                    echo "   ✅ Coluna 'pix_account_snapshot' adicionada\n";
+                } catch (\PDOException $e) {
+                    if (strpos($e->getMessage(), 'Duplicate column') === false) {
+                        throw $e;
+                    }
+                    echo "   ⏭️  Coluna 'pix_account_snapshot' já existe\n";
+                }
+            } else {
+                echo "   ⏭️  Coluna 'pix_account_snapshot' já existe\n";
             }
             
             $db->exec("SET FOREIGN_KEY_CHECKS = 1");
@@ -257,7 +328,6 @@ try {
             $pixAccountSnapshotExistsAfter = $columnExists('enrollments', 'pix_account_snapshot');
             
             if ($pixAccountIdExistsAfter && $pixAccountSnapshotExistsAfter) {
-                echo "   ✅ Colunas adicionadas com sucesso\n";
                 echo "   ✅ Migration 040: Executada\n\n";
             } else {
                 echo "   ⚠️  Algumas colunas não foram criadas\n";
