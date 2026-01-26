@@ -754,11 +754,37 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     <!-- CSS adicional para garantir dark mode (deve vir depois do style inline) -->
     <style id="login-dark-mode-fix">
         @media (prefers-color-scheme: dark) {
+            /* Body background */
+            body {
+                background-color: #0f172a !important;
+            }
+            
+            /* Card de login */
+            .login-container {
+                background-color: #1e293b !important;
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+            }
+            
+            /* Títulos */
+            .login-title {
+                color: #f1f5f9 !important;
+            }
+            
+            .login-subtitle {
+                color: #94a3b8 !important;
+            }
+            
+            /* Labels */
+            .form-label {
+                color: #f1f5f9 !important;
+            }
+            
             /* Forçar placeholders legíveis */
             .form-control::placeholder,
             input.form-control::placeholder,
             input[type="email"]::placeholder,
-            input[type="password"]::placeholder {
+            input[type="password"]::placeholder,
+            input::placeholder {
                 color: #94a3b8 !important;
                 opacity: 1 !important;
             }
@@ -766,30 +792,95 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             /* Forçar link "Esqueci minha senha" visível */
             .forgot-password,
             a.forgot-password,
-            .link-theme {
+            .link-theme,
+            a.link-theme {
                 color: #60a5fa !important;
             }
             
             .forgot-password:hover,
             a.forgot-password:hover,
-            .link-theme:hover {
+            .link-theme:hover,
+            a.link-theme:hover {
                 color: #93c5fd !important;
             }
             
             /* Forçar inputs com contraste */
-            .form-control {
+            .form-control,
+            input.form-control,
+            input[type="email"],
+            input[type="password"] {
                 background-color: #1e293b !important;
                 color: #f1f5f9 !important;
                 border-color: #475569 !important;
             }
             
-            .form-control:focus {
+            .form-control:focus,
+            input.form-control:focus,
+            input[type="email"]:focus,
+            input[type="password"]:focus {
                 background-color: #1e293b !important;
                 color: #f1f5f9 !important;
                 border-color: #60a5fa !important;
+                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+            }
+            
+            /* Textos de ajuda */
+            .form-help {
+                color: #94a3b8 !important;
+            }
+            
+            /* Checkbox labels */
+            .checkbox-group label {
+                color: #f1f5f9 !important;
+            }
+            
+            /* Footer */
+            .login-footer {
+                color: #94a3b8 !important;
+            }
+            
+            .login-footer p {
+                color: #94a3b8 !important;
+            }
+            
+            .support-info {
+                background-color: #1e293b !important;
+            }
+            
+            .support-info h4,
+            .support-info p {
+                color: #94a3b8 !important;
             }
         }
     </style>
+    
+    <!-- Script para forçar dark mode se detectado -->
+    <script>
+        (function() {
+            // Detectar dark mode imediatamente
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            console.log('[Login Dark Mode] prefers-color-scheme: dark =', prefersDark);
+            
+            if (prefersDark) {
+                // Adicionar classe ao body para garantir que dark mode seja aplicado
+                document.documentElement.classList.add('dark-mode');
+                document.body.classList.add('dark-mode');
+                console.log('[Login Dark Mode] ✅ Dark mode detectado - classes adicionadas');
+                
+                // Verificar se CSS está sendo aplicado
+                setTimeout(() => {
+                    const testInput = document.querySelector('.form-control');
+                    if (testInput) {
+                        const computedStyle = window.getComputedStyle(testInput);
+                        console.log('[Login Dark Mode] Input background:', computedStyle.backgroundColor);
+                        console.log('[Login Dark Mode] Input color:', computedStyle.color);
+                    }
+                }, 100);
+            } else {
+                console.log('[Login Dark Mode] ⚠️ Dark mode NÃO detectado - dispositivo está em modo claro');
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="login-container">
