@@ -380,12 +380,17 @@ class AlunosController extends Controller
         $courses = $theoryCourseModel->findActiveByCfc($this->cfcId);
         $classes = $theoryClassModel->findByCfc($this->cfcId, ['scheduled', 'in_progress']); // Apenas turmas agendadas/em andamento
 
+        // Buscar contas PIX do CFC
+        $pixAccountModel = new \App\Models\CfcPixAccount();
+        $pixAccounts = $pixAccountModel->findByCfc($this->cfcId, true); // Apenas ativas
+
         $data = [
             'pageTitle' => 'Nova Matrícula',
             'student' => $student,
             'services' => $services,
             'theoryCourses' => $courses,
-            'theoryClasses' => $classes
+            'theoryClasses' => $classes,
+            'pixAccounts' => $pixAccounts
         ];
         $this->view('alunos/matricular', $data);
     }
@@ -547,6 +552,29 @@ class AlunosController extends Controller
             redirect(base_url("alunos/{$id}/matricular"));
         }
 
+        // Processar conta PIX selecionada (se payment_method = 'pix')
+        $pixAccountId = null;
+        if ($paymentMethod === 'pix') {
+            $pixAccountId = !empty($_POST['pix_account_id']) ? intval($_POST['pix_account_id']) : null;
+            
+            // Validar se conta existe e pertence ao CFC
+            if ($pixAccountId) {
+                $pixAccountModel = new \App\Models\CfcPixAccount();
+                $pixAccount = $pixAccountModel->findByIdAndCfc($pixAccountId, $this->cfcId);
+                if (!$pixAccount || !$pixAccount['is_active']) {
+                    $_SESSION['error'] = 'Conta PIX selecionada não é válida ou está inativa.';
+                    redirect(base_url("alunos/{$id}/matricular"));
+                }
+            } else {
+                // Se não selecionou conta mas tem contas disponíveis, usar padrão
+                $pixAccountModel = new \App\Models\CfcPixAccount();
+                $defaultAccount = $pixAccountModel->findDefaultByCfc($this->cfcId);
+                if ($defaultAccount) {
+                    $pixAccountId = $defaultAccount['id'];
+                }
+            }
+        }
+
         $enrollmentData = [
             'cfc_id' => $this->cfcId,
             'student_id' => $id,
@@ -579,7 +607,9 @@ class AlunosController extends Controller
             // Campos específicos para cartão pago localmente
             'gateway_provider' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? 'local' : null,
             'gateway_last_status' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? 'paid' : null,
-            'gateway_last_event_at' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? date('Y-m-d H:i:s') : null
+            'gateway_last_event_at' => ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) ? date('Y-m-d H:i:s') : null,
+            // Conta PIX selecionada
+            'pix_account_id' => $pixAccountId
         ];
 
         // Validar curso/turma teórica se informado
@@ -691,10 +721,31 @@ class AlunosController extends Controller
         $cfcModel = new \App\Models\Cfc();
         $cfc = $cfcModel->getCurrent();
 
+        // Buscar conta PIX usada na matrícula (se houver)
+        $pixAccountModel = new \App\Models\CfcPixAccount();
+        $pixAccount = null;
+        $pixAccountSnapshot = null;
+        
+        if (!empty($enrollment['pix_account_id'])) {
+            $pixAccount = $pixAccountModel->findByIdAndCfc($enrollment['pix_account_id'], $this->cfcId);
+        }
+        
+        // Se não encontrou conta mas tem snapshot, usar snapshot
+        if (!$pixAccount && !empty($enrollment['pix_account_snapshot'])) {
+            $pixAccountSnapshot = json_decode($enrollment['pix_account_snapshot'], true);
+        }
+        
+        // Se ainda não tem nada, buscar padrão (fallback)
+        if (!$pixAccount && !$pixAccountSnapshot) {
+            $pixAccount = $pixAccountModel->getPixDataForCfc($this->cfcId);
+        }
+
         $data = [
             'pageTitle' => 'Matrícula #' . $id,
             'enrollment' => $enrollment,
-            'cfc' => $cfc
+            'cfc' => $cfc,
+            'pixAccount' => $pixAccount,
+            'pixAccountSnapshot' => $pixAccountSnapshot
         ];
         $this->view('alunos/matricula_show', $data);
     }

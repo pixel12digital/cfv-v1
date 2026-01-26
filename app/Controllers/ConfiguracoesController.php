@@ -7,6 +7,7 @@ use App\Models\TheoryDiscipline;
 use App\Models\TheoryCourse;
 use App\Models\TheoryCourseDiscipline;
 use App\Models\Cfc;
+use App\Models\CfcPixAccount;
 use App\Services\PermissionService;
 use App\Services\EmailService;
 use App\Services\AuditService;
@@ -760,13 +761,18 @@ class ConfiguracoesController extends Controller
         ];
         @file_put_contents($logFile, "=== DISPLAY LOGO ===\n" . json_encode($displayLog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND);
 
+        // Buscar contas PIX do CFC
+        $pixAccountModel = new CfcPixAccount();
+        $pixAccounts = $pixAccountModel->findByCfc($cfc['id'], false); // false = incluir inativas
+
         $data = [
             'pageTitle' => 'Configurações do CFC',
             'cfc' => $cfc,
             'hasLogo' => $hasLogo,
             'logoUrl' => $logoUrl,
             'fileExists' => $fileExists,
-            'iconsExist' => $cfc ? PwaIconGenerator::iconsExist($cfc['id']) : false
+            'iconsExist' => $cfc ? PwaIconGenerator::iconsExist($cfc['id']) : false,
+            'pixAccounts' => $pixAccounts
         ];
 
         $this->view('configuracoes/cfc', $data);
@@ -1487,5 +1493,273 @@ class ConfiguracoesController extends Controller
         header('Cache-Control: public, max-age=3600');
         readfile($filepath);
         exit;
+    }
+
+    // ============================================
+    // MÓDULO: CONTAS PIX MÚLTIPLAS
+    // ============================================
+
+    /**
+     * Criar nova conta PIX
+     */
+    public function pixAccountCriar()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $cfcModel = new Cfc();
+        $cfc = $cfcModel->getCurrent();
+
+        if (!$cfc) {
+            $_SESSION['error'] = 'CFC não encontrado.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $label = trim($_POST['label'] ?? '');
+        $bankCode = trim($_POST['bank_code'] ?? '');
+        $bankName = trim($_POST['bank_name'] ?? '');
+        $agency = trim($_POST['agency'] ?? '');
+        $accountNumber = trim($_POST['account_number'] ?? '');
+        $accountType = trim($_POST['account_type'] ?? '');
+        $holderName = trim($_POST['holder_name'] ?? '');
+        $holderDocument = trim($_POST['holder_document'] ?? '');
+        $pixKey = trim($_POST['pix_key'] ?? '');
+        $pixKeyType = $_POST['pix_key_type'] ?? null;
+        $note = trim($_POST['note'] ?? '');
+        $isDefault = isset($_POST['is_default']) ? 1 : 0;
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        // Validações obrigatórias
+        if (empty($label)) {
+            $_SESSION['error'] = 'Apelido da conta é obrigatório.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (empty($holderName)) {
+            $_SESSION['error'] = 'Nome do titular é obrigatório.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (empty($pixKey)) {
+            $_SESSION['error'] = 'Chave PIX é obrigatória.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $pixAccountModel = new CfcPixAccount();
+        
+        // Se for padrão, remover padrão das outras
+        if ($isDefault) {
+            $db = \App\Config\Database::getInstance()->getConnection();
+            $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
+            $stmt->execute([$cfc['id']]);
+        }
+
+        $data = [
+            'cfc_id' => $cfc['id'],
+            'label' => $label,
+            'bank_code' => !empty($bankCode) ? $bankCode : null,
+            'bank_name' => !empty($bankName) ? $bankName : null,
+            'agency' => !empty($agency) ? $agency : null,
+            'account_number' => !empty($accountNumber) ? $accountNumber : null,
+            'account_type' => !empty($accountType) ? $accountType : null,
+            'holder_name' => $holderName,
+            'holder_document' => !empty($holderDocument) ? $holderDocument : null,
+            'pix_key' => $pixKey,
+            'pix_key_type' => $pixKeyType,
+            'note' => !empty($note) ? $note : null,
+            'is_default' => $isDefault,
+            'is_active' => $isActive
+        ];
+
+        $id = $pixAccountModel->create($data);
+        $this->auditService->logCreate('cfc_pix_accounts', $id, $data);
+
+        $_SESSION['success'] = 'Conta PIX criada com sucesso!';
+        redirect(base_url('configuracoes/cfc'));
+    }
+
+    /**
+     * Atualizar conta PIX
+     */
+    public function pixAccountAtualizar($id)
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $cfcModel = new Cfc();
+        $cfc = $cfcModel->getCurrent();
+
+        if (!$cfc) {
+            $_SESSION['error'] = 'CFC não encontrado.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $pixAccountModel = new CfcPixAccount();
+        $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+
+        if (!$account) {
+            $_SESSION['error'] = 'Conta PIX não encontrada.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $label = trim($_POST['label'] ?? '');
+        $bankCode = trim($_POST['bank_code'] ?? '');
+        $bankName = trim($_POST['bank_name'] ?? '');
+        $agency = trim($_POST['agency'] ?? '');
+        $accountNumber = trim($_POST['account_number'] ?? '');
+        $accountType = trim($_POST['account_type'] ?? '');
+        $holderName = trim($_POST['holder_name'] ?? '');
+        $holderDocument = trim($_POST['holder_document'] ?? '');
+        $pixKey = trim($_POST['pix_key'] ?? '');
+        $pixKeyType = $_POST['pix_key_type'] ?? null;
+        $note = trim($_POST['note'] ?? '');
+        $isDefault = isset($_POST['is_default']) ? 1 : 0;
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        // Validações obrigatórias
+        if (empty($label)) {
+            $_SESSION['error'] = 'Apelido da conta é obrigatório.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (empty($holderName)) {
+            $_SESSION['error'] = 'Nome do titular é obrigatório.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (empty($pixKey)) {
+            $_SESSION['error'] = 'Chave PIX é obrigatória.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        // Se for padrão, remover padrão das outras
+        if ($isDefault && !$account['is_default']) {
+            $db = \App\Config\Database::getInstance()->getConnection();
+            $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
+            $stmt->execute([$cfc['id']]);
+        }
+
+        $dataBefore = $account;
+        $data = [
+            'label' => $label,
+            'bank_code' => !empty($bankCode) ? $bankCode : null,
+            'bank_name' => !empty($bankName) ? $bankName : null,
+            'agency' => !empty($agency) ? $agency : null,
+            'account_number' => !empty($accountNumber) ? $accountNumber : null,
+            'account_type' => !empty($accountType) ? $accountType : null,
+            'holder_name' => $holderName,
+            'holder_document' => !empty($holderDocument) ? $holderDocument : null,
+            'pix_key' => $pixKey,
+            'pix_key_type' => $pixKeyType,
+            'note' => !empty($note) ? $note : null,
+            'is_default' => $isDefault,
+            'is_active' => $isActive
+        ];
+
+        $pixAccountModel->update($id, $data);
+        $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, $data));
+
+        $_SESSION['success'] = 'Conta PIX atualizada com sucesso!';
+        redirect(base_url('configuracoes/cfc'));
+    }
+
+    /**
+     * Excluir/desativar conta PIX
+     */
+    public function pixAccountExcluir($id)
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $cfcModel = new Cfc();
+        $cfc = $cfcModel->getCurrent();
+
+        if (!$cfc) {
+            $_SESSION['error'] = 'CFC não encontrado.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $pixAccountModel = new CfcPixAccount();
+        $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+
+        if (!$account) {
+            $_SESSION['error'] = 'Conta PIX não encontrada.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        // Verificar se há matrículas usando esta conta
+        $db = \App\Config\Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT COUNT(*) as cnt FROM enrollments WHERE pix_account_id = ?");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($result && $result['cnt'] > 0) {
+            // Se houver matrículas usando, apenas desativar
+            $dataBefore = $account;
+            $pixAccountModel->update($id, ['is_active' => 0]);
+            $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, ['is_active' => 0]));
+            $_SESSION['success'] = 'Conta PIX desativada (há matrículas usando esta conta).';
+        } else {
+            // Se não houver uso, pode excluir
+            $dataBefore = $account;
+            $pixAccountModel->delete($id);
+            $this->auditService->logDelete('cfc_pix_accounts', $id, $dataBefore);
+            $_SESSION['success'] = 'Conta PIX excluída com sucesso!';
+        }
+
+        redirect(base_url('configuracoes/cfc'));
+    }
+
+    /**
+     * Definir conta como padrão
+     */
+    public function pixAccountDefinirPadrao($id)
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $cfcModel = new Cfc();
+        $cfc = $cfcModel->getCurrent();
+
+        if (!$cfc) {
+            $_SESSION['error'] = 'CFC não encontrado.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $pixAccountModel = new CfcPixAccount();
+        $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+
+        if (!$account) {
+            $_SESSION['error'] = 'Conta PIX não encontrada.';
+            redirect(base_url('configuracoes/cfc'));
+        }
+
+        $pixAccountModel->setAsDefault($id, $cfc['id']);
+        $_SESSION['success'] = 'Conta PIX definida como padrão!';
+        redirect(base_url('configuracoes/cfc'));
     }
 }

@@ -609,9 +609,10 @@
                 <?php 
                 // Botão Ver Dados do PIX: aparece apenas para PIX com saldo devedor
                 if ($isPix && $hasOutstanding): 
-                    $pixConfigurado = !empty($cfc['pix_chave']) && !empty($cfc['pix_titular']);
+                    // Verificar se há conta PIX configurada (da matrícula, snapshot ou padrão)
+                    $hasPixAccount = !empty($pixAccount) || !empty($pixAccountSnapshot);
                 ?>
-                <?php if ($pixConfigurado): ?>
+                <?php if ($hasPixAccount): ?>
                 <button type="button" class="btn btn-info" id="btnVerDadosPix" onclick="verDadosPix()" style="margin-left: 0.5rem;">
                     Ver Dados do PIX
                 </button>
@@ -1356,12 +1357,38 @@ function excluirMatricula() {
 // ============================================
 
 function verDadosPix() {
+    // Usar dados da conta PIX da matrícula (snapshot ou conta atual)
+    <?php if (!empty($pixAccountSnapshot)): ?>
+    // Usar snapshot (dados imutáveis do momento do pagamento)
     const pixData = {
+        label: <?= json_encode($pixAccountSnapshot['label'] ?? '') ?>,
+        banco: <?= json_encode($pixAccountSnapshot['bank_name'] ?? '') ?>,
+        bank_code: <?= json_encode($pixAccountSnapshot['bank_code'] ?? '') ?>,
+        titular: <?= json_encode($pixAccountSnapshot['holder_name'] ?? '') ?>,
+        chave: <?= json_encode($pixAccountSnapshot['pix_key'] ?? '') ?>,
+        observacao: null
+    };
+    <?php elseif (!empty($pixAccount)): ?>
+    // Usar conta atual
+    const pixData = {
+        label: <?= json_encode($pixAccount['label'] ?? '') ?>,
+        banco: <?= json_encode($pixAccount['bank_name'] ?? '') ?>,
+        bank_code: <?= json_encode($pixAccount['bank_code'] ?? '') ?>,
+        titular: <?= json_encode($pixAccount['holder_name'] ?? '') ?>,
+        chave: <?= json_encode($pixAccount['pix_key'] ?? '') ?>,
+        observacao: <?= json_encode($pixAccount['note'] ?? '') ?>
+    };
+    <?php else: ?>
+    // Fallback para dados antigos (retrocompatibilidade)
+    const pixData = {
+        label: 'PIX Principal',
         banco: <?= json_encode($cfc['pix_banco'] ?? '') ?>,
+        bank_code: null,
         titular: <?= json_encode($cfc['pix_titular'] ?? '') ?>,
         chave: <?= json_encode($cfc['pix_chave'] ?? '') ?>,
         observacao: <?= json_encode($cfc['pix_observacao'] ?? '') ?>
     };
+    <?php endif; ?>
     
     // Verificar se dados estão configurados
     if (!pixData.chave || !pixData.titular) {
@@ -1373,8 +1400,17 @@ function verDadosPix() {
     let modalContent = '<div style="padding: 1rem;">';
     modalContent += '<h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--color-primary);">Dados do PIX</h3>';
     
-    if (pixData.banco) {
-        modalContent += '<div style="margin-bottom: 1rem;"><strong>Banco/Instituição:</strong><br>' + escapeHtml(pixData.banco) + '</div>';
+    if (pixData.label) {
+        modalContent += '<div style="margin-bottom: 1rem;"><strong>Conta:</strong><br>' + escapeHtml(pixData.label) + '</div>';
+    }
+    
+    if (pixData.banco || pixData.bank_code) {
+        let bancoInfo = '';
+        if (pixData.bank_code) {
+            bancoInfo += pixData.bank_code + ' - ';
+        }
+        bancoInfo += pixData.banco || 'Não informado';
+        modalContent += '<div style="margin-bottom: 1rem;"><strong>Banco/Instituição:</strong><br>' + escapeHtml(bancoInfo) + '</div>';
     }
     
     modalContent += '<div style="margin-bottom: 1rem;"><strong>Titular:</strong><br>' + escapeHtml(pixData.titular) + '</div>';

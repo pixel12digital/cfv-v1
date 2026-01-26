@@ -454,83 +454,240 @@
 
 <div class="card">
     <div class="card-body">
-        <h2 style="margin-bottom: var(--spacing-md); font-size: 1.25rem;">Configurações PIX</h2>
-        <p class="text-muted" style="margin-bottom: var(--spacing-md);">
-            Configure os dados do PIX do CFC para pagamentos locais/manuais nas matrículas. Estes campos são opcionais e só serão necessários se você usar PIX como forma de pagamento.
-        </p>
-        
-        <form id="salvarPixForm" method="POST" action="<?= base_url('configuracoes/cfc/salvar') ?>">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+            <div>
+                <h2 style="margin: 0; font-size: 1.25rem;">Contas PIX</h2>
+                <p class="text-muted" style="margin-top: var(--spacing-xs); margin-bottom: 0;">
+                    Configure múltiplas contas PIX para pagamentos locais/manuais nas matrículas.
+                </p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="abrirModalPixAccount(null)">
+                + Adicionar Conta PIX
+            </button>
+        </div>
+
+        <?php if (empty($pixAccounts)): ?>
+            <div style="padding: 2rem; text-align: center; background: var(--color-bg-light); border-radius: var(--radius-md); border: 2px dashed var(--color-border);">
+                <p style="margin: 0; color: var(--color-text-muted);">
+                    Nenhuma conta PIX cadastrada. Clique em "Adicionar Conta PIX" para começar.
+                </p>
+            </div>
+        <?php else: ?>
+            <div style="overflow-x: auto;">
+                <table class="table" style="margin-top: var(--spacing-md);">
+                    <thead>
+                        <tr>
+                            <th>Apelido</th>
+                            <th>Banco</th>
+                            <th>Chave PIX</th>
+                            <th>Titular</th>
+                            <th>Padrão</th>
+                            <th>Ativa</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($pixAccounts as $account): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($account['label']) ?></strong></td>
+                            <td>
+                                <?php if ($account['bank_code']): ?>
+                                    <?= htmlspecialchars($account['bank_code']) ?> - 
+                                <?php endif; ?>
+                                <?= htmlspecialchars($account['bank_name'] ?? '-') ?>
+                            </td>
+                            <td>
+                                <code style="font-size: 0.875rem;"><?= htmlspecialchars($account['pix_key']) ?></code>
+                            </td>
+                            <td><?= htmlspecialchars($account['holder_name']) ?></td>
+                            <td>
+                                <?php if ($account['is_default']): ?>
+                                    <span class="badge badge-success">Padrão</span>
+                                <?php else: ?>
+                                    <form method="POST" action="<?= base_url("configuracoes/cfc/pix-accounts/{$account['id']}/definir-padrao") ?>" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline" onclick="return confirm('Definir esta conta como padrão?');">
+                                            Definir
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($account['is_active']): ?>
+                                    <span class="badge badge-success">Ativa</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary">Inativa</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="abrirModalPixAccount(<?= $account['id'] ?>)">
+                                    Editar
+                                </button>
+                                <form method="POST" action="<?= base_url("configuracoes/cfc/pix-accounts/{$account['id']}/excluir") ?>" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta conta PIX?');">
+                                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        Excluir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Modal para criar/editar conta PIX -->
+<div id="modalPixAccount" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: white; border-radius: var(--border-radius); max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--color-border);">
+            <h3 style="margin: 0;" id="modalPixAccountTitle">Nova Conta PIX</h3>
+        </div>
+        <form id="formPixAccount" method="POST" action="" style="padding: 1.5rem;">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-            <!-- Incluir campo nome (obrigatório) para não quebrar validação -->
-            <input type="hidden" name="nome" value="<?= htmlspecialchars($cfc['nome'] ?? '') ?>">
             
             <div class="form-group">
-                <label class="form-label" for="pix_banco">Banco/Instituição</label>
-                <input 
-                    type="text" 
-                    name="pix_banco"
-                    id="pix_banco"
-                    class="form-input" 
-                    value="<?= htmlspecialchars($cfc['pix_banco'] ?? '') ?>" 
-                    maxlength="255"
-                    placeholder="Ex: Banco do Brasil, Nubank, etc."
-                >
-                <small class="form-hint">
-                    Nome do banco ou instituição financeira.
-                </small>
+                <label class="form-label" for="pix_label">Apelido/Nome da Conta <span class="text-danger">*</span></label>
+                <input type="text" name="label" id="pix_label" class="form-input" required maxlength="255" placeholder="Ex: PagBank, Efí">
+                <small class="form-hint">Nome identificador da conta (ex: PagBank, Efí)</small>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-md);">
+                <div class="form-group">
+                    <label class="form-label" for="pix_bank_code">Código do Banco</label>
+                    <input type="text" name="bank_code" id="pix_bank_code" class="form-input" maxlength="10" placeholder="Ex: 290, 364">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="pix_bank_name">Nome do Banco</label>
+                    <input type="text" name="bank_name" id="pix_bank_name" class="form-input" maxlength="255" placeholder="Ex: PagBank, Efí">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-md);">
+                <div class="form-group">
+                    <label class="form-label" for="pix_agency">Agência</label>
+                    <input type="text" name="agency" id="pix_agency" class="form-input" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="pix_account_number">Número da Conta</label>
+                    <input type="text" name="account_number" id="pix_account_number" class="form-input" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="pix_account_type">Tipo de Conta</label>
+                    <select name="account_type" id="pix_account_type" class="form-select">
+                        <option value="">Selecione</option>
+                        <option value="corrente">Corrente</option>
+                        <option value="poupanca">Poupança</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="pix_titular">Titular</label>
-                <input 
-                    type="text" 
-                    name="pix_titular"
-                    id="pix_titular"
-                    class="form-input" 
-                    value="<?= htmlspecialchars($cfc['pix_titular'] ?? '') ?>" 
-                    maxlength="255"
-                    placeholder="Nome completo do titular da conta"
-                >
-                <small class="form-hint">
-                    Nome completo do titular da conta PIX.
-                </small>
+                <label class="form-label" for="pix_holder_name">Nome do Titular <span class="text-danger">*</span></label>
+                <input type="text" name="holder_name" id="pix_holder_name" class="form-input" required maxlength="255">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="pix_chave">Chave PIX</label>
-                <input 
-                    type="text" 
-                    name="pix_chave"
-                    id="pix_chave"
-                    class="form-input" 
-                    value="<?= htmlspecialchars($cfc['pix_chave'] ?? '') ?>" 
-                    maxlength="255"
-                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                >
-                <small class="form-hint">
-                    Chave PIX (CPF, CNPJ, e-mail, telefone ou chave aleatória).
-                </small>
+                <label class="form-label" for="pix_holder_document">CPF/CNPJ do Titular</label>
+                <input type="text" name="holder_document" id="pix_holder_document" class="form-input" maxlength="20">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="pix_observacao">Observação</label>
-                <textarea 
-                    name="pix_observacao"
-                    id="pix_observacao"
-                    class="form-input" 
-                    rows="3"
-                    placeholder="Informações adicionais sobre o PIX (opcional)"
-                ><?= htmlspecialchars($cfc['pix_observacao'] ?? '') ?></textarea>
-                <small class="form-hint">
-                    Observação opcional que será exibida junto com os dados do PIX.
-                </small>
+                <label class="form-label" for="pix_key">Chave PIX <span class="text-danger">*</span></label>
+                <input type="text" name="pix_key" id="pix_key" class="form-input" required maxlength="255" placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória">
             </div>
 
-            <div class="form-actions">
-                <button id="salvarPixBtn" type="submit" class="btn btn-primary">
-                    Salvar Configurações PIX
-                </button>
+            <div class="form-group">
+                <label class="form-label" for="pix_key_type">Tipo da Chave PIX</label>
+                <select name="pix_key_type" id="pix_key_type" class="form-select">
+                    <option value="">Detectar automaticamente</option>
+                    <option value="cpf">CPF</option>
+                    <option value="cnpj">CNPJ</option>
+                    <option value="email">E-mail</option>
+                    <option value="telefone">Telefone</option>
+                    <option value="aleatoria">Chave Aleatória</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="pix_note">Observações</label>
+                <textarea name="note" id="pix_note" class="form-input" rows="3"></textarea>
+            </div>
+
+            <div style="display: flex; gap: var(--spacing-md);">
+                <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+                    <input type="checkbox" name="is_default" id="pix_is_default" value="1">
+                    <span>Definir como conta padrão</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: var(--spacing-xs); cursor: pointer;">
+                    <input type="checkbox" name="is_active" id="pix_is_active" value="1" checked>
+                    <span>Conta ativa</span>
+                </label>
+            </div>
+
+            <div style="margin-top: var(--spacing-lg); display: flex; justify-content: flex-end; gap: var(--spacing-md);">
+                <button type="button" class="btn btn-outline" onclick="fecharModalPixAccount()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+const pixAccountsData = <?= json_encode($pixAccounts ?? []) ?>;
+
+function abrirModalPixAccount(accountId) {
+    const modal = document.getElementById('modalPixAccount');
+    const form = document.getElementById('formPixAccount');
+    const title = document.getElementById('modalPixAccountTitle');
+    
+    // Limpar formulário
+    form.reset();
+    
+    if (accountId) {
+        // Modo edição
+        const account = pixAccountsData.find(a => a.id == accountId);
+        if (!account) {
+            alert('Conta não encontrada.');
+            return;
+        }
+        
+        title.textContent = 'Editar Conta PIX';
+        form.action = '<?= base_url('configuracoes/cfc/pix-accounts') ?>/' + accountId + '/atualizar';
+        
+        // Preencher campos
+        document.getElementById('pix_label').value = account.label || '';
+        document.getElementById('pix_bank_code').value = account.bank_code || '';
+        document.getElementById('pix_bank_name').value = account.bank_name || '';
+        document.getElementById('pix_agency').value = account.agency || '';
+        document.getElementById('pix_account_number').value = account.account_number || '';
+        document.getElementById('pix_account_type').value = account.account_type || '';
+        document.getElementById('pix_holder_name').value = account.holder_name || '';
+        document.getElementById('pix_holder_document').value = account.holder_document || '';
+        document.getElementById('pix_key').value = account.pix_key || '';
+        document.getElementById('pix_key_type').value = account.pix_key_type || '';
+        document.getElementById('pix_note').value = account.note || '';
+        document.getElementById('pix_is_default').checked = account.is_default == 1;
+        document.getElementById('pix_is_active').checked = account.is_active == 1;
+    } else {
+        // Modo criação
+        title.textContent = 'Nova Conta PIX';
+        form.action = '<?= base_url('configuracoes/cfc/pix-accounts/criar') ?>';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function fecharModalPixAccount() {
+    document.getElementById('modalPixAccount').style.display = 'none';
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('modalPixAccount')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        fecharModalPixAccount();
+    }
+});
+</script>

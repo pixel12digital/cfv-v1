@@ -150,6 +150,17 @@
                 </select>
             </div>
 
+            <!-- Seletor de Conta PIX (aparece quando payment_method = 'pix') -->
+            <div id="pixAccountSelector" style="display: none; margin-top: var(--spacing-md);">
+                <div class="form-group">
+                    <label class="form-label" for="pix_account_id">Conta PIX *</label>
+                    <select id="pix_account_id" name="pix_account_id" class="form-select">
+                        <option value="">Carregando contas...</option>
+                    </select>
+                    <small class="form-hint">Selecione qual conta PIX será usada para este pagamento</small>
+                </div>
+            </div>
+
             <!-- Seção Condições de Pagamento (Dinâmica) -->
             <div id="paymentConditionsSection" style="display: none; margin-top: 1.5rem; padding: 1rem; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--border-radius);">
                 <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: var(--font-size-md); font-weight: var(--font-weight-semibold);">Condições de Pagamento</h3>
@@ -457,11 +468,13 @@ function togglePaymentConditions() {
     const boletoPixDiv = document.getElementById('boletoPixConditions');
     const cartaoDiv = document.getElementById('cartaoConditions');
     const entradaParcelasDiv = document.getElementById('entradaParcelasConditions');
+    const pixAccountSelector = document.getElementById('pixAccountSelector');
     
     // Esconder todas as condições
     boletoPixDiv.style.display = 'none';
     cartaoDiv.style.display = 'none';
     entradaParcelasDiv.style.display = 'none';
+    pixAccountSelector.style.display = 'none';
     
     // Remover required de todos os campos
     document.querySelectorAll('#paymentConditionsSection input[required], #paymentConditionsSection select[required]').forEach(el => {
@@ -474,6 +487,13 @@ function togglePaymentConditions() {
         boletoPixDiv.style.display = 'block';
         document.getElementById('installments').setAttribute('required', 'required');
         document.getElementById('first_due_date').setAttribute('required', 'required');
+        
+        // Se for PIX, mostrar seletor de conta
+        if (paymentMethod === 'pix') {
+            pixAccountSelector.style.display = 'block';
+            document.getElementById('pix_account_id').setAttribute('required', 'required');
+            carregarContasPix();
+        }
     } else if (paymentMethod === 'cartao') {
         conditionsSection.style.display = 'block';
         cartaoDiv.style.display = 'block';
@@ -511,6 +531,34 @@ function togglePaymentConditions() {
     } else {
         conditionsSection.style.display = 'none';
     }
+}
+
+function carregarContasPix() {
+    const select = document.getElementById('pix_account_id');
+    const pixAccounts = <?= json_encode($pixAccounts ?? []) ?>;
+    
+    select.innerHTML = '';
+    
+    if (pixAccounts.length === 0) {
+        select.innerHTML = '<option value="">Nenhuma conta PIX configurada</option>';
+        select.disabled = true;
+        return;
+    }
+    
+    select.disabled = false;
+    
+    // Encontrar conta padrão
+    const defaultAccount = pixAccounts.find(a => a.is_default == 1);
+    
+    pixAccounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = account.label + (account.bank_name ? ' - ' + account.bank_name : '');
+        if (defaultAccount && account.id == defaultAccount.id) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
 }
 
 function validateDownPayment() {
