@@ -695,6 +695,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
+    <!-- Theme Tokens (deve vir antes de outros CSS) -->
+    <link href="../assets/css/theme-tokens.css" rel="stylesheet">
+    
+    <!-- Theme Overrides Global (dark mode fixes) -->
+    <link href="../assets/css/theme-overrides.css?v=1.0.10" rel="stylesheet">
+    
     <!-- CSS Principal -->
     <link href="assets/css/admin.css?v=<?php echo time(); ?>" rel="stylesheet">
     <link href="assets/css/modal-veiculos.css?v=<?php echo time(); ?>" rel="stylesheet">

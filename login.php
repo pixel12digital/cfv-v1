@@ -294,10 +294,11 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     </script>
     
     <!-- Meta tags PWA -->
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
+    <meta name="color-scheme" content="light dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="apple-status-bar">
     <meta name="apple-mobile-web-app-title" content="<?php echo htmlspecialchars($appTitle); ?>">
     <meta name="application-name" content="<?php echo htmlspecialchars($appName); ?>">
     
@@ -305,6 +306,34 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     <link rel="apple-touch-icon" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/pwa/icons/icon-192.png'); ?>">
     <link rel="apple-touch-icon" sizes="152x152" href="/pwa/icons/icon-152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/icon-192.png">
+    
+    <!-- Theme Tokens (deve vir primeiro) -->
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-tokens.css'); ?>?v=<?php echo filemtime(__DIR__ . '/assets/css/theme-tokens.css'); ?>">
+    
+    <!-- Theme Overrides Global (dark mode fixes) -->
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-overrides.css'); ?>?v=<?php echo filemtime(__DIR__ . '/assets/css/theme-overrides.css'); ?>">
+    
+    <!-- Script para atualizar theme-color dinamicamente (iOS/Android) -->
+    <script>
+        (function() {
+            function updateThemeColor() {
+                const metaThemeColor = document.getElementById('theme-color-meta');
+                const appleMeta = document.getElementById('apple-status-bar');
+                if (!metaThemeColor) return;
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    metaThemeColor.setAttribute('content', '#1e293b');
+                    if (appleMeta) { appleMeta.setAttribute('content', 'black-translucent'); }
+                } else {
+                    metaThemeColor.setAttribute('content', '#10b981');
+                    if (appleMeta) { appleMeta.setAttribute('content', 'default'); }
+                }
+            }
+            updateThemeColor();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+        })();
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -314,16 +343,17 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #F6F8FC;
+            background: var(--theme-bg, #F6F8FC);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: background-color 0.2s ease;
         }
         
         .login-container {
-            background: white;
+            background: var(--theme-card-bg, white);
             border-radius: 20px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.15);
             overflow: hidden;
@@ -331,6 +361,7 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             max-width: 1000px;
             min-height: 600px;
             display: flex;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
         }
         
         .left-panel {
@@ -442,13 +473,13 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         .login-title {
             font-size: 28px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
             margin-bottom: 10px;
             font-weight: 600;
         }
         
         .login-subtitle {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 16px;
         }
         
@@ -456,13 +487,13 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .login-portal-info {
             margin-top: 15px;
             padding: 12px 16px;
-            background: #e8f4f8;
-            border-left: 4px solid #1A365D;
+            background: var(--theme-info-bg, #e8f4f8);
+            border-left: 4px solid var(--theme-info, #1A365D);
             border-radius: 4px;
         }
         
         .portal-info-text {
-            color: #2c3e50;
+            color: var(--theme-info-text, #2c3e50);
             font-size: 14px;
             margin: 0;
             line-height: 1.5;
@@ -475,7 +506,7 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
             font-weight: 500;
             font-size: 14px;
         }
@@ -483,17 +514,24 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .form-control {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e1e5e9;
+            border: 2px solid var(--theme-input-border, #e1e5e9);
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            background: #f8f9fa;
+            background: var(--theme-input-bg, #f8f9fa);
+            color: var(--theme-input-text, #1e293b);
+        }
+        
+        .form-control::placeholder {
+            color: var(--theme-input-placeholder, #94a3b8);
+            opacity: 1;
         }
         
         .form-control:focus {
             outline: none;
-            border-color: #1A365D;
-            background: white;
+            border-color: var(--theme-input-border-focus, #1A365D);
+            background: var(--theme-input-bg, white);
+            color: var(--theme-input-text, #1e293b);
             box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
         }
         
@@ -532,16 +570,17 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         .checkbox-group label {
             font-size: 14px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
         }
         
         .forgot-password {
-            color: #1A365D;
+            color: var(--theme-link, #1A365D);
             text-decoration: none;
             font-size: 14px;
         }
         
         .forgot-password:hover {
+            color: var(--theme-link-hover, #1d4ed8);
             text-decoration: underline;
         }
         
@@ -599,30 +638,30 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             text-align: center;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #e1e5e9;
+            border-top: 1px solid var(--theme-border, #e1e5e9);
         }
         
         .login-footer p {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 14px;
             margin-bottom: 10px;
         }
         
         .support-info {
-            background: #f8f9fa;
+            background: var(--theme-bg-secondary, #f8f9fa);
             padding: 15px;
             border-radius: 10px;
             margin-top: 20px;
         }
         
         .support-info h4 {
-            color: #2c3e50;
+            color: var(--theme-text-secondary, #2c3e50);
             font-size: 14px;
             margin-bottom: 5px;
         }
         
         .support-info p {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 12px;
             margin: 2px 0;
         }
@@ -711,6 +750,170 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             border-radius: 2px;
         }
     </style>
+    
+    <!-- CSS adicional para garantir dark mode (deve vir depois do style inline) -->
+    <style id="login-dark-mode-fix">
+        @media (prefers-color-scheme: dark) {
+            /* Body background */
+            body {
+                background-color: #0f172a !important;
+            }
+            
+            /* Card de login */
+            .login-container {
+                background-color: #1e293b !important;
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+            }
+            
+            /* Títulos */
+            .login-title {
+                color: #f1f5f9 !important;
+            }
+            
+            .login-subtitle {
+                color: #94a3b8 !important;
+            }
+            
+            /* Labels */
+            .form-label {
+                color: #f1f5f9 !important;
+            }
+            
+            /* Forçar placeholders legíveis */
+            .form-control::placeholder,
+            input.form-control::placeholder,
+            input[type="email"]::placeholder,
+            input[type="password"]::placeholder,
+            input::placeholder {
+                color: #94a3b8 !important;
+                opacity: 1 !important;
+            }
+            
+            /* Forçar link "Esqueci minha senha" visível */
+            .forgot-password,
+            a.forgot-password,
+            .link-theme,
+            a.link-theme {
+                color: #60a5fa !important;
+            }
+            
+            .forgot-password:hover,
+            a.forgot-password:hover,
+            .link-theme:hover,
+            a.link-theme:hover {
+                color: #93c5fd !important;
+            }
+            
+            /* Forçar inputs com contraste */
+            .form-control,
+            input.form-control,
+            input[type="email"],
+            input[type="password"] {
+                background-color: #1e293b !important;
+                color: #f1f5f9 !important;
+                border-color: #475569 !important;
+            }
+            
+            .form-control:focus,
+            input.form-control:focus,
+            input[type="email"]:focus,
+            input[type="password"]:focus {
+                background-color: #1e293b !important;
+                color: #f1f5f9 !important;
+                border-color: #60a5fa !important;
+                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+            }
+            
+            /* Textos de ajuda */
+            .form-help {
+                color: #94a3b8 !important;
+            }
+            
+            /* Checkbox labels */
+            .checkbox-group label {
+                color: #f1f5f9 !important;
+            }
+            
+            /* Footer */
+            .login-footer {
+                color: #94a3b8 !important;
+            }
+            
+            .login-footer p {
+                color: #94a3b8 !important;
+            }
+            
+            .support-info {
+                background-color: #1e293b !important;
+            }
+            
+            .support-info h4,
+            .support-info p {
+                color: #94a3b8 !important;
+            }
+        }
+    </style>
+    
+    <!-- Script para forçar dark mode se detectado -->
+    <script>
+        // Log imediato para garantir que o script está sendo executado
+        console.log('[Login Dark Mode] 🔍 Script de diagnóstico carregado');
+        
+        (function() {
+            try {
+                console.log('[Login Dark Mode] 🔍 Iniciando detecção de dark mode...');
+                
+                // Detectar dark mode imediatamente
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                console.log('[Login Dark Mode] 📱 prefers-color-scheme: dark =', prefersDark);
+                console.log('[Login Dark Mode] 📱 User Agent:', navigator.userAgent);
+                
+                if (prefersDark) {
+                    console.log('[Login Dark Mode] ✅ DARK MODE DETECTADO - Aplicando estilos...');
+                    
+                    // Adicionar classe ao body para garantir que dark mode seja aplicado
+                    if (document.documentElement) {
+                        document.documentElement.classList.add('dark-mode');
+                        console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <html>');
+                    }
+                    
+                    if (document.body) {
+                        document.body.classList.add('dark-mode');
+                        console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <body>');
+                    } else {
+                        // Se body ainda não existe, aguardar
+                        document.addEventListener('DOMContentLoaded', function() {
+                            document.body.classList.add('dark-mode');
+                            console.log('[Login Dark Mode] ✅ Classe dark-mode adicionada ao <body> (após DOMContentLoaded)');
+                        });
+                    }
+                    
+                    // Verificar se CSS está sendo aplicado
+                    setTimeout(() => {
+                        const testInput = document.querySelector('.form-control');
+                        if (testInput) {
+                            const computedStyle = window.getComputedStyle(testInput);
+                            console.log('[Login Dark Mode] 🎨 Input background computado:', computedStyle.backgroundColor);
+                            console.log('[Login Dark Mode] 🎨 Input color computado:', computedStyle.color);
+                            console.log('[Login Dark Mode] 🎨 Input border computado:', computedStyle.borderColor);
+                            
+                            // Verificar placeholder
+                            const placeholderStyle = window.getComputedStyle(testInput, '::placeholder');
+                            console.log('[Login Dark Mode] 🎨 Placeholder color:', placeholderStyle.color);
+                        } else {
+                            console.warn('[Login Dark Mode] ⚠️ Input .form-control não encontrado');
+                        }
+                    }, 500);
+                } else {
+                    console.log('[Login Dark Mode] ⚠️ DARK MODE NÃO DETECTADO');
+                    console.log('[Login Dark Mode] 💡 Dispositivo está em modo claro');
+                    console.log('[Login Dark Mode] 💡 Para testar dark mode, ative o tema escuro nas configurações do dispositivo');
+                }
+            } catch (error) {
+                console.error('[Login Dark Mode] ❌ ERRO no script de diagnóstico:', error);
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="login-container">
@@ -822,7 +1025,8 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
                     <label for="senha" class="form-label">Senha</label>
                                 <input type="password" 
                                        id="senha" 
-                                       name="senha" 
+                                       name="senha"
+                                       autocomplete="current-password" 
                            class="form-control" 
                                        placeholder="Sua senha"
                            required>
@@ -835,12 +1039,12 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Lembrar de mim</label>
                             </div>
-                    <a href="forgot-password.php<?php echo $hasSpecificType ? '?type=' . htmlspecialchars($userType) : ''; ?>" class="forgot-password">Esqueci minha senha</a>
+                    <a href="forgot-password.php<?php echo $hasSpecificType ? '?type=' . htmlspecialchars($userType) : ''; ?>" class="forgot-password link-theme">Esqueci minha senha</a>
                             </div>
                 <?php else: ?>
                 <div class="form-options">
-                    <div class="form-help" style="text-align: center; margin-top: 10px; color: #7f8c8d;">
-                        <a href="forgot-password.php?type=aluno" style="color: #1A365D; text-decoration: none;">Esqueci minha senha</a>
+                    <div class="form-help" style="text-align: center; margin-top: 10px;">
+                        <a href="forgot-password.php?type=aluno" class="link-theme" style="text-decoration: none;">Esqueci minha senha</a>
                     </div>
                 </div>
                 <?php endif; ?>

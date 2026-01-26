@@ -11,8 +11,8 @@
 body.mobile-first {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f8fafc;
+    color: var(--theme-text, #1e293b);
+    background-color: var(--theme-bg-secondary, #f8fafc);
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -57,12 +57,13 @@ body.mobile-first {
 
 /* Cards Mobile */
 .card {
-    background: white;
+    background: var(--theme-card-bg, var(--theme-surface, #ffffff));
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--theme-card-shadow, 0 2px 8px rgba(0,0,0,0.08));
+    border: 1px solid var(--theme-card-border, var(--theme-border, #e2e8f0));
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-header {
@@ -71,18 +72,18 @@ body.mobile-first {
     align-items: center;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--theme-border, #e2e8f0);
 }
 
 .card-title {
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--theme-text, #1e293b);
 }
 
 .card-subtitle {
     font-size: 14px;
-    color: #64748b;
+    color: var(--theme-text-muted, #64748b);
     margin-top: 4px;
 }
 
@@ -104,60 +105,70 @@ body.mobile-first {
 }
 
 .btn-primary {
-    background: #2563eb;
-    color: white;
+    background: var(--theme-primary, #10b981);
+    color: var(--theme-text-inverse, #ffffff);
+    border-color: var(--theme-primary, #10b981);
 }
 
 .btn-primary:hover {
-    background: #1d4ed8;
+    background: var(--theme-primary-hover, #059669);
+    border-color: var(--theme-primary-hover, #059669);
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #64748b;
-    color: white;
+    background: var(--theme-secondary, #f59e0b);
+    color: var(--theme-text-inverse, #ffffff);
+    border-color: var(--theme-secondary, #f59e0b);
 }
 
 .btn-secondary:hover {
-    background: #475569;
+    background: var(--theme-secondary-hover, #d97706);
+    border-color: var(--theme-secondary-hover, #d97706);
 }
 
 .btn-success {
-    background: #059669;
-    color: white;
+    background: var(--theme-success, #10b981);
+    color: var(--theme-text-inverse, #ffffff);
+    border-color: var(--theme-success, #10b981);
 }
 
 .btn-success:hover {
-    background: #047857;
+    background: var(--theme-primary-hover, #059669);
+    border-color: var(--theme-primary-hover, #059669);
 }
 
 .btn-warning {
-    background: #d97706;
-    color: white;
+    background: var(--theme-warning, #f59e0b);
+    color: var(--theme-text-inverse, #ffffff);
+    border-color: var(--theme-warning, #f59e0b);
 }
 
 .btn-warning:hover {
-    background: #b45309;
+    background: var(--theme-secondary-hover, #d97706);
+    border-color: var(--theme-secondary-hover, #d97706);
 }
 
 .btn-danger {
-    background: #dc2626;
-    color: white;
+    background: var(--theme-danger, #ef4444);
+    color: var(--theme-text-inverse, #ffffff);
+    border-color: var(--theme-danger, #ef4444);
 }
 
 .btn-danger:hover {
-    background: #b91c1c;
+    background: var(--theme-danger, #dc2626);
+    border-color: var(--theme-danger, #dc2626);
 }
 
 .btn-outline {
     background: transparent;
-    border: 2px solid #2563eb;
-    color: #2563eb;
+    border: 2px solid var(--theme-link, var(--theme-primary, #2563eb));
+    color: var(--theme-link, var(--theme-primary, #2563eb));
 }
 
 .btn-outline:hover {
-    background: #2563eb;
-    color: white;
+    background: var(--theme-link, var(--theme-primary, #2563eb));
+    color: var(--theme-text-inverse, #ffffff);
 }
 
 .btn-sm {
@@ -182,12 +193,13 @@ body.mobile-first {
 }
 
 .aula-item {
-    background: white;
+    background: var(--theme-card-bg, var(--theme-surface, #ffffff));
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid var(--theme-border, #e2e8f0);
+    box-shadow: var(--theme-shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .aula-item-header {
@@ -224,12 +236,12 @@ body.mobile-first {
 .aula-data {
     font-size: 16px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--theme-text, #1e293b);
 }
 
 .aula-hora {
     font-size: 14px;
-    color: #64748b;
+    color: var(--theme-text-muted, #64748b);
     margin-top: 2px;
 }
 
@@ -242,7 +254,7 @@ body.mobile-first {
     align-items: center;
     margin-bottom: 6px;
     font-size: 14px;
-    color: #475569;
+    color: var(--theme-text-secondary, #475569);
 }
 
 .aula-detalhe-icon {
@@ -289,34 +301,48 @@ body.mobile-first {
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: #374151;
+    color: var(--theme-text-secondary, #374151);
     margin-bottom: 6px;
 }
 
 .form-input {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #d1d5db;
+    border: 2px solid var(--theme-input-border, #d1d5db);
     border-radius: 8px;
     font-size: 16px;
-    transition: border-color 0.2s ease;
-    background: white;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    background: var(--theme-input-bg, #ffffff);
+    color: var(--theme-input-text, #1e293b);
+}
+
+.form-input::placeholder {
+    color: var(--theme-input-placeholder, #94a3b8);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--theme-input-border-focus, var(--theme-link, #2563eb));
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: var(--theme-input-bg, #ffffff);
 }
 
 .form-select {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #d1d5db;
+    border: 2px solid var(--theme-input-border, #d1d5db);
     border-radius: 8px;
     font-size: 16px;
-    background: white;
+    background: var(--theme-input-bg, #ffffff);
+    color: var(--theme-input-text, #1e293b);
     cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--theme-input-border-focus, var(--theme-link, #2563eb));
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-textarea {
@@ -351,13 +377,14 @@ body.mobile-first {
 }
 
 .modal {
-    background: white;
+    background: var(--theme-surface, #ffffff);
     border-radius: 16px 16px 0 0;
     width: 100%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
     animation: slideUp 0.3s ease;
+    transition: background-color 0.2s ease;
 }
 
 @keyframes slideUp {
@@ -378,7 +405,7 @@ body.mobile-first {
 .modal-title {
     font-size: 20px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--theme-text, #1e293b);
     margin-bottom: 8px;
 }
 
@@ -404,23 +431,23 @@ body.mobile-first {
 }
 
 .badge-success {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--theme-success-bg, #dcfce7);
+    color: var(--theme-success-text, #166534);
 }
 
 .badge-warning {
-    background: #fef3c7;
-    color: #92400e;
+    background: var(--theme-warning-bg, #fef3c7);
+    color: var(--theme-warning-text, #92400e);
 }
 
 .badge-danger {
-    background: #fee2e2;
-    color: #dc2626;
+    background: var(--theme-danger-bg, #fee2e2);
+    color: var(--theme-danger-text, #dc2626);
 }
 
 .badge-info {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--theme-info-bg, #dbeafe);
+    color: var(--theme-info-text, #1e40af);
 }
 
 /* Loading States */
@@ -429,14 +456,14 @@ body.mobile-first {
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: #64748b;
+    color: var(--theme-text-muted, #64748b);
 }
 
 .spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid #e2e8f0;
-    border-top: 2px solid #2563eb;
+    border: 2px solid var(--theme-border-subtle, #e2e8f0);
+    border-top: 2px solid var(--theme-primary, #10b981);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-right: 12px;
@@ -451,7 +478,7 @@ body.mobile-first {
 .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #64748b;
+    color: var(--theme-text-muted, #64748b);
 }
 
 .empty-state-icon {
@@ -465,7 +492,7 @@ body.mobile-first {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #374151;
+    color: var(--theme-text, #374151);
 }
 
 .empty-state-text {
@@ -479,12 +506,13 @@ body.mobile-first {
     top: 20px;
     left: 16px;
     right: 16px;
-    background: white;
+    background: var(--theme-surface, #ffffff);
     border-radius: 12px;
     padding: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--theme-shadow-lg, 0 4px 12px rgba(0,0,0,0.15));
     z-index: 1100;
     animation: slideDown 0.3s ease;
+    transition: background-color 0.2s ease;
 }
 
 @keyframes slideDown {
@@ -527,7 +555,7 @@ body.mobile-first {
 
 .toast-message {
     font-size: 14px;
-    color: #64748b;
+    color: var(--theme-text-muted, #64748b);
 }
 
 /* Grid Responsivo */
@@ -646,17 +674,17 @@ body.mobile-first {
 
 .bottom-nav .nav-link {
     padding: 8px 4px;
-    color: #6c757d;
+    color: var(--theme-text-muted, #6c757d);
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
 .bottom-nav .nav-link.active {
-    color: #0d6efd;
+    color: var(--theme-primary, var(--theme-link, #0d6efd));
 }
 
 .bottom-nav .nav-link:hover {
-    color: #0d6efd;
+    color: var(--theme-primary-hover, var(--theme-link-hover, #0d6efd));
 }
 
 .bottom-nav .nav-label {
@@ -669,19 +697,24 @@ body.mobile-first {
 .card-mobile {
     border: none;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: var(--theme-card-shadow, 0 2px 8px rgba(0,0,0,0.08));
     margin-bottom: 16px;
     overflow: hidden;
+    background: var(--theme-card-bg, var(--theme-surface, #ffffff));
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-mobile .card-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+    background: var(--theme-bg-secondary, #f8f9fa);
+    border-bottom: 1px solid var(--theme-border, #e9ecef);
     padding: 16px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .card-mobile .card-body {
     padding: 16px;
+    background: var(--theme-card-bg, var(--theme-surface, #ffffff));
+    transition: background-color 0.2s ease;
 }
 
 /* Table to Cards (Mobile) */
@@ -717,7 +750,7 @@ body.mobile-first {
 
 .cards-mobile .card-text {
     font-size: 14px;
-    color: #6c757d;
+    color: var(--theme-text-muted, #6c757d);
     margin-bottom: 4px;
 }
 
@@ -727,11 +760,12 @@ body.mobile-first {
     bottom: 80px; /* Acima da bottom nav */
     left: 0;
     right: 0;
-    background: white;
-    border-top: 1px solid #e9ecef;
+    background: var(--theme-surface, #ffffff);
+    border-top: 1px solid var(--theme-border, #e9ecef);
     padding: 16px;
     z-index: 999;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--theme-shadow-md, 0 -2px 10px rgba(0,0,0,0.1));
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 @media (min-width: 768px) {
@@ -830,11 +864,23 @@ input[type="url"] {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.8); /* Usa cor de fundo dark com opacidade */
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
+}
+
+@media (prefers-color-scheme: dark) {
+    .loading-overlay {
+        background: rgba(15, 23, 42, 0.9);
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    .loading-overlay {
+        background: rgba(255, 255, 255, 0.8);
+    }
 }
 
 /* Touch Targets */
@@ -893,5 +939,248 @@ input[type="url"] {
     
     .aula-item {
         border: 2px solid #000;
+    }
+}
+
+/* Dark mode support - Usa tokens de tema */
+/* Nota: As cores agora vêm dos tokens em theme-tokens.css */
+/* Esta seção garante que elementos específicos usem tokens corretamente */
+@media (prefers-color-scheme: dark) {
+    /* =====================================================
+       TEXTOS E LINKS
+       ===================================================== */
+    
+    /* Garantir que textos muted usem token correto */
+    .text-muted,
+    small.text-muted,
+    .small.text-muted {
+        color: var(--theme-text-muted) !important;
+    }
+    
+    /* Links e textos primary devem usar token de link */
+    a:not(.btn):not(.badge),
+    .text-primary:not(.btn):not(.badge),
+    a.text-primary,
+    a.text-decoration-none.text-primary {
+        color: var(--theme-link) !important;
+    }
+    
+    a:not(.btn):not(.badge):hover,
+    .text-primary:not(.btn):not(.badge):hover,
+    a.text-primary:hover,
+    a.text-decoration-none.text-primary:hover {
+        color: var(--theme-link-hover) !important;
+    }
+    
+    /* =====================================================
+       INPUTS E FORMULÁRIOS
+       ===================================================== */
+    
+    /* Placeholders devem ser legíveis */
+    ::placeholder,
+    input::placeholder,
+    textarea::placeholder {
+        color: var(--theme-input-placeholder) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Inputs devem ter contraste adequado */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select,
+    .form-control,
+    .form-select {
+        background-color: var(--theme-input-bg) !important;
+        color: var(--theme-input-text) !important;
+        border-color: var(--theme-input-border) !important;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    input[type="tel"]:focus,
+    input[type="date"]:focus,
+    input[type="time"]:focus,
+    input[type="datetime-local"]:focus,
+    textarea:focus,
+    select:focus,
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--theme-input-border-focus) !important;
+        background-color: var(--theme-input-bg) !important;
+        color: var(--theme-input-text) !important;
+    }
+    
+    /* =====================================================
+       LABELS E TEXTOS SECUNDÁRIOS
+       ===================================================== */
+    
+    /* Garantir que labels e textos secundários sejam legíveis */
+    label,
+    .form-label {
+        color: var(--theme-text-secondary) !important;
+    }
+    
+    /* Ícones muted devem ser visíveis */
+    .text-muted i,
+    i.text-muted,
+    .fas.text-muted,
+    .far.text-muted {
+        color: var(--theme-text-muted) !important;
+    }
+    
+    /* =====================================================
+       CARDS E CONTAINERS
+       ===================================================== */
+    
+    /* Cards com border-primary devem usar tokens */
+    .card.border-primary {
+        border-color: var(--theme-primary) !important;
+        background-color: var(--theme-card-bg) !important;
+    }
+    
+    .card.border-primary .card-body {
+        background-color: var(--theme-card-bg) !important;
+        color: var(--theme-text) !important;
+    }
+    
+    /* Headers de cards com bg-primary devem manter contraste */
+    .card-header.bg-primary {
+        background-color: var(--theme-primary) !important;
+        color: var(--theme-text-inverse) !important;
+    }
+    
+    /* Garantir que todos os textos dentro de cards usem tokens */
+    .card strong,
+    .card h1,
+    .card h2,
+    .card h3,
+    .card h4,
+    .card h5,
+    .card h6,
+    .card h1 strong,
+    .card h2 strong,
+    .card h3 strong {
+        color: var(--theme-text) !important;
+    }
+    
+    /* Textos secundários em cards */
+    .card small,
+    .card .small {
+        color: var(--theme-text-secondary) !important;
+    }
+    
+    /* Links dentro de cards */
+    .card a:not(.btn):not(.badge),
+    .card-body a:not(.btn):not(.badge) {
+        color: var(--theme-link) !important;
+    }
+    
+    .card a:not(.btn):not(.badge):hover,
+    .card-body a:not(.btn):not(.badge):hover {
+        color: var(--theme-link-hover) !important;
+    }
+    
+    /* =====================================================
+       BADGES BOOTSTRAP
+       ===================================================== */
+    
+    /* Badges Bootstrap devem usar tokens */
+    .badge.bg-success {
+        background-color: var(--theme-success-bg) !important;
+        color: var(--theme-success-text) !important;
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--theme-warning-bg) !important;
+        color: var(--theme-warning-text) !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--theme-danger-bg) !important;
+        color: var(--theme-danger-text) !important;
+    }
+    
+    .badge.bg-info {
+        background-color: var(--theme-info-bg) !important;
+        color: var(--theme-info-text) !important;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--theme-primary) !important;
+        color: var(--theme-text-inverse) !important;
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--theme-badge-bg) !important;
+        color: var(--theme-badge-text) !important;
+    }
+    
+    /* =====================================================
+       ELEMENTOS ESPECÍFICOS DO DASHBOARD
+       ===================================================== */
+    
+    /* Garantir que todos os textos dentro de cards sejam legíveis */
+    .card-body strong,
+    .card-body h1,
+    .card-body h2,
+    .card-body h3,
+    .card-body h4,
+    .card-body h5,
+    .card-body h6 {
+        color: var(--theme-text) !important;
+    }
+    
+    /* Labels secundários (Aluno:, Veículo:, etc) */
+    .card-body dt,
+    .card-body label:not(.form-label) {
+        color: var(--theme-text-secondary) !important;
+    }
+    
+    /* Valores em cards */
+    .card-body dd,
+    .card-body .valor {
+        color: var(--theme-text) !important;
+    }
+    
+    /* Garantir que botões outline tenham contraste */
+    .btn-outline-primary,
+    .btn-outline-info,
+    .btn-outline-warning,
+    .btn-outline-success,
+    .btn-outline-danger {
+        border-color: var(--theme-link) !important;
+        color: var(--theme-link) !important;
+    }
+    
+    .btn-outline-primary:hover,
+    .btn-outline-info:hover,
+    .btn-outline-warning:hover,
+    .btn-outline-success:hover,
+    .btn-outline-danger:hover {
+        background-color: var(--theme-link) !important;
+        color: var(--theme-text-inverse) !important;
+    }
+    
+    /* Garantir que todos os links sejam visíveis */
+    a:not(.btn):not(.badge) {
+        color: var(--theme-link) !important;
+    }
+    
+    a:not(.btn):not(.badge):hover {
+        color: var(--theme-link-hover) !important;
+    }
+    
+    /* Textos com classe text-primary (links) */
+    .text-primary:not(.btn):not(.badge) {
+        color: var(--theme-link) !important;
     }
 }

@@ -1,0 +1,661 @@
+/* =====================================================
+   THEME OVERRIDES GLOBAL - Dark Mode PWA Android
+   Correções globais para contraste e legibilidade
+   ===================================================== */
+
+/* =====================================================
+   CLASSES UTILITÁRIAS BASEADAS EM TOKENS
+   ===================================================== */
+
+/* Fundo de cards/surfaces */
+.bg-theme-card {
+    background-color: var(--theme-card-bg, var(--theme-surface, #ffffff)) !important;
+}
+
+.bg-theme-surface {
+    background-color: var(--theme-surface, #ffffff) !important;
+}
+
+/* Textos */
+.text-theme {
+    color: var(--theme-text, #1e293b) !important;
+}
+
+.text-theme-muted {
+    color: var(--theme-text-muted, #64748b) !important;
+}
+
+.text-theme-secondary {
+    color: var(--theme-text-secondary, #475569) !important;
+}
+
+/* Links */
+.link-theme {
+    color: var(--theme-link, #2563eb) !important;
+}
+
+.link-theme:hover {
+    color: var(--theme-link-hover, #1d4ed8) !important;
+}
+
+/* =====================================================
+   OVERRIDES GLOBAIS - DARK MODE
+   ===================================================== */
+
+@media (prefers-color-scheme: dark) {
+    /* =====================================================
+       BOTÕES OUTLINE - CRÍTICO (Tela 3: Admin)
+       ===================================================== */
+    
+    /* Botões outline - BRANCO por padrão, azul claro no hover/ativo */
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .btn-outline-info,
+    .btn-outline-warning,
+    .btn-outline-success,
+    .btn-outline-danger,
+    a.btn-outline-primary,
+    a.btn-outline-secondary,
+    a.btn-outline-info,
+    a.btn-outline-warning,
+    a.btn-outline-success,
+    a.btn-outline-danger,
+    button.btn-outline-primary,
+    button.btn-outline-secondary {
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+        background-color: transparent !important;
+    }
+    
+    /* Hover/Ativo: azul claro */
+    .btn-outline-primary:hover,
+    .btn-outline-secondary:hover,
+    .btn-outline-info:hover,
+    .btn-outline-warning:hover,
+    .btn-outline-success:hover,
+    .btn-outline-danger:hover,
+    .btn-outline-primary:active,
+    .btn-outline-secondary:active,
+    .btn-outline-info:active,
+    .btn-outline-warning:active,
+    .btn-outline-success:active,
+    .btn-outline-danger:active,
+    .btn-outline-primary.active,
+    .btn-outline-secondary.active,
+    a.btn-outline-primary:hover,
+    a.btn-outline-secondary:hover,
+    a.btn-outline-info:hover,
+    a.btn-outline-warning:hover,
+    a.btn-outline-success:hover,
+    a.btn-outline-danger:hover,
+    a.btn-outline-primary:active,
+    a.btn-outline-secondary:active,
+    button.btn-outline-primary:hover,
+    button.btn-outline-secondary:hover,
+    button.btn-outline-primary:active,
+    button.btn-outline-secondary:active {
+        background-color: #60a5fa !important;
+        color: #0f172a !important;
+        border-color: #60a5fa !important;
+    }
+    
+    /* REGRA GENÉRICA: Qualquer botão outline em dark mode - BRANCO por padrão */
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) {
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+    }
+    
+    /* Hover/Ativo: azul claro */
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info):hover,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info):active,
+    [class*="btn-outline"].active:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) {
+        border-color: #60a5fa !important;
+        color: #0f172a !important;
+        background-color: #60a5fa !important;
+    }
+    
+    /* Ícones dentro de botões outline - REMOVIDO inherit, usar regras específicas abaixo */
+    
+    /* =====================================================
+       CARDS COM BACKGROUND HARDCODED
+       ===================================================== */
+    
+    /* Forçar cards a usar token de fundo no dark mode */
+    .aula-item,
+    .aula-item-mobile,
+    .aula-card-padronizado,
+    .card:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+    }
+    
+    /* Textos dentro de cards de aulas */
+    .aula-item strong,
+    .aula-item-mobile strong,
+    .aula-card-padronizado strong,
+    .aula-item h6,
+    .aula-item-mobile h6,
+    .aula-card-padronizado h6 {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       PLACEHOLDERS E INPUTS - CRÍTICO (Tela 4: Login)
+       ===================================================== */
+    
+    /* Placeholders legíveis */
+    ::placeholder,
+    input::placeholder,
+    textarea::placeholder,
+    .form-control::placeholder,
+    .form-input::placeholder,
+    .form-field-input::placeholder {
+        color: var(--theme-input-placeholder, #94a3b8) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Inputs com contraste adequado */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select,
+    .form-control,
+    .form-input,
+    .form-field-input {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border, #475569) !important;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    input[type="tel"]:focus,
+    input[type="date"]:focus,
+    input[type="time"]:focus,
+    input[type="datetime-local"]:focus,
+    textarea:focus,
+    select:focus,
+    .form-control:focus,
+    .form-input:focus,
+    .form-field-input:focus {
+        border-color: var(--theme-input-border-focus, #60a5fa) !important;
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       LINKS ESPECÍFICOS - CRÍTICO (Tela 4: Login)
+       ===================================================== */
+    
+    /* Link "Esqueci minha senha" e similares */
+    .forgot-password,
+    a.forgot-password,
+    .text-link,
+    a.text-link {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .forgot-password:hover,
+    a.forgot-password:hover,
+    .text-link:hover,
+    a.text-link:hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Remover roxo de links (se houver) */
+    a[style*="color: #"]:not(.btn):not(.badge) {
+        /* Sobrescrever cores inline específicas de links */
+    }
+    
+    /* =====================================================
+       TEXTOS HARDCODED EM CARDS
+       ===================================================== */
+    
+    /* Sobrescrever cores inline de textos em cards */
+    .card strong[style*="color: #1e293b"],
+    .card h6[style*="color: #1e293b"],
+    .aula-item strong[style*="color: #1e293b"],
+    .aula-item-mobile strong[style*="color: #1e293b"],
+    .aula-card-padronizado strong[style*="color: #1e293b"],
+    .aula-item div[style*="color: #1e293b"],
+    .aula-item-mobile div[style*="color: #1e293b"],
+    .aula-card-padronizado div[style*="color: #1e293b"] {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       DROPDOWNS E ELEMENTOS FLUTUANTES
+       ===================================================== */
+    
+    .dropdown-menu,
+    .instrutor-profile-dropdown {
+        background-color: var(--theme-surface, #1e293b) !important;
+        border-color: var(--theme-border, #334155) !important;
+    }
+    
+    .dropdown-item {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .dropdown-item:hover {
+        background-color: var(--theme-bg-secondary, #334155) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       LOGIN PAGE - CORREÇÕES ESPECÍFICAS (iOS/Android Dark)
+       ===================================================== */
+    
+    /* Body background adapta ao dark mode */
+    body {
+        background-color: var(--theme-bg, #0f172a) !important;
+    }
+    
+    /* Card de login adapta ao dark mode */
+    .login-container {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    /* Título do login */
+    .login-title {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Subtitle "Acesse sua conta" */
+    .login-subtitle {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* Labels dos inputs */
+    .form-label {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Inputs - sobrescrever CSS inline */
+    .form-control {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border, #475569) !important;
+    }
+    
+    .form-control:focus {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border-focus, #60a5fa) !important;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+    }
+    
+    /* Placeholders específicos do login */
+    .form-control::placeholder {
+        color: var(--theme-input-placeholder, #94a3b8) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Link "Esqueci minha senha" - CRÍTICO */
+    .forgot-password,
+    a.forgot-password,
+    .link-theme {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .forgot-password:hover,
+    a.forgot-password:hover,
+    .link-theme:hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Texto de ajuda dos inputs */
+    .form-help {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* Checkbox labels */
+    .checkbox-group label {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Portal info box */
+    .login-portal-info {
+        background-color: var(--theme-info-bg, #1e3a8a) !important;
+        border-left-color: var(--theme-info, #60a5fa) !important;
+    }
+    
+    .portal-info-text {
+        color: var(--theme-info-text, #93c5fd) !important;
+    }
+    
+    /* Footer do login */
+    .login-footer {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    .support-info h4,
+    .support-info p {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: TEXTOS SECUNDÁRIOS E SEMÂNTICOS
+       ===================================================== */
+    
+    /* Bootstrap text-muted - FORÇAR contraste adequado (WCAG AA) */
+    .text-muted,
+    small.text-muted,
+    .small.text-muted,
+    .text-muted *:not(.btn):not(.badge),
+    small:not(.btn):not(.badge),
+    .small:not(.btn):not(.badge) {
+        color: #cbd5e1 !important;
+        /* #cbd5e1 sobre #1e293b = 5.2:1 (WCAG AA garantido) */
+    }
+    
+    /* Bootstrap text-secondary - FORÇAR contraste adequado */
+    .text-secondary,
+    .text-secondary *:not(.btn):not(.badge) {
+        color: #cbd5e1 !important;
+        /* #cbd5e1 = cinza claro com contraste adequado */
+    }
+    
+    /* Bootstrap text-primary (links) - FORÇAR azul claro legível */
+    .text-primary:not(.btn):not(.badge),
+    a.text-primary:not(.btn),
+    .text-primary *:not(.btn):not(.badge) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .text-primary:hover:not(.btn):not(.badge),
+    a.text-primary:hover:not(.btn) {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ÍCONES EM DARK MODE
+       ===================================================== */
+    
+    /* Ícones em botões outline - BRANCO por padrão */
+    .btn-outline-primary i,
+    .btn-outline-secondary i,
+    .btn-outline-info i,
+    .btn-outline-warning i,
+    .btn-outline-success i,
+    .btn-outline-danger i,
+    .btn-outline-primary .fas,
+    .btn-outline-secondary .fas,
+    .btn-outline-info .fas,
+    .btn-outline-warning .fas,
+    .btn-outline-success .fas,
+    .btn-outline-danger .fas,
+    .btn-outline-primary .fa,
+    .btn-outline-secondary .fa,
+    a.btn-outline-primary i,
+    a.btn-outline-secondary i,
+    a.btn-outline-primary .fas,
+    a.btn-outline-secondary .fas,
+    button.btn-outline-primary i,
+    button.btn-outline-secondary i,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) i,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) .fas,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) .fa {
+        color: #f1f5f9 !important;
+    }
+    
+    /* Ícones em cards escuros - devem ser brancos ou quase brancos */
+    .card i:not(.btn i):not(.badge i),
+    .card .fas:not(.btn .fas):not(.badge .fas),
+    .card .fa:not(.btn .fa):not(.badge .fa),
+    .aula-item i,
+    .aula-item-mobile i,
+    .aula-card-padronizado i,
+    .card-body i:not(.btn i),
+    .card-header i:not(.btn i) {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Ícones em textos secundários - devem manter contraste */
+    .text-muted i,
+    .text-secondary i,
+    small i,
+    .small i {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Ícones em links - devem usar cor do link */
+    a i:not(.btn i),
+    a .fas:not(.btn .fas),
+    a .fa:not(.btn .fa),
+    .text-primary i:not(.btn i) {
+        color: inherit !important;
+    }
+    
+    /* Ícones em dashboard Admin (Ações Rápidas) - BRANCO por padrão */
+    .btn-mobile.btn-outline-primary i,
+    .btn-mobile.btn-outline-secondary i,
+    .btn-mobile.btn-outline-primary .fas,
+    .btn-mobile.btn-outline-secondary .fas,
+    .btn-mobile.btn-outline-info i,
+    .btn-mobile.btn-outline-warning i,
+    .btn-mobile.btn-outline-success i,
+    .btn-mobile.btn-outline-danger i {
+        color: #f1f5f9 !important;
+    }
+    
+    /* Hover/Ativo: texto escuro sobre fundo azul claro */
+    .btn-mobile.btn-outline-primary:hover i,
+    .btn-mobile.btn-outline-secondary:hover i,
+    .btn-mobile.btn-outline-primary:active i,
+    .btn-mobile.btn-outline-secondary:active i {
+        color: #0f172a !important;
+    }
+    
+    /* Ícones em botões outline hover/ativo - texto escuro sobre fundo azul claro */
+    .btn-outline-primary:hover i,
+    .btn-outline-secondary:hover i,
+    .btn-outline-info:hover i,
+    .btn-outline-warning:hover i,
+    .btn-outline-success:hover i,
+    .btn-outline-danger:hover i,
+    .btn-outline-primary:active i,
+    .btn-outline-secondary:active i,
+    .btn-outline-primary.active i,
+    .btn-outline-secondary.active i,
+    a.btn-outline-primary:hover i,
+    a.btn-outline-secondary:hover i,
+    a.btn-outline-primary:active i,
+    button.btn-outline-primary:hover i,
+    button.btn-outline-primary:active i,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info):hover i,
+    [class*="btn-outline"]:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info):active i,
+    [class*="btn-outline"].active:not(.btn-primary):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-info) i {
+        color: #0f172a !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: LINKS GLOBAIS
+       ===================================================== */
+    
+    /* Todos os links (exceto botões e badges) devem ser legíveis */
+    a:not(.btn):not(.badge):not(.nav-link):not(.dropdown-item) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    a:not(.btn):not(.badge):not(.nav-link):not(.dropdown-item):hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Links em cards escuros - garantir visibilidade */
+    .card a:not(.btn):not(.badge),
+    .aula-item a:not(.btn):not(.badge),
+    .aula-item-mobile a:not(.btn):not(.badge) {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .card a:not(.btn):not(.badge):hover,
+    .aula-item a:not(.btn):not(.badge):hover,
+    .aula-item-mobile a:not(.btn):not(.badge):hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Links visitados - manter legibilidade */
+    a:visited:not(.btn):not(.badge) {
+        color: var(--theme-link-visited, #a78bfa) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: TEXTOS EM CARDS ESCUROS
+       ===================================================== */
+    
+    /* Textos secundários em cards - garantir contraste */
+    .card .text-muted,
+    .card small,
+    .card .small,
+    .card .text-secondary,
+    .aula-item .text-muted,
+    .aula-item-mobile .text-muted,
+    .aula-card-padronizado .text-muted {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Textos principais em cards - garantir contraste */
+    .card p:not(.text-muted):not(.text-secondary),
+    .card span:not(.text-muted):not(.text-secondary):not(.badge),
+    .card div:not(.text-muted):not(.text-secondary),
+    .aula-item p,
+    .aula-item-mobile p,
+    .aula-card-padronizado p {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: BADGES E STATUS
+       ===================================================== */
+    
+    /* Badges em dark mode - garantir contraste */
+    .badge:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-badge-bg, #334155) !important;
+        color: #cbd5e1 !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: CARDS ADMIN E DASHBOARD
+       ===================================================== */
+    
+    /* Cards no admin - garantir fundo escuro */
+    .card-mobile,
+    .card:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        border-color: var(--theme-border, #475569) !important;
+    }
+    
+    /* Headers de cards - garantir contraste */
+    .card-header:not(.bg-primary):not(.bg-success):not(.bg-warning):not(.bg-danger):not(.bg-info) {
+        background-color: var(--theme-surface-elevated, #334155) !important;
+        border-bottom-color: var(--theme-border, #475569) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Títulos em cards */
+    .card-title,
+    .card-title h3,
+    .card-title h4,
+    .card-title h5,
+    .card-title h6 {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Body de cards */
+    .card-body {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: BORDAS E SEPARADORES
+       ===================================================== */
+    
+    /* Bordas devem ser visíveis */
+    .card,
+    .border,
+    .border-top,
+    .border-bottom,
+    .border-start,
+    .border-end {
+        border-color: var(--theme-border, #475569) !important;
+    }
+    
+    /* Separadores horizontais */
+    hr {
+        border-color: var(--theme-border, #475569) !important;
+        opacity: 0.5;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ESTADOS HOVER E FOCUS
+       ===================================================== */
+    
+    /* Hover em cards - feedback visual */
+    .card:hover {
+        border-color: var(--theme-border-strong, #64748b) !important;
+    }
+    
+    /* Links com hover - feedback claro */
+    a:not(.btn):not(.badge):hover {
+        text-decoration: underline;
+    }
+    
+    /* =====================================================
+       CORREÇÃO CRÍTICA: ELEMENTOS ESPECÍFICOS DO ADMIN
+       ===================================================== */
+    
+    /* Ícones em headers de cards */
+    .card-header i,
+    .card-header .fas,
+    .card-header .fa,
+    .card-title i,
+    .card-title .fas {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Textos em listas e tabelas */
+    .list-group-item {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        border-color: var(--theme-border, #475569) !important;
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .table {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    .table td,
+    .table th {
+        border-color: var(--theme-border, #475569) !important;
+    }
+}
+
+/* =====================================================
+   OVERRIDES GLOBAIS - LIGHT MODE (garantir consistência)
+   ===================================================== */
+
+/* Garantir que elementos usem tokens mesmo no light mode */
+.aula-item,
+.aula-item-mobile,
+.aula-card-padronizado {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Links sempre devem usar token */
+a:not(.btn):not(.badge):not(.nav-link) {
+    color: var(--theme-link, #2563eb);
+    transition: color 0.2s ease;
+}
+
+a:not(.btn):not(.badge):not(.nav-link):hover {
+    color: var(--theme-link-hover, #1d4ed8);
+}

@@ -581,10 +581,11 @@ if ($instrutorId && !empty($aulasHoje)) {
     <link rel="manifest" href="/pwa/manifest.json">
     
     <!-- Meta tags PWA -->
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
+    <meta name="color-scheme" content="light dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="apple-status-bar">
     <meta name="apple-mobile-web-app-title" content="CFC Instrutor">
     
     <!-- Apple Touch Icons -->
@@ -594,8 +595,45 @@ if ($instrutorId && !empty($aulasHoje)) {
     
     <!-- Bootstrap 4 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    
+    <!-- Theme Tokens (deve vir antes de mobile-first.css) -->
+    <link rel="stylesheet" href="../assets/css/theme-tokens.css">
+    
     <link rel="stylesheet" href="../assets/css/mobile-first.css">
+    
+    <!-- Theme Overrides Global (dark mode fixes) -->
+    <link rel="stylesheet" href="../assets/css/theme-overrides.css?v=1.0.10">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Script para atualizar theme-color dinamicamente -->
+    <script>
+        (function() {
+            function updateThemeColor() {
+                const metaThemeColor = document.getElementById('theme-color-meta');
+                const appleStatusBar = document.getElementById('apple-status-bar');
+                
+                if (!metaThemeColor) return;
+                
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                if (prefersDark) {
+                    metaThemeColor.setAttribute('content', '#1e293b');
+                    if (appleStatusBar) {
+                        appleStatusBar.setAttribute('content', 'black-translucent');
+                    }
+                } else {
+                    metaThemeColor.setAttribute('content', '#10b981');
+                    if (appleStatusBar) {
+                        appleStatusBar.setAttribute('content', 'default');
+                    }
+                }
+            }
+            
+            updateThemeColor();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+        })();
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -641,7 +679,7 @@ if ($instrutorId && !empty($aulasHoje)) {
                     </div>
                     <i class="fas fa-chevron-down" style="font-size: 11px; margin-left: 4px; color: white; opacity: 0.9;"></i>
                 </button>
-                <div class="instrutor-profile-dropdown" id="instrutor-profile-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000;">
+                <div class="instrutor-profile-dropdown bg-theme-surface" id="instrutor-profile-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; border: 1px solid var(--theme-border, #e2e8f0);">
                     <!-- Informações do usuário no dropdown -->
                     <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
                         <div style="font-weight: 600; color: #333; font-size: 14px; margin-bottom: 2px;"><?php echo htmlspecialchars($instrutor['nome'] ?? 'Instrutor'); ?></div>
@@ -1019,11 +1057,11 @@ if ($instrutorId && !empty($aulasHoje)) {
                         $statusAula = $aula['status'] ?? 'agendada';
                     ?>
                     <!-- Card padronizado de aula (hierarquia fixa - nunca estoura) -->
-                    <div class="aula-item-mobile aula-card-padronizado <?php echo $chamadaRegistrada ? 'aula-concluida' : ''; ?>" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: <?php echo $chamadaRegistrada ? '#f0f9ff' : 'white'; ?>; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box;">
+                    <div class="aula-item-mobile aula-card-padronizado bg-theme-card <?php echo $chamadaRegistrada ? 'aula-concluida' : ''; ?>" style="border: 1px solid var(--theme-border, #e2e8f0); border-radius: 8px; padding: 12px; margin-bottom: 12px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box;">
                         <!-- Linha 1: Hora + pill TEOR/PRAT + Status (flex-wrap para nunca estourar) -->
                         <div class="aula-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
                             <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
-                                <strong style="font-size: 15px; font-weight: 600; color: #1e293b; white-space: nowrap; flex-shrink: 0;"><?php echo date('H:i', strtotime($aula['hora_inicio'])); ?>–<?php echo date('H:i', strtotime($aula['hora_fim'])); ?></strong>
+                                <strong class="text-theme" style="font-size: 15px; font-weight: 600; white-space: nowrap; flex-shrink: 0;"><?php echo date('H:i', strtotime($aula['hora_inicio'])); ?>–<?php echo date('H:i', strtotime($aula['hora_fim'])); ?></strong>
                                 <span class="badge" style="background: <?php echo $aula['tipo_aula'] === 'teorica' ? '#3b82f6' : '#10b981'; ?>; color: white; font-size: 10px; padding: 4px 8px; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                     <?php echo $aula['tipo_aula'] === 'teorica' ? 'TEOR' : 'PRAT'; ?>
                                 </span>
@@ -1042,11 +1080,11 @@ if ($instrutorId && !empty($aulasHoje)) {
                         <!-- Linha 2: Título principal (Disciplina ou Nome do aluno) -->
                         <div style="margin-bottom: 8px;">
                             <?php if ($aula['tipo_aula'] === 'teorica'): ?>
-                                <div style="font-weight: 600; font-size: 15px; color: #1e293b; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="text-theme" style="font-weight: 600; font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                                     <?php echo htmlspecialchars((string)($disciplinas[$aula['disciplina'] ?? ''] ?? ucfirst(str_replace('_', ' ', (string)($aula['disciplina'] ?? '')) ?? 'Disciplina'))); ?>
                                 </div>
                             <?php else: ?>
-                                <div style="font-weight: 600; font-size: 15px; color: #1e293b; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="text-theme" style="font-weight: 600; font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                                     <?php echo htmlspecialchars($aula['aluno_nome'] ?? 'Aluno não informado'); ?>
                                 </div>
                             <?php endif; ?>
@@ -1055,7 +1093,7 @@ if ($instrutorId && !empty($aulasHoje)) {
                         <!-- Linha 3: Subinfo curta (Turma/Categoria/Veículo) -->
                         <div style="margin-bottom: 10px;">
                             <?php if ($aula['tipo_aula'] === 'teorica'): ?>
-                                <div style="font-size: 12px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="text-theme-muted" style="font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                                     <?php echo htmlspecialchars((string)($aula['turma_nome'] ?? '')); ?>
                                     <?php if (!empty($aula['sala_nome'])): ?>
                                         · <?php echo htmlspecialchars((string)$aula['sala_nome']); ?>
@@ -1072,7 +1110,7 @@ if ($instrutorId && !empty($aulasHoje)) {
                                 }
                                 ?>
                                 <?php if (!empty($subinfo)): ?>
-                                <div style="font-size: 12px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="text-theme-muted" style="font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                                     <?php echo implode(' · ', $subinfo); ?>
                                 </div>
                                 <?php endif; ?>
@@ -1388,11 +1426,11 @@ if ($instrutorId && !empty($aulasHoje)) {
                                 <h6 style="margin: 0 0 8px 0; font-weight: 600; color: #1e293b;">
                                     <?php echo htmlspecialchars((string)($turma['nome'] ?? '')); ?>
                                 </h6>
-                                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">
+                                <div class="text-theme-muted" style="font-size: 13px; margin-bottom: 4px;">
                                     <i class="fas fa-graduation-cap mr-1"></i>
                                     <?php echo htmlspecialchars((string)($nomesCursos[$turma['curso_tipo'] ?? ''] ?? $turma['curso_tipo'] ?? '')); ?>
                                 </div>
-                                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">
+                                <div class="text-theme-muted" style="font-size: 13px; margin-bottom: 4px;">
                                     <i class="fas fa-calendar mr-1"></i>
                                     <?php echo date('d/m/Y', strtotime($turma['data_inicio'])); ?> - 
                                     <?php echo date('d/m/Y', strtotime($turma['data_fim'])); ?>
