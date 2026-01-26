@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_token() ?>">
     <meta name="theme-color" content="#023A8D">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CFC Sistema">
     <base href="<?= base_path('/') ?>">
     <title><?= $pageTitle ?? 'CFC Sistema' ?></title>
     
@@ -16,6 +20,8 @@
     
     <!-- Apple Touch Icon (iOS) -->
     <link rel="apple-touch-icon" href="<?= base_url('icons/icon-192x192.png') ?>">
+    <link rel="apple-touch-icon" sizes="152x152" href="<?= base_url('icons/icon-192x192.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('icons/icon-192x192.png') ?>">
     
     <!-- CSS -->
     <link rel="stylesheet" href="<?= asset_url('css/tokens.css') ?>">

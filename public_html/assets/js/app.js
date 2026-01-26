@@ -209,6 +209,9 @@
                document.referrer.includes('android-app://');
     }
     
+    // Detectar iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
     // Garantir que o botão está oculto por padrão
     if (installButtonContainer) {
         installButtonContainer.style.display = 'none';
@@ -217,6 +220,31 @@
     // Não mostrar botão se já estiver instalado
     if (isAppInstalled()) {
         if (installButtonContainer) {
+            installButtonContainer.style.display = 'none';
+        }
+    }
+    
+    // Função para verificar se deve mostrar o botão
+    function shouldShowInstallButton() {
+        // Não mostrar se já estiver instalado
+        if (isAppInstalled()) {
+            return false;
+        }
+        
+        // iOS: mostrar sempre (mesmo sem beforeinstallprompt)
+        if (isIOS) {
+            return true;
+        }
+        
+        // Android/Desktop: mostrar apenas se tiver deferredPrompt
+        return !!deferredPrompt;
+    }
+    
+    // Função para atualizar visibilidade do botão
+    function updateInstallButtonVisibility() {
+        if (installButtonContainer && shouldShowInstallButton()) {
+            installButtonContainer.style.display = 'block';
+        } else if (installButtonContainer) {
             installButtonContainer.style.display = 'none';
         }
     }
@@ -230,16 +258,22 @@
         // Guardar o evento para usar depois
         deferredPrompt = e;
         
-        // Mostrar botão apenas se não estiver em standalone E deferredPrompt existir
-        if (!isAppInstalled() && installButtonContainer && deferredPrompt) {
-            installButtonContainer.style.display = 'block';
-        }
+        // Atualizar visibilidade do botão
+        updateInstallButtonVisibility();
         
         // Log discreto (apenas em desenvolvimento)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.log('[PWA] beforeinstallprompt interceptado - botão manual disponível');
         }
     });
+    
+    // No iOS, mostrar botão após um pequeno delay (para garantir que não está instalado)
+    if (isIOS && installButtonContainer) {
+        // Verificar após DOM estar pronto
+        setTimeout(function() {
+            updateInstallButtonVisibility();
+        }, 500);
+    }
     
     // Handler do botão de instalação (alternativa manual)
     if (installButton) {
@@ -281,8 +315,6 @@
                 }
             } else {
                 // iOS: mostrar modal com instruções (somente ao clique)
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                
                 if (isIOS) {
                     showIOSInstallModal();
                 }
@@ -429,8 +461,6 @@
         });
     }
     
-    // Esconder botão se já estiver instalado (verificação final)
-    if (isAppInstalled() && installButtonContainer) {
-        installButtonContainer.style.display = 'none';
-    }
+    // Atualizar visibilidade do botão (verificação final)
+    updateInstallButtonVisibility();
 })();
