@@ -1322,6 +1322,8 @@ class AlunosController extends Controller
             'rg_issuer' => !empty($post['rg_issuer']) ? trim($post['rg_issuer']) : null,
             'rg_uf' => !empty($post['rg_uf']) ? strtoupper(trim($post['rg_uf'])) : null,
             'rg_issue_date' => !empty($post['rg_issue_date']) ? $post['rg_issue_date'] : null,
+            'nome_mae' => !empty($post['nome_mae']) ? trim($post['nome_mae']) : null,
+            'nome_pai' => !empty($post['nome_pai']) ? trim($post['nome_pai']) : null,
             'phone' => preg_replace('/[^0-9]/', '', $post['phone'] ?? '') ?: null,
             'phone_primary' => preg_replace('/[^0-9]/', '', $post['phone_primary'] ?? '') ?: null,
             'phone_secondary' => preg_replace('/[^0-9]/', '', $post['phone_secondary'] ?? '') ?: null,

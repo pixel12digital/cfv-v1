@@ -20,10 +20,25 @@ $_SESSION['user_name'] = 'Robson Wagner Alves vieira';
 $_SESSION['user_email'] = 'rwavieira@gmail.com';
 $_SESSION['cfc_id'] = 1;
 
+// Conectar diretamente ao banco remoto (mesmo usado em produção)
+$dbConfig = [
+    'host' => 'auth-db803.hstgr.io',
+    'dbname' => 'u502697186_cfcv1',
+    'username' => 'u502697186_cfcv1',
+    'password' => 'Los@ngo#081081',
+    'charset' => 'utf8mb4'
+];
+
+// Configurar variáveis de ambiente para os Models usarem Database::getInstance()
+$_ENV['DB_HOST'] = $dbConfig['host'];
+$_ENV['DB_PORT'] = '3306';
+$_ENV['DB_NAME'] = $dbConfig['dbname'];
+$_ENV['DB_USER'] = $dbConfig['username'];
+$_ENV['DB_PASS'] = $dbConfig['password'];
+
 // Autoload
 require_once APP_PATH . '/autoload.php';
 
-use App\Config\Database;
 use App\Models\User;
 use App\Models\Lesson;
 use App\Models\Instructor;
@@ -70,11 +85,18 @@ echo "<div class='section'>";
 echo "<h2>2. Teste de Conexão com Banco</h2>";
 
 try {
-    $db = Database::getInstance()->getConnection();
+    // Criar conexão PDO direta (como nos outros scripts)
+    $dsn = "mysql:host={$dbConfig['host']};dbname={$dbConfig['dbname']};charset={$dbConfig['charset']}";
+    $db = new PDO($dsn, $dbConfig['username'], $dbConfig['password'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]);
+    
     $stmt = $db->query("SELECT DATABASE() as current_db");
     $currentDb = $stmt->fetch();
     echo "<p class='success'>✓ Conexão estabelecida</p>";
     echo "<p><strong>Banco:</strong> " . ($currentDb['current_db'] ?? 'N/A') . "</p>";
+    echo "<p><strong>Host:</strong> {$dbConfig['host']}</p>";
 } catch (\Exception $e) {
     echo "<p class='error'>✗ Erro na conexão: " . htmlspecialchars($e->getMessage()) . "</p>";
     echo "</div></div></body></html>";

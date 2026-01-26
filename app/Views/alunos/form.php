@@ -215,6 +215,33 @@
                         >
                     </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group form-col-2">
+                        <label class="form-label" for="nome_mae">Filiação — Mãe</label>
+                        <input 
+                            type="text" 
+                            id="nome_mae" 
+                            name="nome_mae" 
+                            class="form-input" 
+                            value="<?= htmlspecialchars($student['nome_mae'] ?? '') ?>"
+                            placeholder="Nome da mãe"
+                            maxlength="255"
+                        >
+                    </div>
+                    <div class="form-group form-col-2">
+                        <label class="form-label" for="nome_pai">Filiação — Pai</label>
+                        <input 
+                            type="text" 
+                            id="nome_pai" 
+                            name="nome_pai" 
+                            class="form-input" 
+                            value="<?= htmlspecialchars($student['nome_pai'] ?? '') ?>"
+                            placeholder="Nome do pai"
+                            maxlength="255"
+                        >
+                    </div>
+                </div>
             </div>
 
             <!-- Contato -->
@@ -258,34 +285,6 @@
                             required
                         >
                         <small class="form-text text-muted">Necessário para criar acesso ao sistema</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contato de Emergência -->
-            <div class="form-section">
-                <h3 class="form-section-title">Contato de Emergência</h3>
-                <div class="form-row">
-                    <div class="form-group form-col-2">
-                        <label class="form-label" for="emergency_contact_name">Nome do Contato</label>
-                        <input 
-                            type="text" 
-                            id="emergency_contact_name" 
-                            name="emergency_contact_name" 
-                            class="form-input" 
-                            value="<?= htmlspecialchars($student['emergency_contact_name'] ?? '') ?>"
-                        >
-                    </div>
-                    <div class="form-group form-col-2">
-                        <label class="form-label" for="emergency_contact_phone">Telefone do Contato</label>
-                        <input 
-                            type="text" 
-                            id="emergency_contact_phone" 
-                            name="emergency_contact_phone" 
-                            class="form-input" 
-                            value="<?= htmlspecialchars($student['emergency_contact_phone'] ?? '') ?>"
-                            placeholder="(00) 00000-0000"
-                        >
                     </div>
                 </div>
             </div>
@@ -708,7 +707,6 @@ function applyPhoneMask(input) {
 
 applyPhoneMask(document.getElementById('phone_primary'));
 applyPhoneMask(document.getElementById('phone_secondary'));
-applyPhoneMask(document.getElementById('emergency_contact_phone'));
 
 // Máscara CEP e autopreenchimento via ViaCEP
 (function() {
