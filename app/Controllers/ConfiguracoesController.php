@@ -1751,7 +1751,14 @@ class ConfiguracoesController extends Controller
         }
 
         $pixAccountModel = new CfcPixAccount();
-        $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+        
+        try {
+            $account = $pixAccountModel->findByIdAndCfc($id, $cfc['id']);
+        } catch (\Exception $e) {
+            error_log("ConfiguracoesController::pixAccountExcluir() - Erro ao buscar conta: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao buscar conta PIX. Verifique se as migrations foram executadas.';
+            redirect(base_url('configuracoes/cfc'));
+        }
 
         if (!$account) {
             $_SESSION['error'] = 'Conta PIX não encontrada.';
@@ -1789,7 +1796,7 @@ class ConfiguracoesController extends Controller
             error_log("ConfiguracoesController::pixAccountExcluir() - Erro: " . $e->getMessage());
             $_SESSION['error'] = 'Erro ao excluir conta PIX: ' . $e->getMessage();
         }
-
+        
         redirect(base_url('configuracoes/cfc'));
     }
 
