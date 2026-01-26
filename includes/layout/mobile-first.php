@@ -37,7 +37,8 @@
     ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0d6efd">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
+    <meta name="color-scheme" content="light dark">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CFC Bom Conselho">
@@ -58,11 +59,52 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Theme Tokens (deve vir primeiro) -->
+    <?php 
+    $themeTokensPath = rtrim($basePath, '/') . '/assets/css/theme-tokens.css';
+    ?>
+    <link rel="stylesheet" href="<?php echo $themeTokensPath; ?>">
+    
     <!-- CSS Mobile-First Customizado -->
     <?php 
     $cssPath = rtrim($basePath, '/') . '/assets/css/mobile-first.css';
     ?>
     <link rel="stylesheet" href="<?php echo $cssPath; ?>">
+    
+    <!-- Script para atualizar theme-color dinamicamente -->
+    <script>
+        (function() {
+            function updateThemeColor() {
+                const metaThemeColor = document.getElementById('theme-color-meta');
+                if (!metaThemeColor) return;
+                
+                // Detectar preferência do sistema
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                // Atualizar theme-color baseado no modo
+                if (prefersDark) {
+                    metaThemeColor.setAttribute('content', '#1e293b');
+                    // iOS status bar
+                    const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+                    if (appleMeta) {
+                        appleMeta.setAttribute('content', 'black-translucent');
+                    }
+                } else {
+                    metaThemeColor.setAttribute('content', '#10b981');
+                    const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+                    if (appleMeta) {
+                        appleMeta.setAttribute('content', 'default');
+                    }
+                }
+            }
+            
+            // Atualizar na carga
+            updateThemeColor();
+            
+            // Escutar mudanças
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+        })();
+    </script>
     
     <!-- CSS específico da página -->
     <?php if (isset($pageCSS)): ?>

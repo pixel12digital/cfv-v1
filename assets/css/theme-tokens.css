@@ -1,0 +1,200 @@
+/* =====================================================
+   TOKENS DE TEMA - SISTEMA CFC
+   Suporte completo para Light e Dark Mode
+   ===================================================== */
+
+:root {
+    /* =====================================================
+       TEMA LIGHT (PADRÃO)
+       ===================================================== */
+    
+    /* Backgrounds */
+    --theme-bg: #ffffff;
+    --theme-bg-secondary: #f8fafc;
+    --theme-bg-tertiary: #f1f5f9;
+    --theme-surface: #ffffff;
+    --theme-surface-elevated: #ffffff;
+    
+    /* Textos */
+    --theme-text: #1e293b;
+    --theme-text-secondary: #475569;
+    --theme-text-muted: #64748b;
+    --theme-text-disabled: #94a3b8;
+    --theme-text-inverse: #ffffff;
+    
+    /* Bordas */
+    --theme-border: #e2e8f0;
+    --theme-border-subtle: #f1f5f9;
+    --theme-border-strong: #cbd5e1;
+    
+    /* Links */
+    --theme-link: #2563eb;
+    --theme-link-hover: #1d4ed8;
+    --theme-link-visited: #7c3aed;
+    
+    /* Primary (mantém cores do logo) */
+    --theme-primary: #10b981;
+    --theme-primary-hover: #059669;
+    --theme-primary-light: #34d399;
+    --theme-primary-dark: #047857;
+    
+    /* Secondary */
+    --theme-secondary: #f59e0b;
+    --theme-secondary-hover: #d97706;
+    
+    /* Estados */
+    --theme-success: #10b981;
+    --theme-success-bg: #dcfce7;
+    --theme-success-text: #166534;
+    
+    --theme-warning: #f59e0b;
+    --theme-warning-bg: #fef3c7;
+    --theme-warning-text: #92400e;
+    
+    --theme-danger: #ef4444;
+    --theme-danger-bg: #fee2e2;
+    --theme-danger-text: #dc2626;
+    
+    --theme-info: #0ea5e9;
+    --theme-info-bg: #dbeafe;
+    --theme-info-text: #1e40af;
+    
+    /* Inputs */
+    --theme-input-bg: #ffffff;
+    --theme-input-border: #d1d5db;
+    --theme-input-border-focus: #2563eb;
+    --theme-input-text: #1e293b;
+    --theme-input-placeholder: #94a3b8;
+    
+    /* Cards */
+    --theme-card-bg: #ffffff;
+    --theme-card-border: #e2e8f0;
+    --theme-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    
+    /* Badges */
+    --theme-badge-bg: #f1f5f9;
+    --theme-badge-text: #475569;
+    
+    /* Shadows */
+    --theme-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    
+    /* PWA Theme Color (light) */
+    --theme-color-meta: #10b981;
+}
+
+/* =====================================================
+   TEMA DARK
+   ===================================================== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Backgrounds */
+        --theme-bg: #0f172a;
+        --theme-bg-secondary: #1e293b;
+        --theme-bg-tertiary: #334155;
+        --theme-surface: #1e293b;
+        --theme-surface-elevated: #334155;
+        
+        /* Textos - Contraste AA garantido */
+        --theme-text: #f1f5f9;
+        --theme-text-secondary: #cbd5e1;
+        --theme-text-muted: #94a3b8;
+        --theme-text-disabled: #64748b;
+        --theme-text-inverse: #0f172a;
+        
+        /* Bordas */
+        --theme-border: #334155;
+        --theme-border-subtle: #475569;
+        --theme-border-strong: #64748b;
+        
+        /* Links */
+        --theme-link: #60a5fa;
+        --theme-link-hover: #93c5fd;
+        --theme-link-visited: #a78bfa;
+        
+        /* Primary (ajustado para dark) */
+        --theme-primary: #34d399;
+        --theme-primary-hover: #10b981;
+        --theme-primary-light: #6ee7b7;
+        --theme-primary-dark: #10b981;
+        
+        /* Secondary */
+        --theme-secondary: #fbbf24;
+        --theme-secondary-hover: #f59e0b;
+        
+        /* Estados */
+        --theme-success: #34d399;
+        --theme-success-bg: #064e3b;
+        --theme-success-text: #6ee7b7;
+        
+        --theme-warning: #fbbf24;
+        --theme-warning-bg: #78350f;
+        --theme-warning-text: #fcd34d;
+        
+        --theme-danger: #f87171;
+        --theme-danger-bg: #7f1d1d;
+        --theme-danger-text: #fca5a5;
+        
+        --theme-info: #60a5fa;
+        --theme-info-bg: #1e3a8a;
+        --theme-info-text: #93c5fd;
+        
+        /* Inputs */
+        --theme-input-bg: #1e293b;
+        --theme-input-border: #475569;
+        --theme-input-border-focus: #60a5fa;
+        --theme-input-text: #f1f5f9;
+        --theme-input-placeholder: #94a3b8;
+        
+        /* Cards */
+        --theme-card-bg: #1e293b;
+        --theme-card-border: #334155;
+        --theme-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        
+        /* Badges */
+        --theme-badge-bg: #334155;
+        --theme-badge-text: #cbd5e1;
+        
+        /* Shadows */
+        --theme-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        
+        /* PWA Theme Color (dark) */
+        --theme-color-meta: #1e293b;
+    }
+}
+
+/* =====================================================
+   APLICAÇÃO BASE DO TEMA
+   ===================================================== */
+body,
+body.mobile-first {
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Garantir que elementos principais usem tokens */
+* {
+    /* Herdar cores de texto do tema */
+    color: inherit;
+}
+
+/* =====================================================
+   UTILITÁRIOS DE TEMA
+   ===================================================== */
+.bg-theme { background-color: var(--theme-bg); }
+.bg-theme-secondary { background-color: var(--theme-bg-secondary); }
+.bg-theme-surface { background-color: var(--theme-surface); }
+.bg-theme-surface-elevated { background-color: var(--theme-surface-elevated); }
+
+.text-theme { color: var(--theme-text); }
+.text-theme-secondary { color: var(--theme-text-secondary); }
+.text-theme-muted { color: var(--theme-text-muted); }
+.text-theme-disabled { color: var(--theme-text-disabled); }
+
+.border-theme { border-color: var(--theme-border); }
+.border-theme-subtle { border-color: var(--theme-border-subtle); }
+.border-theme-strong { border-color: var(--theme-border-strong); }

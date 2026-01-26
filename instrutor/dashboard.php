@@ -581,10 +581,11 @@ if ($instrutorId && !empty($aulasHoje)) {
     <link rel="manifest" href="/pwa/manifest.json">
     
     <!-- Meta tags PWA -->
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
+    <meta name="color-scheme" content="light dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="apple-status-bar">
     <meta name="apple-mobile-web-app-title" content="CFC Instrutor">
     
     <!-- Apple Touch Icons -->
@@ -594,8 +595,41 @@ if ($instrutorId && !empty($aulasHoje)) {
     
     <!-- Bootstrap 4 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    
+    <!-- Theme Tokens (deve vir antes de mobile-first.css) -->
+    <link rel="stylesheet" href="../assets/css/theme-tokens.css">
+    
     <link rel="stylesheet" href="../assets/css/mobile-first.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Script para atualizar theme-color dinamicamente -->
+    <script>
+        (function() {
+            function updateThemeColor() {
+                const metaThemeColor = document.getElementById('theme-color-meta');
+                const appleStatusBar = document.getElementById('apple-status-bar');
+                
+                if (!metaThemeColor) return;
+                
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                if (prefersDark) {
+                    metaThemeColor.setAttribute('content', '#1e293b');
+                    if (appleStatusBar) {
+                        appleStatusBar.setAttribute('content', 'black-translucent');
+                    }
+                } else {
+                    metaThemeColor.setAttribute('content', '#10b981');
+                    if (appleStatusBar) {
+                        appleStatusBar.setAttribute('content', 'default');
+                    }
+                }
+            }
+            
+            updateThemeColor();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+        })();
+    </script>
 </head>
 <body>
     <!-- Header -->
