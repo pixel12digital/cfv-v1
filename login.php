@@ -294,10 +294,11 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     </script>
     
     <!-- Meta tags PWA -->
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
+    <meta name="color-scheme" content="light dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="apple-status-bar">
     <meta name="apple-mobile-web-app-title" content="<?php echo htmlspecialchars($appTitle); ?>">
     <meta name="application-name" content="<?php echo htmlspecialchars($appName); ?>">
     
@@ -312,6 +313,27 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
     <!-- Theme Overrides Global (dark mode fixes) -->
     <link rel="stylesheet" href="<?php echo htmlspecialchars(($basePath ? $basePath : '') . '/assets/css/theme-overrides.css'); ?>">
     
+    <!-- Script para atualizar theme-color dinamicamente (iOS/Android) -->
+    <script>
+        (function() {
+            function updateThemeColor() {
+                const metaThemeColor = document.getElementById('theme-color-meta');
+                const appleMeta = document.getElementById('apple-status-bar');
+                if (!metaThemeColor) return;
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    metaThemeColor.setAttribute('content', '#1e293b');
+                    if (appleMeta) { appleMeta.setAttribute('content', 'black-translucent'); }
+                } else {
+                    metaThemeColor.setAttribute('content', '#10b981');
+                    if (appleMeta) { appleMeta.setAttribute('content', 'default'); }
+                }
+            }
+            updateThemeColor();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+        })();
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -321,16 +343,17 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #F6F8FC;
+            background: var(--theme-bg, #F6F8FC);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: background-color 0.2s ease;
         }
         
         .login-container {
-            background: white;
+            background: var(--theme-card-bg, white);
             border-radius: 20px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.15);
             overflow: hidden;
@@ -338,6 +361,7 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             max-width: 1000px;
             min-height: 600px;
             display: flex;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
         }
         
         .left-panel {
@@ -449,13 +473,13 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         .login-title {
             font-size: 28px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
             margin-bottom: 10px;
             font-weight: 600;
         }
         
         .login-subtitle {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 16px;
         }
         
@@ -463,13 +487,13 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .login-portal-info {
             margin-top: 15px;
             padding: 12px 16px;
-            background: #e8f4f8;
-            border-left: 4px solid #1A365D;
+            background: var(--theme-info-bg, #e8f4f8);
+            border-left: 4px solid var(--theme-info, #1A365D);
             border-radius: 4px;
         }
         
         .portal-info-text {
-            color: #2c3e50;
+            color: var(--theme-info-text, #2c3e50);
             font-size: 14px;
             margin: 0;
             line-height: 1.5;
@@ -482,7 +506,7 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
             font-weight: 500;
             font-size: 14px;
         }
@@ -490,17 +514,24 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         .form-control {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e1e5e9;
+            border: 2px solid var(--theme-input-border, #e1e5e9);
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            background: #f8f9fa;
+            background: var(--theme-input-bg, #f8f9fa);
+            color: var(--theme-input-text, #1e293b);
+        }
+        
+        .form-control::placeholder {
+            color: var(--theme-input-placeholder, #94a3b8);
+            opacity: 1;
         }
         
         .form-control:focus {
             outline: none;
-            border-color: #1A365D;
-            background: white;
+            border-color: var(--theme-input-border-focus, #1A365D);
+            background: var(--theme-input-bg, white);
+            color: var(--theme-input-text, #1e293b);
             box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
         }
         
@@ -539,16 +570,17 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
         
         .checkbox-group label {
             font-size: 14px;
-            color: #1A365D;
+            color: var(--theme-text, #1A365D);
         }
         
         .forgot-password {
-            color: #1A365D;
+            color: var(--theme-link, #1A365D);
             text-decoration: none;
             font-size: 14px;
         }
         
         .forgot-password:hover {
+            color: var(--theme-link-hover, #1d4ed8);
             text-decoration: underline;
         }
         
@@ -606,30 +638,30 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
             text-align: center;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #e1e5e9;
+            border-top: 1px solid var(--theme-border, #e1e5e9);
         }
         
         .login-footer p {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 14px;
             margin-bottom: 10px;
         }
         
         .support-info {
-            background: #f8f9fa;
+            background: var(--theme-bg-secondary, #f8f9fa);
             padding: 15px;
             border-radius: 10px;
             margin-top: 20px;
         }
         
         .support-info h4 {
-            color: #2c3e50;
+            color: var(--theme-text-secondary, #2c3e50);
             font-size: 14px;
             margin-bottom: 5px;
         }
         
         .support-info p {
-            color: #7f8c8d;
+            color: var(--theme-text-muted, #7f8c8d);
             font-size: 12px;
             margin: 2px 0;
         }

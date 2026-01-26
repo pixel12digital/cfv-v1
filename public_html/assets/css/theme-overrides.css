@@ -211,6 +211,99 @@
         background-color: var(--theme-bg-secondary, #334155) !important;
         color: var(--theme-text, #f1f5f9) !important;
     }
+    
+    /* =====================================================
+       LOGIN PAGE - CORREÇÕES ESPECÍFICAS (iOS/Android Dark)
+       ===================================================== */
+    
+    /* Body background adapta ao dark mode */
+    body {
+        background-color: var(--theme-bg, #0f172a) !important;
+    }
+    
+    /* Card de login adapta ao dark mode */
+    .login-container {
+        background-color: var(--theme-card-bg, #1e293b) !important;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    /* Título do login */
+    .login-title {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Subtitle "Acesse sua conta" */
+    .login-subtitle {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* Labels dos inputs */
+    .form-label {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Inputs - sobrescrever CSS inline */
+    .form-control {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border, #475569) !important;
+    }
+    
+    .form-control:focus {
+        background-color: var(--theme-input-bg, #1e293b) !important;
+        color: var(--theme-input-text, #f1f5f9) !important;
+        border-color: var(--theme-input-border-focus, #60a5fa) !important;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+    }
+    
+    /* Placeholders específicos do login */
+    .form-control::placeholder {
+        color: var(--theme-input-placeholder, #94a3b8) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Link "Esqueci minha senha" - CRÍTICO */
+    .forgot-password,
+    a.forgot-password,
+    .link-theme {
+        color: var(--theme-link, #60a5fa) !important;
+    }
+    
+    .forgot-password:hover,
+    a.forgot-password:hover,
+    .link-theme:hover {
+        color: var(--theme-link-hover, #93c5fd) !important;
+    }
+    
+    /* Texto de ajuda dos inputs */
+    .form-help {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    /* Checkbox labels */
+    .checkbox-group label {
+        color: var(--theme-text, #f1f5f9) !important;
+    }
+    
+    /* Portal info box */
+    .login-portal-info {
+        background-color: var(--theme-info-bg, #1e3a8a) !important;
+        border-left-color: var(--theme-info, #60a5fa) !important;
+    }
+    
+    .portal-info-text {
+        color: var(--theme-info-text, #93c5fd) !important;
+    }
+    
+    /* Footer do login */
+    .login-footer {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
+    
+    .support-info h4,
+    .support-info p {
+        color: var(--theme-text-muted, #94a3b8) !important;
+    }
 }
 
 /* =====================================================
