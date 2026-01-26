@@ -1561,11 +1561,17 @@ class ConfiguracoesController extends Controller
 
         $pixAccountModel = new CfcPixAccount();
         
-        // Se for padrão, remover padrão das outras
+        // Se for padrão, remover padrão das outras (com tratamento de erro)
         if ($isDefault) {
-            $db = \App\Config\Database::getInstance()->getConnection();
-            $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
-            $stmt->execute([$cfc['id']]);
+            try {
+                $db = \App\Config\Database::getInstance()->getConnection();
+                $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
+                $stmt->execute([$cfc['id']]);
+            } catch (\Exception $e) {
+                // Se a tabela não existir ainda, apenas logar e continuar
+                error_log("ConfiguracoesController::pixAccountCriar() - Erro ao remover padrão (tabela pode não existir ainda): " . $e->getMessage());
+                // Não bloquear criação se for a primeira conta
+            }
         }
 
         $data = [
@@ -1585,11 +1591,31 @@ class ConfiguracoesController extends Controller
             'is_active' => $isActive
         ];
 
-        $id = $pixAccountModel->create($data);
-        $this->auditService->logCreate('cfc_pix_accounts', $id, $data);
+        try {
+            $id = $pixAccountModel->create($data);
+            $this->auditService->logCreate('cfc_pix_accounts', $id, $data);
 
-        $_SESSION['success'] = 'Conta PIX criada com sucesso!';
-        redirect(base_url('configuracoes/cfc'));
+            $_SESSION['success'] = 'Conta PIX criada com sucesso!';
+            redirect(base_url('configuracoes/cfc'));
+        } catch (\PDOException $e) {
+            // Erro específico de SQL (tabela não existe, erro de sintaxe, etc)
+            error_log("ConfiguracoesController::pixAccountCriar() - Erro SQL: " . $e->getMessage());
+            error_log("SQL State: " . $e->getCode());
+            error_log("SQL Error Info: " . print_r($e->errorInfo ?? [], true));
+            
+            // Verificar se é erro de tabela não encontrada
+            if ($e->getCode() == '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), "não existe") !== false) {
+                $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations 038, 039 e 040 primeiro.';
+            } else {
+                $_SESSION['error'] = 'Erro ao criar conta PIX: ' . $e->getMessage();
+            }
+            redirect(base_url('configuracoes/cfc'));
+        } catch (\Exception $e) {
+            // Outros erros
+            error_log("ConfiguracoesController::pixAccountCriar() - Erro: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao criar conta PIX: ' . $e->getMessage();
+            redirect(base_url('configuracoes/cfc'));
+        }
     }
 
     /**
@@ -1652,11 +1678,16 @@ class ConfiguracoesController extends Controller
             redirect(base_url('configuracoes/cfc'));
         }
 
-        // Se for padrão, remover padrão das outras
+        // Se for padrão, remover padrão das outras (com tratamento de erro)
         if ($isDefault && !$account['is_default']) {
-            $db = \App\Config\Database::getInstance()->getConnection();
-            $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
-            $stmt->execute([$cfc['id']]);
+            try {
+                $db = \App\Config\Database::getInstance()->getConnection();
+                $stmt = $db->prepare("UPDATE cfc_pix_accounts SET is_default = 0 WHERE cfc_id = ?");
+                $stmt->execute([$cfc['id']]);
+            } catch (\Exception $e) {
+                error_log("ConfiguracoesController::pixAccountAtualizar() - Erro ao remover padrão: " . $e->getMessage());
+                // Continuar mesmo se falhar
+            }
         }
 
         $dataBefore = $account;
@@ -1676,11 +1707,25 @@ class ConfiguracoesController extends Controller
             'is_active' => $isActive
         ];
 
-        $pixAccountModel->update($id, $data);
-        $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, $data));
+        try {
+            $pixAccountModel->update($id, $data);
+            $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, $data));
 
-        $_SESSION['success'] = 'Conta PIX atualizada com sucesso!';
-        redirect(base_url('configuracoes/cfc'));
+            $_SESSION['success'] = 'Conta PIX atualizada com sucesso!';
+            redirect(base_url('configuracoes/cfc'));
+        } catch (\PDOException $e) {
+            error_log("ConfiguracoesController::pixAccountAtualizar() - Erro SQL: " . $e->getMessage());
+            if ($e->getCode() == '42S02' || strpos($e->getMessage(), "doesn't exist") !== false) {
+                $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations primeiro.';
+            } else {
+                $_SESSION['error'] = 'Erro ao atualizar conta PIX: ' . $e->getMessage();
+            }
+            redirect(base_url('configuracoes/cfc'));
+        } catch (\Exception $e) {
+            error_log("ConfiguracoesController::pixAccountAtualizar() - Erro: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao atualizar conta PIX: ' . $e->getMessage();
+            redirect(base_url('configuracoes/cfc'));
+        }
     }
 
     /**
@@ -1714,23 +1759,35 @@ class ConfiguracoesController extends Controller
         }
 
         // Verificar se há matrículas usando esta conta
-        $db = \App\Config\Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT COUNT(*) as cnt FROM enrollments WHERE pix_account_id = ?");
-        $stmt->execute([$id]);
-        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        try {
+            $db = \App\Config\Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT COUNT(*) as cnt FROM enrollments WHERE pix_account_id = ?");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        if ($result && $result['cnt'] > 0) {
-            // Se houver matrículas usando, apenas desativar
-            $dataBefore = $account;
-            $pixAccountModel->update($id, ['is_active' => 0]);
-            $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, ['is_active' => 0]));
-            $_SESSION['success'] = 'Conta PIX desativada (há matrículas usando esta conta).';
-        } else {
-            // Se não houver uso, pode excluir
-            $dataBefore = $account;
-            $pixAccountModel->delete($id);
-            $this->auditService->logDelete('cfc_pix_accounts', $id, $dataBefore);
-            $_SESSION['success'] = 'Conta PIX excluída com sucesso!';
+            if ($result && $result['cnt'] > 0) {
+                // Se houver matrículas usando, apenas desativar
+                $dataBefore = $account;
+                $pixAccountModel->update($id, ['is_active' => 0]);
+                $this->auditService->logUpdate('cfc_pix_accounts', $id, $dataBefore, array_merge($account, ['is_active' => 0]));
+                $_SESSION['success'] = 'Conta PIX desativada (há matrículas usando esta conta).';
+            } else {
+                // Se não houver uso, pode excluir
+                $dataBefore = $account;
+                $pixAccountModel->delete($id);
+                $this->auditService->logDelete('cfc_pix_accounts', $id, $dataBefore);
+                $_SESSION['success'] = 'Conta PIX excluída com sucesso!';
+            }
+        } catch (\PDOException $e) {
+            error_log("ConfiguracoesController::pixAccountExcluir() - Erro SQL: " . $e->getMessage());
+            if ($e->getCode() == '42S02' || strpos($e->getMessage(), "doesn't exist") !== false) {
+                $_SESSION['error'] = 'A tabela de contas PIX ainda não foi criada. Por favor, execute as migrations primeiro.';
+            } else {
+                $_SESSION['error'] = 'Erro ao excluir conta PIX: ' . $e->getMessage();
+            }
+        } catch (\Exception $e) {
+            error_log("ConfiguracoesController::pixAccountExcluir() - Erro: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao excluir conta PIX: ' . $e->getMessage();
         }
 
         redirect(base_url('configuracoes/cfc'));
