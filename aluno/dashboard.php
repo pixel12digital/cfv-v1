@@ -6,7 +6,7 @@
 
 // Redirect: login principal (funciona); /aluno/login.php usa os mesmos includes e pode ficar em branco quando há erro
 $alunoLoginUrl = '/aluno/login.php';
-$mainLoginUrl  = '/login.php'; // em erro, mandar para o login principal (print 1) em vez de aluno/login que fica em branco
+$mainLoginUrl  = '/login'; // em erro, mandar para a rota do app (não login.php legado que devolve 500)
 
 // Qualquer exceção não capturada → login principal (evita tela em branco em aluno/login.php)
 set_exception_handler(function (Throwable $e) use ($mainLoginUrl) {
@@ -30,7 +30,7 @@ try {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Bootstrap error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
-    $url = '/login.php';
+    $url = '/login';
     if (!headers_sent()) {
         header('Location: ' . $url . '?erro=system', true, 302);
     } else {
@@ -98,7 +98,7 @@ try {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Auth/DB error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
-    $url = '/login.php';
+    $url = '/login';
     if (!headers_sent()) {
         header('Location: ' . $url . '?erro=system', true, 302);
     } else {
