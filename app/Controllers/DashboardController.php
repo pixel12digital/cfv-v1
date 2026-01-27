@@ -112,9 +112,11 @@ class DashboardController extends Controller
                 }
             }
             
-            // Se for ALUNO, carregar dados específicos
+            // Se for ALUNO, redirecionar para o dashboard legado (canonical /aluno/dashboard.php, overlay PWA)
             if ($currentRole === Constants::ROLE_ALUNO && $userId) {
-                return $this->dashboardAluno($userId);
+                $basePath = function_exists('base_url') ? rtrim(base_url(), '/') : (defined('BASE_PATH') ? BASE_PATH : '');
+                header('Location: ' . $basePath . '/aluno/dashboard.php');
+                exit;
             }
             
             // Se for INSTRUTOR, carregar dados específicos
