@@ -8,11 +8,26 @@ if (!function_exists('ob_get_level') || ob_get_level() === 0) {
 // CONFIGURAÇÃO PRINCIPAL DO SISTEMA CFC
 // =====================================================
 
-// Configurações do Banco de Dados
-define('DB_HOST', 'auth-db803.hstgr.io');
-define('DB_NAME', 'u502697186_cfcbomconselho');
-define('DB_USER', 'u502697186_cfcbomconselho');
-define('DB_PASS', 'Los@ngo#081081');
+// Configurações do Banco de Dados — legado alinha com app quando .env existe (correção 500 legado)
+$envPath = __DIR__ . '/../.env';
+$dbFromEnv = [];
+if (file_exists($envPath) && is_readable($envPath)) {
+    foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0 || strpos($line, '=') === false) continue;
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value, " \t\"'");
+        if (in_array($name, ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'], true)) {
+            $dbFromEnv[$name] = $value;
+        }
+    }
+}
+// Fallback: valores usados pelo legado desde o início (evita quebra se .env não tiver DB_*)
+define('DB_HOST', $dbFromEnv['DB_HOST'] ?? 'auth-db803.hstgr.io');
+define('DB_NAME', $dbFromEnv['DB_NAME'] ?? 'u502697186_cfcbomconselho');
+define('DB_USER', $dbFromEnv['DB_USER'] ?? 'u502697186_cfcbomconselho');
+define('DB_PASS', $dbFromEnv['DB_PASS'] ?? 'Los@ngo#081081');
 define('DB_CHARSET', 'utf8mb4');
 
 // Configurações da Aplicação
