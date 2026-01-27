@@ -424,6 +424,15 @@ class AuthController extends Controller
         $user = $userModel->find($userId);
         $this->authService->login($user);
         $_SESSION['first_access'] = 1;
+
+        $userType = strtolower($user['tipo'] ?? '');
+        $redirectTarget = ($userType === 'aluno') ? base_url('/aluno/dashboard.php')
+            : (($userType === 'instrutor') ? base_url('/instrutor/dashboard.php')
+            : (in_array($userType, ['admin', 'secretaria']) ? base_url('/admin/index.php') : base_url('/dashboard')));
+        if (function_exists('error_log')) {
+            $sk = ['user_id' => isset($_SESSION['user_id']), 'last_activity' => isset($_SESSION['last_activity']), 'user_type' => isset($_SESSION['user_type'])];
+            error_log('[definePassword] userId=' . $userId . ' userType=' . ($user['tipo'] ?? '') . ' session_keys=' . json_encode($sk) . ' redirect_target=' . $redirectTarget);
+        }
         $this->redirectToUserDashboard($userId);
     }
 

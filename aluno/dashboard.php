@@ -9,14 +9,29 @@ require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/services/SistemaNotificacoes.php';
 
+// Instrumentação: log para diagnóstico redirecionamento pós define-password
+$dashboardLogged = isLoggedIn();
+if (function_exists('error_log')) {
+    $sid = session_id();
+    $hasUid = isset($_SESSION['user_id']);
+    $hasLa = isset($_SESSION['last_activity']);
+    error_log('[aluno/dashboard] session_id=' . ($sid ?: 'none') . ' has_user_id=' . ($hasUid ? 1 : 0) . ' has_last_activity=' . ($hasLa ? 1 : 0) . ' isLoggedIn=' . ($dashboardLogged ? 1 : 0));
+}
+
 // Verificar autenticação específica para aluno
-if (!isLoggedIn()) {
+if (!$dashboardLogged) {
+    if (function_exists('error_log')) {
+        error_log('[aluno/dashboard] redirect_reason=isLoggedIn_false');
+    }
     header('Location: login.php');
     exit();
 }
 
 $user = getCurrentUser();
 if (!$user || $user['tipo'] !== 'aluno') {
+    if (function_exists('error_log')) {
+        error_log('[aluno/dashboard] redirect_reason=user_not_aluno_or_null tipo=' . ($user['tipo'] ?? 'null'));
+    }
     header('Location: login.php');
     exit();
 }

@@ -57,6 +57,14 @@
             color: var(--color-text-muted);
             font-size: var(--font-size-sm);
         }
+        /* Acessibilidade: "Esqueci minha senha" legível (contraste WCAG AA em fundo claro) */
+        .login-forgot-link {
+            color: #034ba8;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            text-decoration: underline;
+        }
+        .login-forgot-link:hover { color: #023A8D; }
     </style>
 </head>
 <body>
@@ -113,7 +121,7 @@
             </form>
             
             <div style="text-align: center; margin-top: var(--spacing-md);">
-                <a href="<?= base_url('/forgot-password') ?>" class="text-link" style="font-size: var(--font-size-sm);">
+                <a href="<?= base_url('/forgot-password') ?>" class="login-forgot-link">
                     Esqueci minha senha
                 </a>
             </div>

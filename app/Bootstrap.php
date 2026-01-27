@@ -1,7 +1,8 @@
 <?php
 
-// Session
+// Session — mesmo nome do legado (includes/config.php SESSION_NAME) para /aluno/dashboard.php enxergar sessão pós define-password
 if (session_status() === PHP_SESSION_NONE) {
+    session_name('CFC_SESSION');
     session_start([
         'cookie_lifetime' => 86400, // 24 horas
         'cookie_httponly' => true,

@@ -7,8 +7,9 @@ $isPainelSubdomain = strpos($host, 'painel.') === 0 || $host === 'painel.cfcbomc
 
 // Se for o subdomínio painel e não houver sessão válida, garantir que mostre login
 if ($isPainelSubdomain) {
-    // Iniciar sessão se ainda não estiver iniciada
+    // Iniciar sessão com mesmo nome do legado (CFC_SESSION) para /aluno/dashboard.php enxergar sessão
     if (session_status() === PHP_SESSION_NONE) {
+        session_name('CFC_SESSION');
         session_start();
     }
     

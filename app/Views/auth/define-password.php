@@ -9,15 +9,20 @@
     <link rel="stylesheet" href="<?= asset_url('css/layout.css') ?>">
     <link rel="stylesheet" href="<?= asset_url('css/utilities.css') ?>">
     <style>
-        /* Acessibilidade: título, labels e texto legíveis (WCAG AA) em light/dark */
-        .define-password-page { --dp-title-color: #1a1a1a; --dp-body-color: #374151; --dp-hint-color: #4b5563; }
+        /* Acessibilidade: título, labels e texto legíveis (WCAG AA). Em dark: fundo da página E do card escuros para evitar “texto claro em fundo claro”. */
+        .define-password-page { --dp-title-color: #1a1a1a; --dp-body-color: #374151; --dp-hint-color: #4b5563; --dp-bg: #f9fafb; --dp-card-bg: #fff; --dp-input-bg: #fff; --dp-input-border: #d1d5db; --dp-input-color: #1a1a1a; }
         @media (prefers-color-scheme: dark) {
-            .define-password-page { --dp-title-color: #f3f4f6; --dp-body-color: #d1d5db; --dp-hint-color: #9ca3af; }
-            .define-password-page .auth-card { background: #1f2937; }
+            .define-password-page {
+                --dp-title-color: #f3f4f6; --dp-body-color: #d1d5db; --dp-hint-color: #9ca3af;
+                --dp-bg: #111827; --dp-card-bg: #1f2937; --dp-input-bg: #374151; --dp-input-border: #4b5563; --dp-input-color: #f9fafb;
+            }
+            .define-password-page { background: var(--dp-bg) !important; }
+            .define-password-page .auth-card { background: var(--dp-card-bg) !important; border-color: #374151; }
+            .define-password-page .form-input { background: var(--dp-input-bg) !important; border-color: var(--dp-input-border) !important; color: var(--dp-input-color) !important; }
         }
-        .define-password-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50, #f9fafb); }
+        .define-password-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--dp-bg); }
         .define-password-page .auth-container { width: 100%; max-width: 400px; padding: var(--spacing-lg); }
-        .define-password-page .auth-card { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--spacing-xl); }
+        .define-password-page .auth-card { background: var(--dp-card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--spacing-xl); }
         .define-password-page .auth-logo { text-align: center; margin-bottom: var(--spacing-xl); font-size: 24px; font-weight: bold; color: var(--color-primary); }
         .define-password-page .auth-title { margin-bottom: var(--spacing-md); color: var(--dp-title-color); font-size: 1.35rem; font-weight: 600; }
         .define-password-page .auth-intro { margin-bottom: var(--spacing-lg); color: var(--dp-body-color); font-size: 1rem; line-height: 1.5; }

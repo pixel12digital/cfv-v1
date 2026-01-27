@@ -27,7 +27,9 @@ class AuthService
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['nome'];
+        $_SESSION['user_type'] = $user['tipo'] ?? null;       // compatível com legado (includes/auth createSession)
         $_SESSION['cfc_id'] = $user['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
+        $_SESSION['user_cfc_id'] = $user['cfc_id'] ?? null;    // compatível com legado
         $_SESSION['must_change_password'] = !empty($user['must_change_password']) && $user['must_change_password'] == 1;
         $_SESSION['last_activity'] = time(); // compatível com legacy (includes/auth.php isLoggedIn)
         
