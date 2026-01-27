@@ -123,6 +123,9 @@
             hideOverlay();
             updateHeaderCta(false);
             updateBell(false);
+            if (window.__PWA_DEBUG) {
+                console.log('[PWA overlay] installed=1 dismissedToday=' + wasDismissedToday() + ' deferred=' + !!deferredPrompt + ' overlay=hide bell=hide cta=hide');
+            }
             return;
         }
 
@@ -139,6 +142,13 @@
             showOverlay();
         } else {
             hideOverlay();
+        }
+
+        if (window.__PWA_DEBUG) {
+            var ov = overlayEl && !overlayEl.classList.contains('pwa-overlay-hidden');
+            var bellVis = bellEl && !bellEl.classList.contains('d-none');
+            var ctaVis = headerCtaEl && !headerCtaEl.classList.contains('d-none');
+            console.log('[PWA overlay] installed=0 dismissedToday=' + wasDismissedToday() + ' deferred=' + !!deferredPrompt + ' overlay=' + (ov ? 'show' : 'hide') + ' bell=' + (bellVis ? 'show' : 'hide') + ' cta=' + (ctaVis ? 'show' : 'hide'));
         }
 
         overlayEl.querySelectorAll('.pwa-overlay-btn-dismiss').forEach(function (btn) {
