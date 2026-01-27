@@ -7,6 +7,19 @@
 // Redirect absoluto para login legado (evita tela em branco por redirect relativo ou 500)
 $alunoLoginUrl = '/aluno/login.php';
 
+// Qualquer exceção não capturada (incl. após login, na renderização) redireciona para login em vez de 500 em branco
+set_exception_handler(function (Throwable $e) use ($alunoLoginUrl) {
+    if (function_exists('error_log')) {
+        error_log('[aluno/dashboard] Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
+    if (!headers_sent()) {
+        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
+        exit;
+    }
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '"></head><body>Redirecionando para o login...</body></html>';
+    exit;
+});
+
 try {
     require_once __DIR__ . '/../includes/config.php';
     require_once __DIR__ . '/../includes/database.php';
@@ -18,8 +31,10 @@ try {
     }
     if (!headers_sent()) {
         header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
-        exit;
+    } else {
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '"></head><body>Redirecionando...</body></html>';
     }
+    exit;
 }
 
 // Instrumentação e checagem de auth/DB — qualquer falha redireciona para login (evita 500 em branco)
