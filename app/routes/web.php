@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\AuthController;
+use App\Controllers\InstallController;
 use App\Controllers\DashboardController;
 use App\Controllers\ApiController;
 use App\Controllers\AlunosController;
@@ -37,6 +38,7 @@ $router->get('/reset-password', [AuthController::class, 'showResetPassword']);
 $router->post('/reset-password', [AuthController::class, 'resetPassword']);
 $router->get('/ativar-conta', [AuthController::class, 'showActivateAccount']);
 $router->post('/ativar-conta', [AuthController::class, 'activateAccount']);
+$router->get('/install', [InstallController::class, 'show']); // Landing pública: instalar app do aluno (sem auth)
 
 // Rotas protegidas
 $router->get('/dashboard', [DashboardController::class, 'index'], [AuthMiddleware::class]);

@@ -442,6 +442,48 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
             </a>
         </div>
         <?php endif; ?>
+
+        <?php if (!empty($showInstallCta)): ?>
+        <div class="card" style="margin-top: var(--spacing-lg); border-left: 4px solid var(--color-primary);">
+            <div class="card-body">
+                <h4 style="margin-top: 0; margin-bottom: var(--spacing-sm);">Envie o app ao aluno</h4>
+                <p class="text-muted" style="margin-bottom: var(--spacing-md); font-size: var(--font-size-sm);">Link para instalação do app (Android/iPhone).</p>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center;">
+                    <a href="#" id="pwa-cta-wa" class="btn btn-primary btn-sm" data-phone="<?= htmlspecialchars($studentPhoneForWa ?? '') ?>" data-message="<?= htmlspecialchars($waMessage ?? '') ?>" data-install-url="<?= htmlspecialchars($installUrl ?? '') ?>" <?= empty($hasValidPhone) ? ' style="pointer-events: none; opacity: 0.6;"' : '' ?>>
+                        WhatsApp
+                    </a>
+                    <button type="button" class="btn btn-outline btn-sm" id="pwa-cta-copy" data-install-url="<?= htmlspecialchars($installUrl ?? '') ?>">Copiar link</button>
+                    <?php if (empty($hasValidPhone)): ?>
+                    <span class="text-muted" style="font-size: var(--font-size-sm);">Aluno sem telefone cadastrado.</span>
+                    <?php endif; ?>
+                </div>
+                <div id="pwa-copy-fallback" style="display: none; margin-top: var(--spacing-sm);">
+                    <input type="text" readonly class="form-input" id="pwa-copy-input" value="" style="font-size: 0.85rem;">
+                </div>
+                <p id="pwa-copy-feedback" style="display: none; margin: var(--spacing-sm) 0 0; color: var(--color-success); font-size: var(--font-size-sm);">Link copiado.</p>
+            </div>
+        </div>
+        <script>
+        (function(){
+            var waEl = document.getElementById('pwa-cta-wa');
+            var copyEl = document.getElementById('pwa-cta-copy');
+            if (waEl && waEl.dataset.phone && waEl.dataset.message) {
+                waEl.addEventListener('click', function(e){ e.preventDefault(); if (this.dataset.phone) window.open('https://wa.me/' + this.dataset.phone + '?text=' + encodeURIComponent(this.dataset.message), '_blank'); });
+            }
+            if (copyEl && copyEl.dataset.installUrl) {
+                copyEl.addEventListener('click', function(){
+                    var u = this.dataset.installUrl;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(u).then(function(){ var fb = document.getElementById('pwa-copy-feedback'); if(fb){ fb.style.display='block'; setTimeout(function(){ fb.style.display='none'; }, 2000); }});
+                    } else {
+                        var fallback = document.getElementById('pwa-copy-fallback'); var inp = document.getElementById('pwa-copy-input');
+                        if (fallback && inp) { inp.value = u; fallback.style.display = 'block'; inp.select(); document.execCommand('copy'); }
+                    }
+                });
+            }
+        })();
+        </script>
+        <?php endif; ?>
     <?php endif; ?>
 
 <?php elseif ($tab === 'documentos'): ?>

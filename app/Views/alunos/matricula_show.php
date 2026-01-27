@@ -3,13 +3,40 @@
         <h1>Editar Matrícula</h1>
         <p class="text-muted">Aluno: <?= htmlspecialchars($enrollment['student_name']) ?></p>
     </div>
-    <a href="<?= base_path("alunos/{$enrollment['student_id']}?tab=matricula") ?>" class="btn btn-outline">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        Voltar
-    </a>
+    <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center;">
+        <a href="<?= base_path("alunos/{$enrollment['student_id']}?tab=matricula") ?>" class="btn btn-outline">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Voltar
+        </a>
+        <span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">|</span>
+        <a href="#" class="btn btn-outline btn-sm" id="matricula-cta-wa" data-phone="<?= htmlspecialchars($studentPhoneForWa ?? '') ?>" data-message="<?= htmlspecialchars($waMessage ?? '') ?>" data-install-url="<?= htmlspecialchars($installUrl ?? '') ?>" <?= empty($hasValidPhone) ? ' style="pointer-events: none; opacity: 0.6;"' : '' ?>>Enviar app no WhatsApp</a>
+        <button type="button" class="btn btn-outline btn-sm" id="matricula-cta-copy" data-install-url="<?= htmlspecialchars($installUrl ?? '') ?>">Copiar link</button>
+        <?php if (empty($hasValidPhone)): ?>
+        <span class="text-muted" style="font-size: var(--font-size-sm);">Aluno sem telefone.</span>
+        <?php endif; ?>
+    </div>
 </div>
+<script>
+(function(){
+    var waEl = document.getElementById('matricula-cta-wa');
+    var copyEl = document.getElementById('matricula-cta-copy');
+    if (waEl && waEl.dataset.phone && waEl.dataset.message) {
+        waEl.addEventListener('click', function(e){ e.preventDefault(); if (this.dataset.phone) window.open('https://wa.me/' + this.dataset.phone + '?text=' + encodeURIComponent(this.dataset.message), '_blank'); });
+    }
+    if (copyEl && copyEl.dataset.installUrl) {
+        copyEl.addEventListener('click', function(){
+            var u = this.dataset.installUrl;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(u).then(function(){ if (typeof alert === 'function') alert('Link copiado.'); });
+            } else {
+                var inp = document.createElement('input'); inp.value = u; inp.setAttribute('readonly',''); inp.style.position = 'absolute'; inp.style.left = '-9999px'; document.body.appendChild(inp); inp.select(); document.execCommand('copy'); document.body.removeChild(inp); alert('Link copiado.');
+            }
+        });
+    }
+})();
+</script>
 
 <div class="card">
     <div class="card-body">

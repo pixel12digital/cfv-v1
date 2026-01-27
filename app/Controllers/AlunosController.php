@@ -167,6 +167,11 @@ class AlunosController extends Controller
         $enrollments = $studentModel->getEnrollments($id);
         $tab = $_GET['tab'] ?? 'dados';
 
+        $showInstallCta = ($tab === 'matricula' && !empty($_SESSION['show_install_cta']));
+        if ($showInstallCta) {
+            unset($_SESSION['show_install_cta']);
+        }
+
         $fullName = $studentModel->getFullName($student);
 
         // Carregar cidades para exibição
@@ -195,6 +200,11 @@ class AlunosController extends Controller
             }
         }
         
+        $installUrl = base_url('install');
+        $waMessage = str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
+        $studentPhoneRaw = $studentModel->getPrimaryPhone($student);
+        list($studentPhoneForWa, $hasValidPhone) = $this->normalizePhoneForWa($studentPhoneRaw);
+
         $data = [
             'pageTitle' => 'Aluno: ' . $fullName,
             'student' => $student,
@@ -203,7 +213,12 @@ class AlunosController extends Controller
             'addressCity' => $addressCity,
             'birthCity' => $birthCity,
             'userInfo' => $userInfo,
-            'userRoles' => $userRoles
+            'userRoles' => $userRoles,
+            'showInstallCta' => $showInstallCta,
+            'installUrl' => $installUrl,
+            'waMessage' => $waMessage,
+            'studentPhoneForWa' => $studentPhoneForWa,
+            'hasValidPhone' => $hasValidPhone
         ];
 
         if ($tab === 'progresso' && !empty($enrollments)) {
@@ -712,6 +727,7 @@ class AlunosController extends Controller
             $db->commit();
             
             $_SESSION['success'] = 'Matrícula criada com sucesso!';
+            $_SESSION['show_install_cta'] = true;
             redirect(base_url("alunos/{$id}?tab=matricula"));
         } catch (\Exception $e) {
             $db->rollBack();
@@ -767,13 +783,22 @@ class AlunosController extends Controller
             $pixAccounts = []; // Array vazio se tabela não existir
         }
 
+        $installUrl = base_url('install');
+        $waMessage = str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
+        $enrollmentPhoneRaw = !empty($enrollment['phone_primary']) ? $enrollment['phone_primary'] : ($enrollment['phone'] ?? null);
+        list($studentPhoneForWa, $hasValidPhone) = $this->normalizePhoneForWa($enrollmentPhoneRaw);
+
         $data = [
             'pageTitle' => 'Matrícula #' . $id,
             'enrollment' => $enrollment,
             'cfc' => $cfc,
             'pixAccount' => $pixAccount,
             'pixAccountSnapshot' => $pixAccountSnapshot,
-            'pixAccounts' => $pixAccounts // Contas disponíveis para seleção
+            'pixAccounts' => $pixAccounts,
+            'installUrl' => $installUrl,
+            'waMessage' => $waMessage,
+            'studentPhoneForWa' => $studentPhoneForWa,
+            'hasValidPhone' => $hasValidPhone
         ];
         $this->view('alunos/matricula_show', $data);
     }
@@ -1711,5 +1736,29 @@ class AlunosController extends Controller
             $_SESSION['error'] = 'Erro ao excluir matrícula: ' . $e->getMessage();
             redirect(base_url("matriculas/{$id}"));
         }
+    }
+
+    /**
+     * Normaliza telefone para wa.me: só dígitos, DDI 55.
+     * Retorna [numeroParaWa, valido].
+     * Válido = 12 ou 13 dígitos (55 + DDD + número).
+     */
+    private function normalizePhoneForWa($phone)
+    {
+        if ($phone === null || $phone === '') {
+            return [null, false];
+        }
+        $digits = preg_replace('/\D/', '', $phone);
+        if ($digits === '') {
+            return [null, false];
+        }
+        if (strlen($digits) === 11 && substr($digits, 0, 2) !== '55') {
+            $digits = '55' . $digits;
+        } elseif (substr($digits, 0, 2) !== '55') {
+            $digits = '55' . $digits;
+        }
+        $len = strlen($digits);
+        $valid = ($len >= 12 && $len <= 13);
+        return [$digits, $valid];
     }
 }
