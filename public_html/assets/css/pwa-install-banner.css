@@ -1,0 +1,413 @@
+/**
+ * PWA Install Banner Styles
+ * Estilos para o banner de instalação do aplicativo PWA no dashboard do aluno
+ */
+
+/* Banner principal */
+.pwa-install-banner {
+    background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--spacing-md, 16px);
+    margin-bottom: var(--spacing-md, 16px);
+    box-shadow: 0 4px 20px rgba(26, 54, 93, 0.3);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.pwa-install-banner--visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.pwa-install-banner--hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+/* Efeito de brilho decorativo */
+.pwa-install-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Container do conteúdo */
+.pwa-install-banner__content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+    position: relative;
+    z-index: 1;
+}
+
+/* Ícone do smartphone */
+.pwa-install-banner__icon {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md, 8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.pwa-install-banner__icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Texto */
+.pwa-install-banner__text {
+    flex: 1;
+    min-width: 0;
+}
+
+.pwa-install-banner__title {
+    margin: 0 0 4px 0;
+    font-size: var(--font-size-lg, 18px);
+    font-weight: var(--font-weight-semibold, 600);
+    color: white;
+    line-height: 1.3;
+}
+
+.pwa-install-banner__subtitle {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.4;
+}
+
+/* Hint iOS */
+.pwa-install-banner__ios-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: var(--font-size-sm, 14px);
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 6px);
+}
+
+.pwa-install-banner__ios-hint svg {
+    flex-shrink: 0;
+    color: white;
+}
+
+/* Ações (botões) */
+.pwa-install-banner__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 8px);
+    flex-shrink: 0;
+}
+
+/* Botões */
+.pwa-install-banner__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: var(--font-weight-medium, 500);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+.pwa-install-banner__btn--primary {
+    background: white;
+    color: #1a365d;
+}
+
+.pwa-install-banner__btn--primary:hover {
+    background: #f0f4f8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pwa-install-banner__btn--primary:active {
+    transform: translateY(0);
+}
+
+.pwa-install-banner__btn--primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pwa-install-banner__btn--secondary {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pwa-install-banner__btn--secondary:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Botão de fechar (X) */
+.pwa-install-banner__close {
+    position: absolute;
+    top: var(--spacing-sm, 8px);
+    right: var(--spacing-sm, 8px);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    border-radius: var(--radius-sm, 6px);
+    transition: all 0.2s ease;
+}
+
+.pwa-install-banner__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Spinner de loading */
+.pwa-install-banner__spinner {
+    animation: pwa-spin 1s linear infinite;
+}
+
+@keyframes pwa-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Toast de sucesso */
+.pwa-install-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #059669;
+    color: white;
+    padding: 14px 24px;
+    border-radius: var(--radius-md, 8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: var(--font-weight-medium, 500);
+    z-index: 10001;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.pwa-install-toast--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.pwa-install-toast--success {
+    background: #059669;
+}
+
+.pwa-install-toast svg {
+    flex-shrink: 0;
+}
+
+/* Modal de instruções */
+.pwa-install-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: var(--spacing-md, 16px);
+    animation: pwa-fade-in 0.2s ease;
+}
+
+.pwa-install-modal__content {
+    background: white;
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--spacing-lg, 24px);
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.pwa-install-modal__content h4 {
+    margin: 0 0 var(--spacing-md, 16px) 0;
+    font-size: var(--font-size-lg, 18px);
+    color: var(--color-text, #1a365d);
+}
+
+.pwa-install-modal__content p {
+    margin: 0 0 var(--spacing-sm, 8px) 0;
+    color: var(--color-text, #1a365d);
+}
+
+.pwa-install-modal__content ol {
+    margin: 0 0 var(--spacing-md, 16px) 0;
+    padding-left: 24px;
+    color: var(--color-text-muted, #64748b);
+}
+
+.pwa-install-modal__content ol li {
+    margin-bottom: 8px;
+}
+
+.pwa-install-modal__content .pwa-install-banner__btn {
+    width: 100%;
+}
+
+@keyframes pwa-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsivo - Mobile */
+@media (max-width: 640px) {
+    .pwa-install-banner {
+        padding: var(--spacing-sm, 12px);
+    }
+
+    .pwa-install-banner__content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .pwa-install-banner__icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .pwa-install-banner__icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .pwa-install-banner__title {
+        font-size: var(--font-size-base, 16px);
+    }
+
+    .pwa-install-banner__subtitle {
+        font-size: var(--font-size-xs, 12px);
+    }
+
+    .pwa-install-banner__actions {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .pwa-install-banner__btn {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        font-size: var(--font-size-xs, 12px);
+    }
+
+    .pwa-install-banner__close {
+        top: 4px;
+        right: 4px;
+    }
+
+    .pwa-install-banner__ios-hint {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .pwa-install-toast {
+        left: 16px;
+        right: 16px;
+        transform: translateX(0) translateY(100px);
+        text-align: center;
+        justify-content: center;
+    }
+
+    .pwa-install-toast--visible {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .pwa-install-banner__content {
+        flex-wrap: wrap;
+    }
+
+    .pwa-install-banner__text {
+        flex: 1 1 300px;
+    }
+
+    .pwa-install-banner__actions {
+        flex-direction: row;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .pwa-install-modal__content {
+        background: #1e293b;
+        color: white;
+    }
+
+    .pwa-install-modal__content h4,
+    .pwa-install-modal__content p {
+        color: white;
+    }
+
+    .pwa-install-modal__content ol {
+        color: #94a3b8;
+    }
+
+    .pwa-install-banner__btn--primary {
+        background: #f8fafc;
+        color: #1a365d;
+    }
+
+    .pwa-install-banner__btn--primary:hover {
+        background: white;
+    }
+}
+
+/* Animação de entrada suave */
+@keyframes pwa-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Print: ocultar banner */
+@media print {
+    .pwa-install-banner,
+    .pwa-install-toast,
+    .pwa-install-modal {
+        display: none !important;
+    }
+}

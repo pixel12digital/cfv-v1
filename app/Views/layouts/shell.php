@@ -12,6 +12,21 @@
     <base href="<?= base_path('/') ?>">
     <title><?= $pageTitle ?? 'CFC Sistema' ?></title>
     
+    <!-- PWA: Captura precoce do beforeinstallprompt -->
+    <script>
+    // Capturar beforeinstallprompt o mais cedo possível
+    window.__deferredPrompt = null;
+    window.__bipFiredAt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__deferredPrompt = e;
+        window.__bipFiredAt = Date.now();
+        console.log('[PWA Early] beforeinstallprompt capturado');
+        // Disparar evento customizado para componentes que carregam depois
+        window.dispatchEvent(new CustomEvent('pwa:beforeinstallprompt', { detail: e }));
+    });
+    </script>
+    
     <!-- PWA Manifest (usando pwa-manifest.php para white-label dinâmico) -->
     <link rel="manifest" href="<?= pwa_asset_path('pwa-manifest.php') ?>">
     

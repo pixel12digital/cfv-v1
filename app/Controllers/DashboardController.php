@@ -270,7 +270,10 @@ class DashboardController extends Controller
             // Aluno sem vínculo, mostrar mensagem
             $data = [
                 'pageTitle' => 'Dashboard',
-                'student' => null
+                'student' => null,
+                // PWA Install Banner - CSS e JS para prompt de instalação
+                'additionalCSS' => ['css/pwa-install-banner.css'],
+                'additionalJS' => ['js/pwa-install-banner.js']
             ];
             $this->view('dashboard/aluno', $data);
             return;
@@ -438,7 +441,10 @@ class DashboardController extends Controller
             'theoryClass' => $theoryClass,
             'theoryProgress' => $theoryProgress,
             'nextDueDate' => $nextDueDate,
-            'overdueCount' => $overdueCount
+            'overdueCount' => $overdueCount,
+            // PWA Install Banner - CSS e JS para prompt de instalação
+            'additionalCSS' => ['css/pwa-install-banner.css'],
+            'additionalJS' => ['js/pwa-install-banner.js']
         ];
         
         $this->view('dashboard/aluno', $data);
