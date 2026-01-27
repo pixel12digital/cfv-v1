@@ -4,19 +4,20 @@
  * Interface focada em usabilidade móvel
  */
 
-// Redirect absoluto para login legado (evita tela em branco por redirect relativo ou 500)
+// Redirect: login principal (funciona); /aluno/login.php usa os mesmos includes e pode ficar em branco quando há erro
 $alunoLoginUrl = '/aluno/login.php';
+$mainLoginUrl  = '/login.php'; // em erro, mandar para o login principal (print 1) em vez de aluno/login que fica em branco
 
-// Qualquer exceção não capturada (incl. após login, na renderização) redireciona para login em vez de 500 em branco
-set_exception_handler(function (Throwable $e) use ($alunoLoginUrl) {
+// Qualquer exceção não capturada → login principal (evita tela em branco em aluno/login.php)
+set_exception_handler(function (Throwable $e) use ($mainLoginUrl) {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
     if (!headers_sent()) {
-        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
+        header('Location: ' . $mainLoginUrl . '?erro=system', true, 302);
         exit;
     }
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '"></head><body>Redirecionando para o login...</body></html>';
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($mainLoginUrl) . '"></head><body>Redirecionando para o login...</body></html>';
     exit;
 });
 
@@ -29,10 +30,11 @@ try {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Bootstrap error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
+    $url = '/login.php';
     if (!headers_sent()) {
-        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
+        header('Location: ' . $url . '?erro=system', true, 302);
     } else {
-        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '"></head><body>Redirecionando...</body></html>';
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($url) . '"></head><body>Redirecionando...</body></html>';
     }
     exit;
 }
@@ -96,12 +98,12 @@ try {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Auth/DB error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
+    $url = '/login.php';
     if (!headers_sent()) {
-        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
-        exit;
+        header('Location: ' . $url . '?erro=system', true, 302);
+    } else {
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($url) . '"></head><body>Redirecionando...</body></html>';
     }
-    // fallback se headers já enviados
-    echo '<meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '">Redirecionando...';
     exit;
 }
 
