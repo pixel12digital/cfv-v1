@@ -10,6 +10,7 @@
     var deferredPrompt = null;
     var overlayEl = null;
     var headerCtaEl = null;
+    var bellEl = null;
     var installUrl = typeof window.__PWA_INSTALL_URL === 'string' ? window.__PWA_INSTALL_URL : '/install';
 
     function isPwaInstalled() {
@@ -74,6 +75,17 @@
         }
     }
 
+    function updateBell(visible) {
+        if (!bellEl) return;
+        if (visible) {
+            bellEl.classList.remove('d-none');
+            bellEl.setAttribute('aria-hidden', 'false');
+        } else {
+            bellEl.classList.add('d-none');
+            bellEl.setAttribute('aria-hidden', 'true');
+        }
+    }
+
     function setStateInstallable() {
         var blockInstal = overlayEl && overlayEl.querySelector('.pwa-overlay-state-installable');
         var blockNotInstallable = overlayEl && overlayEl.querySelector('.pwa-overlay-state-not-installable');
@@ -104,15 +116,18 @@
     function setupOverlay() {
         overlayEl = document.getElementById('pwa-install-overlay');
         headerCtaEl = document.getElementById('pwa-install-header-cta');
+        bellEl = document.getElementById('pwa-install-bell');
         if (!overlayEl) return;
 
         if (isPwaInstalled()) {
             hideOverlay();
             updateHeaderCta(false);
+            updateBell(false);
             return;
         }
 
         updateHeaderCta(true);
+        updateBell(true);
 
         if (deferredPrompt) {
             setStateInstallable();
@@ -143,6 +158,7 @@
                             deferredPrompt = null;
                             hideOverlay();
                             updateHeaderCta(false);
+                            updateBell(false);
                         }
                     });
                 }
@@ -172,11 +188,39 @@
                         if (choice.outcome === 'accepted') {
                             deferredPrompt = null;
                             updateHeaderCta(false);
+                            updateBell(false);
                         }
                     });
                 } else {
                     window.location.href = installUrl;
                 }
+            });
+        }
+
+        var bellItem = document.getElementById('pwa-install-bell-item');
+        if (bellItem) {
+            bellItem.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function (choice) {
+                        if (choice.outcome === 'accepted') {
+                            deferredPrompt = null;
+                            updateHeaderCta(false);
+                            updateBell(false);
+                        }
+                    });
+                } else {
+                    window.location.href = installUrl;
+                }
+            });
+        }
+
+        var bellDismiss = document.getElementById('pwa-install-bell-dismiss');
+        if (bellDismiss) {
+            bellDismiss.addEventListener('click', function () {
+                setDismissedToday();
+                hideOverlay();
             });
         }
     }
@@ -190,6 +234,7 @@
             if (shouldShowOverlay()) showOverlay();
         }
         updateHeaderCta(true);
+        updateBell(true);
     });
 
     window.addEventListener('appinstalled', function () {
@@ -197,6 +242,7 @@
         window.__deferredPrompt = null;
         hideOverlay();
         updateHeaderCta(false);
+        updateBell(false);
         setDismissedToday();
     });
 

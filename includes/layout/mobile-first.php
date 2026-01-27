@@ -136,6 +136,17 @@
                 $pwaInstallUrlAttr = isset($pwaInstallUrl) ? htmlspecialchars($pwaInstallUrl) : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
             ?>
             <a href="<?php echo $pwaInstallUrlAttr; ?>" id="pwa-install-header-cta" class="btn btn-outline-light btn-sm ms-2 d-none" aria-label="Instalar app">Instalar app</a>
+            <div id="pwa-install-bell" class="dropdown ms-2 d-none" aria-hidden="true">
+                <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Avisos – Instalar aplicativo">
+                    <i class="fas fa-bell me-1"></i>
+                    <span class="badge bg-warning text-dark" id="pwa-install-bell-badge">1</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" id="pwa-install-bell-item"><i class="fas fa-download me-2"></i>Instalar aplicativo</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button type="button" class="dropdown-item pwa-install-bell-dismiss" id="pwa-install-bell-dismiss">Dispensar por hoje</button></li>
+                </ul>
+            </div>
             <?php endif; ?>
             
             <!-- Botão de filtros (mobile) -->
@@ -238,7 +249,7 @@
     <?php if (!empty($showPwaInstallOverlay)): 
         $pwaInstallUrlForJs = isset($pwaInstallUrl) ? $pwaInstallUrl : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
     ?>
-    <div id="pwa-install-overlay" class="pwa-overlay-hidden" role="dialog" aria-modal="true" aria-labelledby="pwa-overlay-title" aria-hidden="true">
+    <div id="pwa-install-overlay" role="dialog" aria-modal="true" aria-labelledby="pwa-overlay-title" aria-hidden="false">
         <div class="pwa-overlay-dialog">
             <h2 id="pwa-overlay-title">Instalar o app</h2>
             <p class="pwa-overlay-text-muted">Acesse aulas, financeiro e mais pelo celular.</p>
