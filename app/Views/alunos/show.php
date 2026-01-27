@@ -447,6 +447,9 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
         <div class="card" style="margin-top: var(--spacing-lg); border-left: 4px solid var(--color-primary);">
             <div class="card-body">
                 <h4 style="margin-top: 0; margin-bottom: var(--spacing-sm);">Envie o app ao aluno</h4>
+                <?php if (!empty($installLinkError)): ?>
+                <div class="alert alert-warning" style="margin-bottom: var(--spacing-md);"><?= htmlspecialchars($installLinkError) ?></div>
+                <?php endif; ?>
                 <p class="text-muted" style="margin-bottom: var(--spacing-md); font-size: var(--font-size-sm);">Link para instalação do app (Android/iPhone).</p>
                 <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center;">
                     <a href="#" id="pwa-cta-wa" class="btn btn-primary btn-sm" data-phone="<?= htmlspecialchars($studentPhoneForWa ?? '') ?>" data-message="<?= htmlspecialchars($waMessage ?? '') ?>" data-install-url="<?= htmlspecialchars($installUrl ?? '') ?>" <?= empty($hasValidPhone) ? ' style="pointer-events: none; opacity: 0.6;"' : '' ?>>

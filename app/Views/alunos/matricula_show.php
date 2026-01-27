@@ -16,6 +16,9 @@
         <?php if (empty($hasValidPhone)): ?>
         <span class="text-muted" style="font-size: var(--font-size-sm);">Aluno sem telefone.</span>
         <?php endif; ?>
+        <?php if (!empty($installLinkError)): ?>
+        <span class="alert alert-warning" style="margin: 0; padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-sm);"><?= htmlspecialchars($installLinkError) ?></span>
+        <?php endif; ?>
     </div>
 </div>
 <script>

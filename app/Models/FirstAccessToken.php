@@ -45,16 +45,41 @@ class FirstAccessToken
      */
     public function findByPlainToken($plainToken)
     {
+        $r = $this->findWithReason($plainToken);
+        return ($r && $r['result'] === 'ok') ? $r['row'] : null;
+    }
+
+    /**
+     * Busca token e retorna motivo (para log e UI).
+     *
+     * @param string $plainToken Token em texto puro (como vem na URL)
+     * @return array{row: array|null, result: 'ok'|'not_found'|'expired'|'used', hash_prefix: string, found_token_id: int|null, expires_at: string|null, used_at: string|null}
+     */
+    public function findWithReason($plainToken)
+    {
+        $now = date('Y-m-d H:i:s');
+        $hashPrefix = '';
+        $empty = ['row' => null, 'result' => 'not_found', 'hash_prefix' => '', 'found_token_id' => null, 'expires_at' => null, 'used_at' => null];
         if (empty($plainToken) || strlen($plainToken) !== 64) {
-            return null;
+            return array_merge($empty, ['result' => 'not_found']);
         }
         $tokenHash = hash('sha256', $plainToken);
-        $stmt = $this->db->prepare("
-            SELECT * FROM first_access_tokens
-            WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()
-        ");
+        $hashPrefix = substr($tokenHash, 0, 8);
+        $stmt = $this->db->prepare("SELECT id, user_id, token_hash, expires_at, used_at FROM first_access_tokens WHERE token_hash = ?");
         $stmt->execute([$tokenHash]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            return array_merge($empty, ['hash_prefix' => $hashPrefix, 'result' => 'not_found']);
+        }
+        $usedAt = $row['used_at'] ?? null;
+        $expiresAt = $row['expires_at'] ?? null;
+        if ($usedAt !== null && $usedAt !== '') {
+            return ['row' => null, 'result' => 'used', 'hash_prefix' => $hashPrefix, 'found_token_id' => (int)$row['id'], 'expires_at' => $expiresAt, 'used_at' => $usedAt];
+        }
+        if ($expiresAt !== null && $expiresAt < $now) {
+            return ['row' => null, 'result' => 'expired', 'hash_prefix' => $hashPrefix, 'found_token_id' => (int)$row['id'], 'expires_at' => $expiresAt, 'used_at' => $usedAt];
+        }
+        return ['row' => $row, 'result' => 'ok', 'hash_prefix' => $hashPrefix, 'found_token_id' => (int)$row['id'], 'expires_at' => $expiresAt, 'used_at' => $usedAt];
     }
 
     /**

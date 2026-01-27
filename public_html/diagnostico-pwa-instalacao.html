@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico PWA - Instalação</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #023A8D;
+            border-bottom: 3px solid #023A8D;
+            padding-bottom: 10px;
+        }
+        .check-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .check-item.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .check-item.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .check-item.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .check-item h3 {
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .icon {
+            font-size: 24px;
+        }
+        .details {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        button {
+            background: #023A8D;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #022a6d;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        .summary h2 {
+            margin-top: 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-ok {
+            background: #28a745;
+            color: white;
+        }
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+        .status-warning {
+            background: #ffc107;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnóstico PWA - Por Que Não Aparece "Instalar Aplicativo"</h1>
+        
+        <button onclick="runDiagnostics()">🔄 Executar Diagnóstico</button>
+        <button onclick="clearResults()">🗑️ Limpar Resultados</button>
+        
+        <div id="results"></div>
+        <div id="summary" class="summary" style="display: none;">
+            <h2>Resumo</h2>
+            <div id="summary-content"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runDiagnostics() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Executando diagnóstico... ⏳</p>';
+            
+            const checks = [];
+            
+            // 1. Service Worker
+            checks.push(await checkServiceWorker());
+            
+            // 2. Manifest
+            checks.push(await checkManifest());
+            
+            // 3. Ícones
+            checks.push(await checkIcons());
+            
+            // 4. Critérios de Instalabilidade
+            checks.push(await checkInstallabilityCriteria());
+            
+            // 5. Evento beforeinstallprompt
+            checks.push(await checkBeforeInstallPrompt());
+            
+            // Renderizar resultados
+            renderResults(checks);
+            renderSummary(checks);
+        }
+        
+        async function checkServiceWorker() {
+            const check = {
+                title: '1. Service Worker',
+                status: 'error',
+                details: []
+            };
+            
+            try {
+                // Verificar suporte
+                if (!('serviceWorker' in navigator)) {
+                    check.details.push('❌ Service Worker não suportado neste navegador');
+                    return check;
+                }
+                check.details.push('✅ Service Worker suportado');
+                
+                // Verificar registros
+                const regs = await navigator.serviceWorker.getRegistrations();
+                check.details.push(`📋 Service Workers registrados: ${regs.length}`);
+                
+                if (regs.length === 0) {
+                    check.details.push('❌ Nenhum Service Worker registrado');
+                    check.details.push('💡 Solução: Verifique se /sw.js está acessível e sendo registrado');
+                    return check;
+                }
+                
+                // Detalhes dos registros
+                regs.forEach((reg, idx) => {
+                    check.details.push(`\nSW ${idx + 1}:`);
+                    check.details.push(`  Scope: ${reg.scope}`);
+                    check.details.push(`  Active: ${reg.active?.state || 'null'}`);
+                    check.details.push(`  Installing: ${reg.installing?.state || 'null'}`);
+                    check.details.push(`  Waiting: ${reg.waiting?.state || 'null'}`);
+                    check.details.push(`  Script URL: ${reg.active?.scriptURL || reg.installing?.scriptURL || 'N/A'}`);
+                });
+                
+                // Verificar controller
+                const controller = navigator.serviceWorker.controller;
+                if (controller) {
+                    check.details.push(`\n✅ Service Worker está controlando a página`);
+                    check.details.push(`   Controller URL: ${controller.scriptURL}`);
+                    check.details.push(`   Controller State: ${controller.state}`);
+                    check.status = 'success';
+                } else {
+                    check.details.push(`\n⚠️ Service Worker NÃO está controlando a página`);
+                    check.details.push(`💡 Solução: Recarregue a página (F5) após o registro do SW`);
+                    check.status = 'warning';
+                }
+                
+            } catch (error) {
+                check.details.push(`❌ Erro ao verificar Service Worker: ${error.message}`);
+            }
+            
+            return check;
+        }
+        
+        async function checkManifest() {
+            const check = {
+                title: '2. Manifest.json',
+                status: 'error',
+                details: []
+            };
+            
+            try {
+                const response = await fetch('/manifest.json');
+                
+                if (!response.ok) {
+                    check.details.push(`❌ Manifest retornou HTTP ${response.status}`);
+                    check.details.push(`💡 Solução: Verifique se /manifest.json existe e está acessível`);
+                    return check;
+                }
+                
+                check.details.push(`✅ Manifest acessível (HTTP ${response.status})`);
+                
+                const manifest = await response.json();
+                check.details.push(`✅ Manifest JSON válido`);
+                check.details.push(`\n📋 Campos do Manifest:`);
+                check.details.push(`   name: ${manifest.name || '❌ FALTANDO'}`);
+                check.details.push(`   short_name: ${manifest.short_name || '❌ FALTANDO'}`);
+                check.details.push(`   start_url: ${manifest.start_url || '❌ FALTANDO'}`);
+                check.details.push(`   scope: ${manifest.scope || '❌ FALTANDO'}`);
+                check.details.push(`   display: ${manifest.display || '❌ FALTANDO'}`);
+                check.details.push(`   icons: ${manifest.icons?.length || 0} ícone(s)`);
+                
+                // Validar campos obrigatórios
+                const required = ['name', 'icons', 'start_url', 'display'];
+                const missing = required.filter(field => !manifest[field]);
+                
+                if (missing.length > 0) {
+                    check.details.push(`\n❌ Campos obrigatórios faltando: ${missing.join(', ')}`);
+                    check.status = 'error';
+                } else {
+                    check.details.push(`\n✅ Todos os campos obrigatórios presentes`);
+                    check.status = 'success';
+                }
+                
+            } catch (error) {
+                check.details.push(`❌ Erro ao verificar Manifest: ${error.message}`);
+                check.details.push(`💡 Solução: Verifique se /manifest.json existe e está acessível`);
+            }
+            
+            return check;
+        }
+        
+        async function checkIcons() {
+            const check = {
+                title: '3. Ícones do Manifest',
+                status: 'error',
+                details: []
+            };
+            
+            try {
+                // Buscar manifest para pegar ícones
+                const manifestResponse = await fetch('/manifest.json');
+                if (!manifestResponse.ok) {
+                    check.details.push('❌ Não foi possível verificar ícones (manifest não acessível)');
+                    return check;
+                }
+                
+                const manifest = await manifestResponse.json();
+                const icons = manifest.icons || [];
+                
+                check.details.push(`📋 ${icons.length} ícone(s) definido(s) no manifest`);
+                
+                if (icons.length === 0) {
+                    check.details.push('❌ Nenhum ícone definido no manifest');
+                    check.details.push('💡 Solução: Adicione pelo menos um ícone 192x192 e um 512x512');
+                    return check;
+                }
+                
+                // Verificar ícones obrigatórios
+                const has192 = icons.some(i => i.sizes === '192x192' || i.sizes?.includes('192'));
+                const has512 = icons.some(i => i.sizes === '512x512' || i.sizes?.includes('512'));
+                
+                check.details.push(`\n📏 Tamanhos:`);
+                check.details.push(`   ${has192 ? '✅' : '❌'} Ícone 192x192`);
+                check.details.push(`   ${has512 ? '✅' : '❌'} Ícone 512x512`);
+                
+                // Verificar acessibilidade dos ícones
+                check.details.push(`\n🔍 Verificando acessibilidade:`);
+                let accessibleCount = 0;
+                
+                for (const icon of icons.slice(0, 5)) { // Verificar até 5 ícones
+                    try {
+                        const iconPath = icon.src.startsWith('/') ? icon.src : '/' + icon.src;
+                        const iconResponse = await fetch(iconPath, { method: 'HEAD' });
+                        
+                        if (iconResponse.ok) {
+                            check.details.push(`   ✅ ${iconPath} (${icon.sizes})`);
+                            accessibleCount++;
+                        } else {
+                            check.details.push(`   ❌ ${iconPath} - HTTP ${iconResponse.status}`);
+                        }
+                    } catch (error) {
+                        check.details.push(`   ❌ ${icon.src} - ${error.message}`);
+                    }
+                }
+                
+                if (accessibleCount === 0) {
+                    check.details.push(`\n❌ Nenhum ícone acessível`);
+                    check.details.push(`💡 Solução: Verifique se os ícones existem nos caminhos especificados`);
+                    check.status = 'error';
+                } else if (!has192 || !has512) {
+                    check.details.push(`\n⚠️ Ícones acessíveis, mas faltam tamanhos obrigatórios`);
+                    check.status = 'warning';
+                } else {
+                    check.details.push(`\n✅ Ícones acessíveis e tamanhos corretos`);
+                    check.status = 'success';
+                }
+                
+            } catch (error) {
+                check.details.push(`❌ Erro ao verificar ícones: ${error.message}`);
+            }
+            
+            return check;
+        }
+        
+        async function checkInstallabilityCriteria() {
+            const check = {
+                title: '4. Critérios de Instalabilidade',
+                status: 'error',
+                details: []
+            };
+            
+            // HTTPS ou localhost
+            const isSecure = location.protocol === 'https:' || 
+                           location.hostname === 'localhost' || 
+                           location.hostname === '127.0.0.1';
+            check.details.push(`${isSecure ? '✅' : '❌'} HTTPS ou localhost: ${location.protocol}//${location.hostname}`);
+            if (!isSecure) {
+                check.details.push('💡 Solução: PWA requer HTTPS (produção) ou localhost (desenvolvimento)');
+            }
+            
+            // Já instalado
+            const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+                              navigator.standalone === true ||
+                              document.referrer.includes('android-app://');
+            check.details.push(`${isInstalled ? '✅' : '❌'} Já instalado: ${isInstalled ? 'SIM (evento não dispara)' : 'NÃO'}`);
+            if (isInstalled) {
+                check.details.push('💡 Nota: Se já está instalado, beforeinstallprompt não dispara');
+            }
+            
+            // SW controlando
+            const hasController = navigator.serviceWorker.controller !== null;
+            check.details.push(`${hasController ? '✅' : '❌'} Service Worker controlando: ${hasController ? 'SIM' : 'NÃO'}`);
+            if (!hasController) {
+                check.details.push('💡 Solução: Recarregue a página após o registro do SW');
+            }
+            
+            // Verificar se todos os critérios estão OK
+            const allOk = isSecure && !isInstalled && hasController;
+            check.status = allOk ? 'success' : 'warning';
+            
+            if (allOk) {
+                check.details.push(`\n✅ Todos os critérios básicos atendidos`);
+            } else {
+                check.details.push(`\n⚠️ Alguns critérios não atendidos (veja acima)`);
+            }
+            
+            return check;
+        }
+        
+        async function checkBeforeInstallPrompt() {
+            const check = {
+                title: '5. Evento beforeinstallprompt',
+                status: 'warning',
+                details: []
+            };
+            
+            // Verificar se já foi capturado
+            if (window.__deferredPrompt) {
+                check.details.push('✅ beforeinstallprompt já foi capturado');
+                check.details.push(`   Capturado em: ${new Date(window.__bipFiredAt || Date.now()).toLocaleString()}`);
+                check.status = 'success';
+            } else {
+                check.details.push('⚠️ beforeinstallprompt ainda não foi capturado');
+                check.details.push('💡 Possíveis causas:');
+                check.details.push('   1. Service Worker não está controlando a página');
+                check.details.push('   2. Manifest não está acessível ou inválido');
+                check.details.push('   3. Ícones não estão acessíveis');
+                check.details.push('   4. Página não atende aos critérios de instalabilidade');
+                check.details.push('   5. Usuário já instalou o app anteriormente');
+                check.details.push('   6. Página não foi visitada suficientes vezes');
+                check.details.push('\n💡 Solução: Verifique os itens acima e recarregue a página');
+            }
+            
+            // Adicionar listener para capturar se disparar
+            window.addEventListener('beforeinstallprompt', (e) => {
+                check.details.push(`\n🎉 beforeinstallprompt DISPAROU! ${new Date().toLocaleString()}`);
+                check.status = 'success';
+                renderResults([check]);
+            }, { once: true });
+            
+            return check;
+        }
+        
+        function renderResults(checks) {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            checks.forEach(check => {
+                const div = document.createElement('div');
+                div.className = `check-item ${check.status}`;
+                
+                const icon = check.status === 'success' ? '✅' : 
+                            check.status === 'warning' ? '⚠️' : '❌';
+                
+                div.innerHTML = `
+                    <h3>
+                        <span class="icon">${icon}</span>
+                        ${check.title}
+                        <span class="status-badge status-${check.status}">${check.status.toUpperCase()}</span>
+                    </h3>
+                    <div class="details">${check.details.join('\n')}</div>
+                `;
+                
+                results.appendChild(div);
+            });
+        }
+        
+        function renderSummary(checks) {
+            const summary = document.getElementById('summary');
+            const summaryContent = document.getElementById('summary-content');
+            
+            const successCount = checks.filter(c => c.status === 'success').length;
+            const warningCount = checks.filter(c => c.status === 'warning').length;
+            const errorCount = checks.filter(c => c.status === 'error').length;
+            
+            const total = checks.length;
+            const allOk = errorCount === 0 && warningCount === 0;
+            
+            summaryContent.innerHTML = `
+                <p><strong>Total de verificações:</strong> ${total}</p>
+                <p><strong style="color: #28a745;">✅ Sucesso:</strong> ${successCount}</p>
+                <p><strong style="color: #ffc107;">⚠️ Avisos:</strong> ${warningCount}</p>
+                <p><strong style="color: #dc3545;">❌ Erros:</strong> ${errorCount}</p>
+                <hr>
+                <p><strong>Status geral:</strong> 
+                    <span class="status-badge ${allOk ? 'status-ok' : 'status-error'}">
+                        ${allOk ? '✅ TUDO OK' : '❌ REQUER CORREÇÕES'}
+                    </span>
+                </p>
+                ${!allOk ? '<p><strong>💡 Ação necessária:</strong> Corrija os erros acima e recarregue a página.</p>' : ''}
+            `;
+            
+            summary.style.display = 'block';
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        }
+        
+        // Executar diagnóstico automaticamente ao carregar
+        window.addEventListener('load', () => {
+            setTimeout(runDiagnostics, 1000);
+        });
+    </script>
+</body>
+</html>

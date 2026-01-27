@@ -201,8 +201,10 @@ class AlunosController extends Controller
             }
         }
         
-        $installUrl = $this->resolveInstallOrStartUrl($id, $student);
-        $isFirstAccessLink = (strpos($installUrl, '/start?token=') !== false);
+        $linkResult = $this->resolveInstallOrStartUrl($id, $student);
+        $installUrl = $linkResult['url'];
+        $installLinkError = $this->installLinkErrorMessage($linkResult['error']);
+        $isFirstAccessLink = ($linkResult['error'] === null && strpos($installUrl, '/start?token=') !== false);
         $waMessage = $isFirstAccessLink
             ? str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Clique no link para ativar seu acesso e instalar o app:\n\n{LINK}")
             : str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
@@ -220,6 +222,7 @@ class AlunosController extends Controller
             'userRoles' => $userRoles,
             'showInstallCta' => $showInstallCta,
             'installUrl' => $installUrl,
+            'installLinkError' => $installLinkError,
             'waMessage' => $waMessage,
             'studentPhoneForWa' => $studentPhoneForWa,
             'hasValidPhone' => $hasValidPhone
@@ -789,8 +792,10 @@ class AlunosController extends Controller
         }
 
         $studentIdForLink = (int) ($enrollment['student_id'] ?? 0);
-        $installUrl = $this->resolveInstallOrStartUrl($studentIdForLink);
-        $isFirstAccessLink = (strpos($installUrl, '/start?token=') !== false);
+        $linkResult = $this->resolveInstallOrStartUrl($studentIdForLink);
+        $installUrl = $linkResult['url'];
+        $installLinkError = $this->installLinkErrorMessage($linkResult['error']);
+        $isFirstAccessLink = ($linkResult['error'] === null && strpos($installUrl, '/start?token=') !== false);
         $waMessage = $isFirstAccessLink
             ? str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Clique no link para ativar seu acesso e instalar o app:\n\n{LINK}")
             : str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
@@ -805,6 +810,7 @@ class AlunosController extends Controller
             'pixAccountSnapshot' => $pixAccountSnapshot,
             'pixAccounts' => $pixAccounts,
             'installUrl' => $installUrl,
+            'installLinkError' => $installLinkError,
             'waMessage' => $waMessage,
             'studentPhoneForWa' => $studentPhoneForWa,
             'hasValidPhone' => $hasValidPhone
@@ -1761,48 +1767,71 @@ class AlunosController extends Controller
      *
      * @param int $studentId
      * @param array|null $student Dados do aluno (id, user_id, email, name/full_name). Se null, carrega do BD.
+     * @return array{url: string, error: null|'no_email'|'email_in_use'|'create_failed'}
      */
     private function resolveInstallOrStartUrl($studentId, $student = null)
     {
+        $install = base_url('install');
         $sid = (int) $studentId;
         if ($sid <= 0) {
-            return base_url('install');
+            return ['url' => $install, 'error' => 'create_failed'];
         }
         if ($student === null) {
             $studentModel = new Student();
             $student = $studentModel->find($sid);
         }
         if (!$student) {
-            return base_url('install');
+            return ['url' => $install, 'error' => 'create_failed'];
         }
         $userId = isset($student['user_id']) ? (int) $student['user_id'] : 0;
-        if ($userId <= 0 && !empty(trim($student['email'] ?? ''))) {
+        $email = trim($student['email'] ?? '');
+        if ($userId <= 0 && $email !== '') {
             try {
                 $userService = new UserCreationService();
                 $out = $userService->createForStudent(
                     $sid,
-                    trim($student['email']),
+                    $email,
                     $student['full_name'] ?? $student['name'] ?? null
                 );
                 $userId = is_array($out) ? (int) ($out['user_id'] ?? 0) : (int) $out;
             } catch (\Throwable $e) {
                 error_log("AlunosController::resolveInstallOrStartUrl - criar acesso aluno: " . $e->getMessage());
-                return base_url('install');
+                $err = (strpos($e->getMessage(), 'já está em uso') !== false) ? 'email_in_use' : 'create_failed';
+                return ['url' => $install, 'error' => $err];
             }
         }
         if ($userId <= 0) {
-            return base_url('install');
+            return ['url' => $install, 'error' => $email === '' ? 'no_email' : 'create_failed'];
         }
         try {
             $firstAccess = new FirstAccessToken();
             $plainToken = $firstAccess->create($userId, 48);
             if ($plainToken) {
-                return base_url('start?token=' . $plainToken);
+                return ['url' => base_url('start?token=' . $plainToken), 'error' => null];
             }
         } catch (\Throwable $e) {
             error_log("AlunosController::resolveInstallOrStartUrl - token: " . $e->getMessage());
         }
-        return base_url('install');
+        return ['url' => $install, 'error' => 'create_failed'];
+    }
+
+    /**
+     * Mensagem explícita para o admin quando não foi possível gerar link de primeiro acesso.
+     *
+     * @param string|null $error 'no_email'|'email_in_use'|'create_failed' ou null
+     * @return string|null
+     */
+    private function installLinkErrorMessage($error)
+    {
+        if ($error === null) {
+            return null;
+        }
+        $messages = [
+            'no_email' => 'Não foi possível gerar link de primeiro acesso: aluno sem e-mail.',
+            'email_in_use' => 'Não foi possível gerar link de primeiro acesso: e-mail já em uso.',
+            'create_failed' => 'Não foi possível gerar link de primeiro acesso: falha ao criar usuário.',
+        ];
+        return $messages[$error] ?? 'Não foi possível gerar link de primeiro acesso.';
     }
 
     private function normalizePhoneForWa($phone)

@@ -23,6 +23,9 @@
             <div class="auth-logo">CFC Sistema</div>
             <h2 style="margin-bottom: var(--spacing-md);">Link de primeiro acesso</h2>
             <p class="fallback-msg"><?= htmlspecialchars($message ?? 'Este link não é válido.') ?></p>
+            <?php if (!empty($errorCode)): ?>
+            <p class="fallback-hint" style="margin-top: 0; font-family: monospace;">Código: <?= htmlspecialchars($errorCode) ?></p>
+            <?php endif; ?>
             <div class="fallback-actions">
                 <a href="<?= htmlspecialchars($loginUrl ?? base_url('login')) ?>" class="btn btn-primary">Ir para login</a>
                 <a href="<?= htmlspecialchars($forgotPasswordUrl ?? base_url('forgot-password')) ?>" class="btn btn-outline">Esqueci minha senha</a>
