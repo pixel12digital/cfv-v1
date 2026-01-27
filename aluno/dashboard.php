@@ -86,14 +86,15 @@ try {
 
     $db = db();
     $notificacoes = new SistemaNotificacoes();
-    $aluno = $db->fetch("SELECT * FROM usuarios WHERE id = ? AND tipo = 'aluno'", [$user['id']]);
-
-    if (!$aluno) {
+    // Tipo já validado acima (getCurrentUser()['tipo'] === 'aluno'). usuarios não tem coluna tipo (vem de usuario_roles/sessão).
+    $alunoId = getCurrentAlunoId($user['id']);
+    if (!$alunoId) {
+        if (function_exists('error_log')) {
+            error_log('[aluno/dashboard] getCurrentAlunoId retornou vazio para user_id=' . ($user['id'] ?? ''));
+        }
         header('Location: ' . $alunoLoginUrl, true, 302);
         exit();
     }
-
-    $alunoId = getCurrentAlunoId($user['id']);
 } catch (Throwable $e) {
     if (function_exists('error_log')) {
         error_log('[aluno/dashboard] Auth/DB error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());

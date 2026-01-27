@@ -55,10 +55,9 @@ class AuthController extends Controller
                 redirect(base_url('/instrutor/dashboard.php'));
                 break;
             case 'aluno':
-                redirect(base_url('/aluno/dashboard.php'));
+                redirect(base_url('/dashboard'));
                 break;
             default:
-                // Fallback para dashboard genérico
                 redirect(base_url('/dashboard'));
         }
     }
@@ -93,10 +92,9 @@ class AuthController extends Controller
                         redirect(base_url('/instrutor/dashboard.php'));
                         break;
                     case 'aluno':
-                        redirect(base_url('/aluno/dashboard.php'));
+                        redirect(base_url('/dashboard'));
                         break;
                     default:
-                        // Se tipo desconhecido, usar dashboard genérico
                         redirect(base_url('/dashboard'));
                 }
             } else {
@@ -456,7 +454,7 @@ class AuthController extends Controller
 
         $userType = strtolower($user['tipo'] ?? '');
         // Aluno: passar ?first_access=1 para o dashboard mostrar banner "Instalar app" mesmo se sessão atrasar
-        $redirectTarget = ($userType === 'aluno') ? base_url('/aluno/dashboard.php?first_access=1')
+        $redirectTarget = ($userType === 'aluno') ? base_url('/dashboard?first_access=1')
             : (($userType === 'instrutor') ? base_url('/instrutor/dashboard.php')
             : (in_array($userType, ['admin', 'secretaria']) ? base_url('/admin/index.php') : base_url('/dashboard')));
         if (function_exists('error_log')) {

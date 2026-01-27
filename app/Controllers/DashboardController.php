@@ -48,8 +48,11 @@ class DashboardController extends Controller
                     $userType = $_SESSION['user_type'] ?? $_SESSION['user_tipo'] ?? null;
                     
                     if ($userType) {
-                        // Se houver user_type, usar diretamente sem consultar banco
                         $tipo = strtolower($userType);
+                        if ($tipo === 'aluno') {
+                            unset($_SESSION['redirect_count']);
+                            return $this->dashboardAluno($userId);
+                        }
                         $_SESSION['redirect_count'] = ($redirectCount ?? 0) + 1;
                         $this->redirectToLegacyDashboard($tipo);
                         return;
@@ -60,10 +63,11 @@ class DashboardController extends Controller
                     $user = $userModel->find($userId);
                     
                     if ($user) {
-                        // Mapear tipo do sistema antigo para current_role
                         $tipo = strtolower($user['tipo'] ?? '');
-                        
-                        // Redirecionar para o dashboard correto do sistema antigo
+                        if ($tipo === 'aluno') {
+                            unset($_SESSION['redirect_count']);
+                            return $this->dashboardAluno($userId);
+                        }
                         $_SESSION['redirect_count'] = ($redirectCount ?? 0) + 1;
                         $this->redirectToLegacyDashboard($tipo);
                         return;
@@ -112,11 +116,9 @@ class DashboardController extends Controller
                 }
             }
             
-            // Se for ALUNO, redirecionar para o dashboard legado (canonical /aluno/dashboard.php, overlay PWA)
+            // Aluno: renderizar dashboard do app (evita depender do legado /aluno/dashboard.php)
             if ($currentRole === Constants::ROLE_ALUNO && $userId) {
-                $basePath = function_exists('base_url') ? rtrim(base_url(), '/') : (defined('BASE_PATH') ? BASE_PATH : '');
-                header('Location: ' . $basePath . '/aluno/dashboard.php');
-                exit;
+                return $this->dashboardAluno($userId);
             }
             
             // Se for INSTRUTOR, carregar dados específicos
@@ -139,6 +141,9 @@ class DashboardController extends Controller
                     $user = $userModel->find($userId);
                     if ($user) {
                         $tipo = strtolower($user['tipo'] ?? '');
+                        if ($tipo === 'aluno') {
+                            return $this->dashboardAluno($userId);
+                        }
                         $this->redirectToLegacyDashboard($tipo);
                         return;
                     }
