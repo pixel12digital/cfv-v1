@@ -47,6 +47,13 @@ class StartController extends Controller
         $_SESSION['onboarding_token_id'] = (int) $row['id'];
         $_SESSION['force_password_change'] = true;
 
+        if (function_exists('error_log')) {
+            $sname = function_exists('session_name') ? session_name() : 'none';
+            $sid = function_exists('session_id') ? session_id() : 'none';
+            $cookiePresent = isset($_COOKIE[$sname ?? 'CFC_SESSION']) ? '1' : '0';
+            error_log('[START] token_result=ok token_id=' . ($row['id'] ?? '') . ' user_id=' . ($row['user_id'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'empty') . ' cookie_present=' . $cookiePresent);
+        }
+
         // Renderizar a mesma view de "definir senha" na própria resposta de /start (sem redirect),
         // para não depender do cookie sobreviver ao redirect no in-app do WhatsApp.
         $this->viewRaw('auth/define-password', ['user' => $user]);

@@ -9,19 +9,28 @@ require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/services/SistemaNotificacoes.php';
 
-// Instrumentação: log para diagnóstico redirecionamento pós define-password
+// Instrumentação: log para diagnóstico redirecionamento pós define-password (Trace Pack)
 $dashboardLogged = isLoggedIn();
 if (function_exists('error_log')) {
-    $sid = session_id();
+    $sname = function_exists('session_name') ? session_name() : 'none';
+    $sid = function_exists('session_id') ? session_id() : 'none';
     $hasUid = isset($_SESSION['user_id']);
     $hasLa = isset($_SESSION['last_activity']);
-    error_log('[aluno/dashboard] session_id=' . ($sid ?: 'none') . ' has_user_id=' . ($hasUid ? 1 : 0) . ' has_last_activity=' . ($hasLa ? 1 : 0) . ' isLoggedIn=' . ($dashboardLogged ? 1 : 0));
+    $cookiePresent = isset($_COOKIE['CFC_SESSION']) ? '1' : '0';
+    $cp = ini_get('session.cookie_path');
+    $cd = ini_get('session.cookie_domain');
+    $csec = ini_get('session.cookie_secure');
+    $csame = ini_get('session.cookie_samesite');
+    $sh = ini_get('session.save_handler');
+    $sp = ini_get('session.save_path');
+    $strict = ini_get('session.use_strict_mode');
+    error_log('[aluno/dashboard] TRACE HTTP_HOST=' . ($_SERVER['HTTP_HOST'] ?? '') . ' REQUEST_URI=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'none') . ' cookie_present=' . $cookiePresent . ' cookie_path=' . ($cp ?: '') . ' cookie_domain=' . ($cd ?: '') . ' cookie_secure=' . ($csec ?: '') . ' cookie_samesite=' . ($csame ?: '') . ' save_handler=' . ($sh ?: '') . ' save_path=' . ($sp ?: '') . ' use_strict_mode=' . ($strict ?: '') . ' has_user_id=' . ($hasUid ? 1 : 0) . ' has_last_activity=' . ($hasLa ? 1 : 0) . ' isLoggedIn=' . ($dashboardLogged ? 1 : 0));
 }
 
 // Verificar autenticação específica para aluno
 if (!$dashboardLogged) {
     if (function_exists('error_log')) {
-        error_log('[aluno/dashboard] redirect_reason=isLoggedIn_false');
+        error_log('[aluno/dashboard] redirect_reason=isLoggedIn_false redirect_location=login.php (relative -> /aluno/login.php legado)');
     }
     header('Location: login.php');
     exit();
@@ -30,7 +39,7 @@ if (!$dashboardLogged) {
 $user = getCurrentUser();
 if (!$user || $user['tipo'] !== 'aluno') {
     if (function_exists('error_log')) {
-        error_log('[aluno/dashboard] redirect_reason=user_not_aluno_or_null tipo=' . ($user['tipo'] ?? 'null'));
+        error_log('[aluno/dashboard] redirect_reason=user_not_aluno_or_null tipo=' . ($user['tipo'] ?? 'null') . ' redirect_location=login.php (relative -> /aluno/login.php legado)');
     }
     header('Location: login.php');
     exit();

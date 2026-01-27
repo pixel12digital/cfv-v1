@@ -198,6 +198,7 @@ class User extends Model
     {
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
-        return $stmt->execute([$hashedPassword, $userId]);
+        $stmt->execute([$hashedPassword, $userId]);
+        return $stmt->rowCount();
     }
 }

@@ -7,19 +7,32 @@ use App\Config\Constants;
 
 class AuthService
 {
+    private $lastAttemptFailureReason = 'credentials_invalid';
+
     public function attempt($email, $password)
     {
+        $this->lastAttemptFailureReason = 'credentials_invalid';
         $user = User::findByEmail($email);
         
-        if (!$user || !password_verify($password, $user['password'])) {
+        if (!$user) {
+            $this->lastAttemptFailureReason = 'user_not_found';
             return null;
         }
-
-        if ($user['status'] !== 'ativo') {
+        if (!password_verify($password, $user['password'] ?? '')) {
+            $this->lastAttemptFailureReason = 'wrong_password';
+            return null;
+        }
+        if (($user['status'] ?? '') !== 'ativo') {
+            $this->lastAttemptFailureReason = 'inactive';
             return null;
         }
 
         return $user;
+    }
+
+    public function getLastAttemptFailureReason()
+    {
+        return $this->lastAttemptFailureReason;
     }
 
     public function login($user)

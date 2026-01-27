@@ -197,6 +197,27 @@ class AuthController extends Controller
 
         $user = $this->authService->attempt($email, $password);
 
+        if (function_exists('error_log')) {
+            $emailNorm = trim(strtolower($email));
+            $masked = preg_replace('/^(.{2}).*@(.+)$/', '$1***@$2', $email);
+            if ($user) {
+                error_log('[login] email_normalized=' . $emailNorm . ' email_from_db=' . $masked . ' user_found_id=' . ($user['id'] ?? '') . ' user_status=' . ($user['status'] ?? '') . ' password_verify=ok');
+            } else {
+                $failReason = $this->authService->getLastAttemptFailureReason();
+                $userFromDb = User::findByEmail($email);
+                $emailFromDbMasked = $userFromDb ? preg_replace('/^(.{2}).*@(.+)$/', '$1***@$2', $userFromDb['email'] ?? '') : '';
+                $pv = 'n/a';
+                if ($failReason === 'wrong_password') {
+                    $pv = 'fail';
+                } elseif ($failReason === 'inactive') {
+                    $pv = 'ok';
+                } elseif ($userFromDb && $failReason === 'credentials_invalid') {
+                    $pv = password_verify($password, $userFromDb['password'] ?? '') ? 'ok' : 'fail';
+                }
+                error_log('[login] email_normalized=' . $emailNorm . ' email_from_db=' . $emailFromDbMasked . ' user_found_id=' . ($userFromDb['id'] ?? '') . ' user_status=' . ($userFromDb['status'] ?? '') . ' password_verify=' . $pv . ' failure_reason=' . ($failReason ?? 'credentials_invalid'));
+            }
+        }
+
         if ($user) {
             $this->authService->login($user);
             
@@ -411,7 +432,7 @@ class AuthController extends Controller
             return;
         }
         $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
-        $userModel->updatePassword($userId, $hashedPassword);
+        $rowsAffected = $userModel->updatePassword($userId, $hashedPassword);
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("UPDATE usuarios SET must_change_password = 0 WHERE id = ?");
         $stmt->execute([$userId]);
@@ -430,8 +451,22 @@ class AuthController extends Controller
             : (($userType === 'instrutor') ? base_url('/instrutor/dashboard.php')
             : (in_array($userType, ['admin', 'secretaria']) ? base_url('/admin/index.php') : base_url('/dashboard')));
         if (function_exists('error_log')) {
+            $userFromDb = $userModel->find($userId);
+            $storedHash = $userFromDb['password'] ?? '';
+            $verifyAfter = password_verify($newPassword, $storedHash) ? 'ok' : 'fail';
+            $hashPrefix = strlen($storedHash) >= 15 ? substr($storedHash, 0, 15) : substr($storedHash, 0, 8);
+            $sname = function_exists('session_name') ? session_name() : 'none';
+            $sid = function_exists('session_id') ? session_id() : 'none';
             $sk = ['user_id' => isset($_SESSION['user_id']), 'last_activity' => isset($_SESSION['last_activity']), 'user_type' => isset($_SESSION['user_type'])];
-            error_log('[definePassword] userId=' . $userId . ' userType=' . ($user['tipo'] ?? '') . ' session_keys=' . json_encode($sk) . ' redirect_target=' . $redirectTarget);
+            $cookiePresent = isset($_COOKIE['CFC_SESSION']) ? '1' : '0';
+            $cp = ini_get('session.cookie_path');
+            $cd = ini_get('session.cookie_domain');
+            $csec = ini_get('session.cookie_secure');
+            $csame = ini_get('session.cookie_samesite');
+            $sh = ini_get('session.save_handler');
+            $sp = ini_get('session.save_path');
+            $strict = ini_get('session.use_strict_mode');
+            error_log('[definePassword] TRACE userId=' . $userId . ' rows_affected=' . $rowsAffected . ' email=' . ($userFromDb['email'] ?? '') . ' password_hash_prefix=' . $hashPrefix . ' verify_after_update=' . $verifyAfter . ' userType=' . ($user['tipo'] ?? '') . ' HTTP_HOST=' . ($_SERVER['HTTP_HOST'] ?? '') . ' REQUEST_URI=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'empty') . ' cookie_present=' . $cookiePresent . ' cookie_path=' . ($cp ?: '') . ' cookie_domain=' . ($cd ?: '') . ' cookie_secure=' . ($csec ?: '') . ' cookie_samesite=' . ($csame ?: '') . ' save_handler=' . ($sh ?: '') . ' save_path=' . ($sp ?: '') . ' use_strict_mode=' . ($strict ?: '') . ' session_keys=' . json_encode($sk) . ' redirect_target=' . $redirectTarget);
         }
         $this->redirectToUserDashboard($userId);
     }
