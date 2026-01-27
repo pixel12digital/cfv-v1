@@ -4,71 +4,91 @@
  * Interface focada em usabilidade móvel
  */
 
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/database.php';
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../includes/services/SistemaNotificacoes.php';
+// Redirect absoluto para login legado (evita tela em branco por redirect relativo ou 500)
+$alunoLoginUrl = '/aluno/login.php';
 
-// Instrumentação: log para diagnóstico redirecionamento pós define-password (Trace Pack)
-$dashboardLogged = isLoggedIn();
-if (function_exists('error_log')) {
-    $sname = function_exists('session_name') ? session_name() : 'none';
-    $sid = function_exists('session_id') ? session_id() : 'none';
-    $hasUid = isset($_SESSION['user_id']);
-    $hasLa = isset($_SESSION['last_activity']);
-    $cookiePresent = isset($_COOKIE['CFC_SESSION']) ? '1' : '0';
-    $cp = ini_get('session.cookie_path');
-    $cd = ini_get('session.cookie_domain');
-    $csec = ini_get('session.cookie_secure');
-    $csame = ini_get('session.cookie_samesite');
-    $sh = ini_get('session.save_handler');
-    $sp = ini_get('session.save_path');
-    $strict = ini_get('session.use_strict_mode');
-    error_log('[aluno/dashboard] TRACE HTTP_HOST=' . ($_SERVER['HTTP_HOST'] ?? '') . ' REQUEST_URI=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'none') . ' cookie_present=' . $cookiePresent . ' cookie_path=' . ($cp ?: '') . ' cookie_domain=' . ($cd ?: '') . ' cookie_secure=' . ($csec ?: '') . ' cookie_samesite=' . ($csame ?: '') . ' save_handler=' . ($sh ?: '') . ' save_path=' . ($sp ?: '') . ' use_strict_mode=' . ($strict ?: '') . ' has_user_id=' . ($hasUid ? 1 : 0) . ' has_last_activity=' . ($hasLa ? 1 : 0) . ' isLoggedIn=' . ($dashboardLogged ? 1 : 0));
-}
-
-// Verificar autenticação específica para aluno
-if (!$dashboardLogged) {
+try {
+    require_once __DIR__ . '/../includes/config.php';
+    require_once __DIR__ . '/../includes/database.php';
+    require_once __DIR__ . '/../includes/auth.php';
+    require_once __DIR__ . '/../includes/services/SistemaNotificacoes.php';
+} catch (Throwable $e) {
     if (function_exists('error_log')) {
-        error_log('[aluno/dashboard] redirect_reason=isLoggedIn_false redirect_location=login.php (relative -> /aluno/login.php legado)');
+        error_log('[aluno/dashboard] Bootstrap error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     }
-    header('Location: login.php');
-    exit();
+    if (!headers_sent()) {
+        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
+        exit;
+    }
 }
 
-$user = getCurrentUser();
-if (!$user || $user['tipo'] !== 'aluno') {
+// Instrumentação e checagem de auth/DB — qualquer falha redireciona para login (evita 500 em branco)
+try {
+    $dashboardLogged = isLoggedIn();
     if (function_exists('error_log')) {
-        error_log('[aluno/dashboard] redirect_reason=user_not_aluno_or_null tipo=' . ($user['tipo'] ?? 'null') . ' redirect_location=login.php (relative -> /aluno/login.php legado)');
+        $sname = function_exists('session_name') ? session_name() : 'none';
+        $sid = function_exists('session_id') ? session_id() : 'none';
+        $hasUid = isset($_SESSION['user_id']);
+        $hasLa = isset($_SESSION['last_activity']);
+        $cookiePresent = isset($_COOKIE['CFC_SESSION']) ? '1' : '0';
+        $cp = ini_get('session.cookie_path');
+        $cd = ini_get('session.cookie_domain');
+        $csec = ini_get('session.cookie_secure');
+        $csame = ini_get('session.cookie_samesite');
+        $sh = ini_get('session.save_handler');
+        $sp = ini_get('session.save_path');
+        $strict = ini_get('session.use_strict_mode');
+        error_log('[aluno/dashboard] TRACE HTTP_HOST=' . ($_SERVER['HTTP_HOST'] ?? '') . ' REQUEST_URI=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'none') . ' cookie_present=' . $cookiePresent . ' cookie_path=' . ($cp ?: '') . ' cookie_domain=' . ($cd ?: '') . ' cookie_secure=' . ($csec ?: '') . ' cookie_samesite=' . ($csame ?: '') . ' save_handler=' . ($sh ?: '') . ' save_path=' . ($sp ?: '') . ' use_strict_mode=' . ($strict ?: '') . ' has_user_id=' . ($hasUid ? 1 : 0) . ' has_last_activity=' . ($hasLa ? 1 : 0) . ' isLoggedIn=' . ($dashboardLogged ? 1 : 0));
     }
-    header('Location: login.php');
-    exit();
-}
 
-// Fallback: primeiro acesso via URL (?first_access=1) — garante banner mesmo se sessão atrasar no redirect
-if (!empty($_GET['first_access']) && $dashboardLogged) {
-    $_SESSION['first_access'] = 1;
-}
-// Consumir flag de primeiro acesso ao fechar/dismiss (mostrar banner apenas uma vez)
-if (isset($_GET['dismiss_first_access'])) {
-    unset($_SESSION['first_access']);
-    header('Location: dashboard.php');
+    if (!$dashboardLogged) {
+        if (function_exists('error_log')) {
+            error_log('[aluno/dashboard] redirect_reason=isLoggedIn_false redirect_location=' . $alunoLoginUrl);
+        }
+        header('Location: ' . $alunoLoginUrl, true, 302);
+        exit();
+    }
+
+    $user = getCurrentUser();
+    if (!$user || ($user['tipo'] ?? '') !== 'aluno') {
+        if (function_exists('error_log')) {
+            error_log('[aluno/dashboard] redirect_reason=user_not_aluno_or_null tipo=' . ($user['tipo'] ?? 'null') . ' redirect_location=' . $alunoLoginUrl);
+        }
+        header('Location: ' . $alunoLoginUrl, true, 302);
+        exit();
+    }
+
+    if (!empty($_GET['first_access']) && $dashboardLogged) {
+        $_SESSION['first_access'] = 1;
+    }
+    if (isset($_GET['dismiss_first_access'])) {
+        unset($_SESSION['first_access']);
+        header('Location: /aluno/dashboard.php', true, 302);
+        exit;
+    }
+
+    $db = db();
+    $notificacoes = new SistemaNotificacoes();
+    $aluno = $db->fetch("SELECT * FROM usuarios WHERE id = ? AND tipo = 'aluno'", [$user['id']]);
+
+    if (!$aluno) {
+        header('Location: ' . $alunoLoginUrl, true, 302);
+        exit();
+    }
+
+    $alunoId = getCurrentAlunoId($user['id']);
+} catch (Throwable $e) {
+    if (function_exists('error_log')) {
+        error_log('[aluno/dashboard] Auth/DB error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
+    if (!headers_sent()) {
+        header('Location: ' . $alunoLoginUrl . '?erro=system', true, 302);
+        exit;
+    }
+    // fallback se headers já enviados
+    echo '<meta http-equiv="refresh" content="0;url=' . htmlspecialchars($alunoLoginUrl) . '">Redirecionando...';
     exit;
 }
-
-$db = db();
-$notificacoes = new SistemaNotificacoes();
-
-// Buscar dados do aluno na tabela usuarios
-$aluno = $db->fetch("SELECT * FROM usuarios WHERE id = ? AND tipo = 'aluno'", [$user['id']]);
-
-if (!$aluno) {
-    header('Location: login.php');
-    exit();
-}
-
-// AUDITORIA DASHBOARD PROXIMAS AULAS - Buscar o ID do aluno usando getCurrentAlunoId()
-$alunoId = getCurrentAlunoId($user['id']);
 
 /**
  * AUDITORIA DASHBOARD PROXIMAS AULAS - Função para buscar próximas aulas (práticas e teóricas) do aluno
