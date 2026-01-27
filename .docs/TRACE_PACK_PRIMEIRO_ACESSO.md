@@ -154,19 +154,20 @@ Com base no Trace Pack preenchido, assinale **uma** causa principal:
 - [ ] **E. Dashboard bloqueia por role/tipo**  
   (user_type não bate, user inválido — ex.: has_user_id=1 mas isLoggedIn=0 ou redirect por user_not_aluno)
 
-**Causa principal escolhida:** _____
+- [x] **F. Sessão de onboarding zerada antes do router** *(causa fechada em produção — Ana)*  
+  Em `public_html/index.php`, quando não havia `user_id`, o script fazia `$_SESSION = []`. No fluxo "definir senha", o POST /define-password chega com `onboarding_user_id` (e sem `user_id` ainda). A sessão era limpa antes do dispatch; o `definePassword()` via `onboarding_user_id` vazio e redirecionava para /login.
+
+**Causa principal escolhida:** **F** (sessão de onboarding zerada em public_html/index.php).
 
 ---
 
 ## 7) Plano de correção mínima (2–3 passos)
 
-Preencher **somente após** fechar a causa no item 6.
-
-| # | Ação |
-|---|------|
-| 1 | |
-| 2 | |
-| 3 | |
+| # | Ação | Status |
+|---|------|--------|
+| 1 | Em `public_html/index.php`, não zerar sessão quando existir `onboarding_user_id` (fluxo de primeiro acesso). | ✅ Feito |
+| 2 | Manter `$_SESSION = []` apenas quando não houver nem `user_id` nem `onboarding_user_id`. | ✅ Feito |
+| 3 | *(Opcional fase 2)* Se o dashboard redirecionar para login por sessão inválida, usar Location para `/login` do app (com mensagem) em vez de `login.php` legado. | Pendente |
 
 ---
 

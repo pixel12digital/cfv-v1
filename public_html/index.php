@@ -13,12 +13,14 @@ if ($isPainelSubdomain) {
         session_start();
     }
     
-    // Se houver user_id na sessão, verificar se é válido
+    // Se houver user_id na sessão, manter. Se não, limpar só quando NÃO estiver no fluxo de primeiro acesso.
+    // No fluxo "definir senha" (GET /start → POST /define-password) existe onboarding_user_id mas ainda não user_id;
+    // zerar a sessão aqui quebrava o definePassword e mandava o usuário de volta pro login.
     if (!empty($_SESSION['user_id'])) {
-        // A validação será feita no AuthController::showLogin()
-        // Por enquanto, apenas garantir que a sessão está ativa
+        // Sessão de usuário logado — validação em AuthController
+    } elseif (!empty($_SESSION['onboarding_user_id'])) {
+        // Fluxo de primeiro acesso — não limpar; definir senha precisa desses dados
     } else {
-        // Limpar qualquer sessão inválida
         $_SESSION = [];
     }
 }
