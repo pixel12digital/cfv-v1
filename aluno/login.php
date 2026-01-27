@@ -21,19 +21,20 @@ $success = '';
 
 // Processar formulário de login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $cpf = trim($_POST['cpf'] ?? '');
+    $cpfOuEmail = trim($_POST['cpf'] ?? '');
     $senha = $_POST['senha'] ?? '';
     
-    if (empty($cpf) || empty($senha)) {
+    if (empty($cpfOuEmail) || empty($senha)) {
         $error = 'Por favor, preencha todos os campos';
     } else {
         try {
-            // Limpar CPF (remover pontos e traços)
-            $cpfLimpo = preg_replace('/[^0-9]/', '', $cpf);
+            // CPF: só números. E-mail: passar como está (Auth::getUserByLogin aceita os dois)
+            $login = (strpos($cpfOuEmail, '@') !== false)
+                ? strtolower($cpfOuEmail)
+                : preg_replace('/[^0-9]/', '', $cpfOuEmail);
             
-            // Usar sistema unificado de autenticação
             $auth = new Auth();
-            $result = $auth->login($cpfLimpo, $senha);
+            $result = $auth->login($login, $senha);
             
             if ($result['success']) {
                 $user = getCurrentUser();
@@ -180,9 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <form method="POST">
                 <div class="form-group">
-                    <label for="cpf" class="form-label">CPF</label>
+                    <label for="cpf" class="form-label">CPF ou e-mail</label>
                     <input type="text" id="cpf" name="cpf" class="form-control" 
-                           placeholder="000.000.000-00" required>
+                           placeholder="CPF (000.000.000-00) ou e-mail" required autocomplete="username">
                 </div>
                 
                 <div class="form-group">
@@ -203,9 +204,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     
     <script>
-        // Máscara para CPF
+        // Máscara para CPF; se contiver @, é e-mail — não aplicar máscara
         document.getElementById('cpf').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
+            var v = e.target.value;
+            if (v.indexOf('@') >= 0) return;
+            var value = v.replace(/\D/g, '');
             value = value.replace(/(\d{3})(\d)/, '$1.$2');
             value = value.replace(/(\d{3})(\d)/, '$1.$2');
             value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');

@@ -116,6 +116,13 @@
     <?php if (isset($pageCSS)): ?>
         <link rel="stylesheet" href="<?php echo $pageCSS; ?>">
     <?php endif; ?>
+    <?php 
+    $showPwaInstallOverlay = $showPwaInstallOverlay ?? false;
+    if ($showPwaInstallOverlay): 
+        $pwaOverlayCss = rtrim($basePath, '/') . '/assets/css/pwa-install-overlay.css';
+    ?>
+    <link rel="stylesheet" href="<?php echo $pwaOverlayCss; ?>">
+    <?php endif; ?>
 </head>
 <body class="mobile-first">
     <!-- Header -->
@@ -125,6 +132,11 @@
                 <i class="fas fa-graduation-cap me-2"></i>
                 CFC Bom Conselho
             </a>
+            <?php if (!empty($showPwaInstallOverlay)): 
+                $pwaInstallUrlAttr = isset($pwaInstallUrl) ? htmlspecialchars($pwaInstallUrl) : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
+            ?>
+            <a href="<?php echo $pwaInstallUrlAttr; ?>" id="pwa-install-header-cta" class="btn btn-outline-light btn-sm ms-2 d-none" aria-label="Instalar app">Instalar app</a>
+            <?php endif; ?>
             
             <!-- Botão de filtros (mobile) -->
             <button class="btn btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filtrosOffcanvas">
@@ -223,6 +235,35 @@
         </div>
     </div>
 
+    <?php if (!empty($showPwaInstallOverlay)): 
+        $pwaInstallUrlForJs = isset($pwaInstallUrl) ? $pwaInstallUrl : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
+    ?>
+    <div id="pwa-install-overlay" class="pwa-overlay-hidden" role="dialog" aria-modal="true" aria-labelledby="pwa-overlay-title" aria-hidden="true">
+        <div class="pwa-overlay-dialog">
+            <h2 id="pwa-overlay-title">Instalar o app</h2>
+            <p class="pwa-overlay-text-muted">Acesse aulas, financeiro e mais pelo celular.</p>
+            <div class="pwa-overlay-state-installable d-none">
+                <div class="pwa-overlay-actions">
+                    <button type="button" class="btn pwa-overlay-btn-primary pwa-overlay-btn-install">Instalar app</button>
+                    <button type="button" class="btn pwa-overlay-btn-secondary pwa-overlay-btn-dismiss">Agora não</button>
+                </div>
+            </div>
+            <div class="pwa-overlay-state-not-installable">
+                <div class="pwa-overlay-ios-only d-none">
+                    <p class="pwa-overlay-text-muted">Toque em Compartilhar → Adicionar à Tela de Início.</p>
+                </div>
+                <div class="pwa-overlay-android-only">
+                    <p class="pwa-overlay-text-muted">Abra este link no Chrome para instalar.</p>
+                </div>
+                <div class="pwa-overlay-actions">
+                    <a href="<?php echo htmlspecialchars($pwaInstallUrlForJs); ?>" class="btn pwa-overlay-btn-primary pwa-overlay-btn-ver-instrucoes">Ver instruções</a>
+                    <button type="button" class="btn pwa-overlay-btn-secondary pwa-overlay-btn-dismiss">Agora não</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
 
@@ -253,6 +294,12 @@
             });
         }
     </script>
+    <?php if (!empty($showPwaInstallOverlay)): 
+        $pwaInstallUrlScript = isset($pwaInstallUrl) ? $pwaInstallUrl : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
+    ?>
+    <script>window.__PWA_INSTALL_URL = <?php echo json_encode($pwaInstallUrlScript); ?>;</script>
+    <script src="<?php echo rtrim($basePath, '/'); ?>/assets/js/pwa-install-overlay.js"></script>
+    <?php endif; ?>
     
     <!-- JavaScript Mobile-First -->
     <?php 

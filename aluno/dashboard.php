@@ -45,6 +45,10 @@ if (!$user || $user['tipo'] !== 'aluno') {
     exit();
 }
 
+// Fallback: primeiro acesso via URL (?first_access=1) — garante banner mesmo se sessão atrasar no redirect
+if (!empty($_GET['first_access']) && $dashboardLogged) {
+    $_SESSION['first_access'] = 1;
+}
 // Consumir flag de primeiro acesso ao fechar/dismiss (mostrar banner apenas uma vez)
 if (isset($_GET['dismiss_first_access'])) {
     unset($_SESSION['first_access']);
@@ -876,6 +880,10 @@ ob_start();
 
 <?php
 $pageContent = ob_get_clean();
+
+// Overlay PWA "Instalar app" (dashboard aluno): ativa overlay + CTA no header
+$showPwaInstallOverlay = true;
+$pwaInstallUrl = $installUrl;
 
 // Incluir layout mobile-first
 include __DIR__ . '/../includes/layout/mobile-first.php';

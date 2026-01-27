@@ -1,0 +1,160 @@
+/**
+ * Overlay "Instalar App" - dashboard aluno.
+ * Light/dark, alto contraste, botões >= 44px, acessível.
+ */
+#pwa-install-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+#pwa-install-overlay.pwa-overlay-hidden {
+    display: none !important;
+}
+
+#pwa-install-overlay[aria-hidden="true"] {
+    display: none !important;
+}
+
+.pwa-overlay-dialog {
+    position: relative;
+    max-width: 420px;
+    width: 100%;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pwa-overlay-dialog {
+        background: #1e293b;
+        color: #e2e8f0;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .pwa-overlay-dialog .pwa-overlay-text-muted {
+        color: #94a3b8;
+    }
+}
+
+.pwa-overlay-dialog h2 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pwa-overlay-dialog h2 {
+        color: #f1f5f9;
+    }
+}
+
+.pwa-overlay-text-muted {
+    font-size: 0.9375rem;
+    color: #475569;
+    margin: 0 0 1.25rem 0;
+    line-height: 1.45;
+}
+
+.pwa-overlay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pwa-overlay-actions .btn {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.pwa-overlay-btn-primary {
+    background: #10b981;
+    color: #fff;
+}
+
+.pwa-overlay-btn-primary:hover,
+.pwa-overlay-btn-primary:focus {
+    background: #0d9668;
+    color: #fff;
+    outline: 2px solid #047857;
+    outline-offset: 2px;
+}
+
+.pwa-overlay-btn-secondary {
+    background: transparent;
+    color: #475569;
+    border: 2px solid #cbd5e1;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pwa-overlay-btn-secondary {
+        color: #94a3b8;
+        border-color: #475569;
+    }
+    .pwa-overlay-btn-secondary:hover,
+    .pwa-overlay-btn-secondary:focus {
+        border-color: #64748b;
+        color: #e2e8f0;
+        outline: 2px solid #64748b;
+        outline-offset: 2px;
+    }
+}
+
+.pwa-overlay-btn-dismiss {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9375rem;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.pwa-overlay-btn-dismiss:hover,
+.pwa-overlay-btn-dismiss:focus {
+    color: #475569;
+    outline: 2px solid #94a3b8;
+    outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .pwa-overlay-btn-dismiss {
+        color: #94a3b8;
+    }
+    .pwa-overlay-btn-dismiss:hover,
+    .pwa-overlay-btn-dismiss:focus {
+        color: #cbd5e1;
+    }
+}
+
+/* Header CTA (botão fixo) - escondido por padrão, JS mostra quando não instalado */
+#pwa-install-header-cta.d-none {
+    display: none !important;
+}
+
+#pwa-install-header-cta {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}

@@ -447,7 +447,8 @@ class AuthController extends Controller
         $_SESSION['first_access'] = 1;
 
         $userType = strtolower($user['tipo'] ?? '');
-        $redirectTarget = ($userType === 'aluno') ? base_url('/aluno/dashboard.php')
+        // Aluno: passar ?first_access=1 para o dashboard mostrar banner "Instalar app" mesmo se sessão atrasar
+        $redirectTarget = ($userType === 'aluno') ? base_url('/aluno/dashboard.php?first_access=1')
             : (($userType === 'instrutor') ? base_url('/instrutor/dashboard.php')
             : (in_array($userType, ['admin', 'secretaria']) ? base_url('/admin/index.php') : base_url('/dashboard')));
         if (function_exists('error_log')) {
@@ -468,7 +469,7 @@ class AuthController extends Controller
             $strict = ini_get('session.use_strict_mode');
             error_log('[definePassword] TRACE userId=' . $userId . ' rows_affected=' . $rowsAffected . ' email=' . ($userFromDb['email'] ?? '') . ' password_hash_prefix=' . $hashPrefix . ' verify_after_update=' . $verifyAfter . ' userType=' . ($user['tipo'] ?? '') . ' HTTP_HOST=' . ($_SERVER['HTTP_HOST'] ?? '') . ' REQUEST_URI=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_name=' . $sname . ' session_id=' . ($sid ?: 'empty') . ' cookie_present=' . $cookiePresent . ' cookie_path=' . ($cp ?: '') . ' cookie_domain=' . ($cd ?: '') . ' cookie_secure=' . ($csec ?: '') . ' cookie_samesite=' . ($csame ?: '') . ' save_handler=' . ($sh ?: '') . ' save_path=' . ($sp ?: '') . ' use_strict_mode=' . ($strict ?: '') . ' session_keys=' . json_encode($sk) . ' redirect_target=' . $redirectTarget);
         }
-        $this->redirectToUserDashboard($userId);
+        redirect($redirectTarget);
     }
 
     /**
