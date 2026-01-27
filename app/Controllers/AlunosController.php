@@ -17,6 +17,7 @@ use App\Services\EnrollmentPolicy;
 use App\Services\StudentHistoryService;
 use App\Services\UserCreationService;
 use App\Services\EmailService;
+use App\Models\FirstAccessToken;
 use App\Config\Constants;
 use App\Helpers\ValidationHelper;
 
@@ -200,7 +201,7 @@ class AlunosController extends Controller
             }
         }
         
-        $installUrl = $this->resolveInstallOrStartUrl($id);
+        $installUrl = $this->resolveInstallOrStartUrl($id, $student);
         $isFirstAccessLink = (strpos($installUrl, '/start?token=') !== false);
         $waMessage = $isFirstAccessLink
             ? str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Clique no link para ativar seu acesso e instalar o app:\n\n{LINK}")
@@ -731,20 +732,6 @@ class AlunosController extends Controller
 
             $_SESSION['success'] = 'Matrícula criada com sucesso!';
             $_SESSION['show_install_cta'] = true;
-
-            // Link personalizado de primeiro acesso (magic link) quando o aluno tem user_id
-            if (!empty($student['user_id'])) {
-                try {
-                    $firstAccessModel = new \App\Models\FirstAccessToken();
-                    $plainToken = $firstAccessModel->create((int) $student['user_id'], 48);
-                    if ($plainToken) {
-                        $_SESSION['first_access_url'] = base_url('start?token=' . $plainToken);
-                        $_SESSION['first_access_url_student_id'] = (int) $id;
-                    }
-                } catch (\Throwable $e) {
-                    error_log("AlunosController::criarMatricula - Erro ao gerar token primeiro acesso: " . $e->getMessage());
-                }
-            }
 
             redirect(base_url("alunos/{$id}?tab=matricula"));
         } catch (\Exception $e) {
@@ -1766,14 +1753,54 @@ class AlunosController extends Controller
      * Válido = 12 ou 13 dígitos (55 + DDD + número).
      */
     /**
-     * Retorna o link a ser enviado ao aluno: /start?token=... quando houver primeiro acesso
-     * em sessão para esse student_id, senão /install.
+     * Retorna o link a ser enviado ao aluno na tela "Enviar app / Copiar link".
+     * Sempre que possível devolve /start?token=... (definir senha → acessar), sem burocracia.
+     * - Se o aluno tem user_id: gera token de primeiro acesso e retorna /start?token=...
+     * - Se o aluno tem email mas não tem user_id: cria acesso (usuário), gera token e retorna /start?token=...
+     * - Caso contrário: retorna /install (genérico).
+     *
+     * @param int $studentId
+     * @param array|null $student Dados do aluno (id, user_id, email, name/full_name). Se null, carrega do BD.
      */
-    private function resolveInstallOrStartUrl($studentId)
+    private function resolveInstallOrStartUrl($studentId, $student = null)
     {
         $sid = (int) $studentId;
-        if ($sid > 0 && isset($_SESSION['first_access_url'], $_SESSION['first_access_url_student_id']) && (int) $_SESSION['first_access_url_student_id'] === $sid) {
-            return $_SESSION['first_access_url'];
+        if ($sid <= 0) {
+            return base_url('install');
+        }
+        if ($student === null) {
+            $studentModel = new Student();
+            $student = $studentModel->find($sid);
+        }
+        if (!$student) {
+            return base_url('install');
+        }
+        $userId = isset($student['user_id']) ? (int) $student['user_id'] : 0;
+        if ($userId <= 0 && !empty(trim($student['email'] ?? ''))) {
+            try {
+                $userService = new UserCreationService();
+                $out = $userService->createForStudent(
+                    $sid,
+                    trim($student['email']),
+                    $student['full_name'] ?? $student['name'] ?? null
+                );
+                $userId = is_array($out) ? (int) ($out['user_id'] ?? 0) : (int) $out;
+            } catch (\Throwable $e) {
+                error_log("AlunosController::resolveInstallOrStartUrl - criar acesso aluno: " . $e->getMessage());
+                return base_url('install');
+            }
+        }
+        if ($userId <= 0) {
+            return base_url('install');
+        }
+        try {
+            $firstAccess = new FirstAccessToken();
+            $plainToken = $firstAccess->create($userId, 48);
+            if ($plainToken) {
+                return base_url('start?token=' . $plainToken);
+            }
+        } catch (\Throwable $e) {
+            error_log("AlunosController::resolveInstallOrStartUrl - token: " . $e->getMessage());
         }
         return base_url('install');
     }
