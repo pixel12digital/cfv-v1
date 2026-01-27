@@ -84,12 +84,15 @@ jobs:
     - name: 📊 Deploy Summary
       if: always()
       run: |
-        echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
-        echo "**App:** ${{ env.APP_NAME }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+        {
+          echo "## Deploy Summary"
+          echo "**App:** ${{ env.APP_NAME }}"
+          echo "**Commit:** ${{ github.sha }}"
+          echo "**Branch:** ${{ github.ref }}"
+          echo "**Status:** ${{ job.status }}"
+          _t="**Time:** $(date)"
+          echo "$_t"
+        } >> $GITHUB_STEP_SUMMARY
 
   rollback:
     name: Rollback if needed

@@ -166,15 +166,18 @@ jobs:
     - name: 📊 Relatório de Deploy
       if: always()
       run: |
-        echo "## 🚀 Relatório de Deploy" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**App:** ${{ env.APP_NAME }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Environment:** ${{ inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-        echo **Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+        {
+          echo "## 🚀 Relatório de Deploy"
+          echo ""
+          echo "**App:** ${{ env.APP_NAME }}"
+          echo "**Commit:** ${{ github.sha }}"
+          echo "**Branch:** ${{ github.ref_name }}"
+          echo "**Environment:** ${{ inputs.environment || 'production' }}"
+          echo "**Actor:** ${{ github.actor }}"
+          echo "**Status:** ${{ job.status }}"
+          _t="**Time:** $(date)"
+          echo "$_t"
+        } >> $GITHUB_STEP_SUMMARY
         
   rollback:
     name: Rollback Automático
