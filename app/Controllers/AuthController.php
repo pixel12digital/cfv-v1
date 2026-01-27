@@ -65,6 +65,14 @@ class AuthController extends Controller
 
     public function showLogin()
     {
+        // Erro de sistema: limpar sessão e mostrar login (evita loop dashboard → /login?erro=system → dashboard)
+        if (!empty($_GET['erro']) && $_GET['erro'] === 'system') {
+            if (session_status() === \PHP_SESSION_ACTIVE) {
+                session_destroy();
+                @session_start();
+            }
+        }
+
         // Verificar se há sessão ativa E se o usuário realmente existe e está ativo
         if (!empty($_SESSION['user_id'])) {
             $userModel = new User();
