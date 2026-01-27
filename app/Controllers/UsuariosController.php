@@ -843,20 +843,19 @@ class UsuariosController extends Controller
         }
 
         $userModel = new User();
-        $user = $userModel->find($id);
+        $user = $userModel->findWithLinks($id);
 
         if (!$user || $user['cfc_id'] != $this->cfcId) {
             $_SESSION['error'] = 'Usuário não encontrado.';
             redirect(base_url('usuarios'));
         }
 
-        // Verificar se há token ativo
+        // Garantir token ativo: reutiliza sessão ou gera novo (invalida anteriores)
         $tokenModel = new AccountActivationToken();
         $activeToken = $tokenModel->findActiveToken($id);
-
         if (!$activeToken) {
-            $_SESSION['error'] = 'Nenhum link de ativação ativo. Gere um link primeiro.';
-            redirect(base_url("usuarios/{$id}/editar"));
+            $this->ensureActivationTokenForUser((int) $id, $user);
+            $activeToken = $tokenModel->findActiveToken($id);
         }
 
         // Tentar enviar e-mail (não bloqueia se falhar)
@@ -928,6 +927,121 @@ class UsuariosController extends Controller
         }
 
         redirect(base_url("usuarios/{$id}/editar"));
+    }
+
+    /**
+     * POST /usuarios/{id}/access-link
+     * Obtém ou gera link de ativação (JSON). Usado pelos CTAs "Enviar no WhatsApp" e "Copiar link".
+     * Reutiliza token da sessão se válido; senão cria novo (invalida anteriores). Nunca loga token puro.
+     */
+    public function accessLink($id)
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'message' => 'Sem permissão para esta ação'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $csrf = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+        if (!csrf_verify($csrf)) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'message' => 'Token CSRF inválido'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $userModel = new User();
+        $user = $userModel->findWithLinks($id);
+        if (!$user || $user['cfc_id'] != $this->cfcId) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'message' => 'Usuário não encontrado'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $data = $this->ensureActivationTokenForUser((int) $id, $user);
+        if (!$data) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => 'Não foi possível obter ou gerar o link'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        list($phoneWa, ) = $this->normalizePhoneForWa($user['telefone'] ?? null);
+        $message = 'Olá! Segue seu link para ativar/recuperar seu acesso: ' . $data['url'];
+
+        echo json_encode([
+            'ok' => true,
+            'url' => $data['url'],
+            'expires_at' => $data['expires_at'],
+            'phone_wa' => $phoneWa,
+            'message' => $message,
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Garante que o usuário tem link de ativação: reutiliza da sessão se válido, senão cria novo (invalida anteriores).
+     * Nunca loga token puro. Retorna ['url' => string, 'expires_at' => string] ou null.
+     */
+    private function ensureActivationTokenForUser($id, array $user)
+    {
+        $now = date('Y-m-d H:i:s');
+        if (!empty($_SESSION['activation_link_generated'])
+            && (int) ($_SESSION['activation_link_generated']['user_id'] ?? 0) === (int) $id
+            && !empty($_SESSION['activation_link_generated']['activation_url'])
+            && !empty($_SESSION['activation_link_generated']['expires_at'])
+            && $_SESSION['activation_link_generated']['expires_at'] > $now) {
+            return [
+                'url' => $_SESSION['activation_link_generated']['activation_url'],
+                'expires_at' => $_SESSION['activation_link_generated']['expires_at'],
+            ];
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+
+        $tokenModel = new AccountActivationToken();
+        $tokenModel->create($id, $tokenHash, $expiresAt, $_SESSION['user_id'] ?? null);
+
+        $this->auditService->logUpdate('usuarios', $id, null, [
+            'action' => 'generate_activation_link',
+            'generated_by' => $_SESSION['user_id'] ?? null,
+        ]);
+
+        $activationUrl = base_url("ativar-conta?token={$token}");
+        $_SESSION['activation_link_generated'] = [
+            'user_id' => $id,
+            'user_email' => $user['email'],
+            'activation_url' => $activationUrl,
+            'token' => $token,
+            'expires_at' => $expiresAt,
+        ];
+
+        return ['url' => $activationUrl, 'expires_at' => $expiresAt];
+    }
+
+    /**
+     * Normaliza telefone para wa.me: só dígitos, DDI 55. Retorna [numeroParaWa, valido].
+     * Valido = 12 ou 13 dígitos (55 + DDD + número).
+     */
+    private function normalizePhoneForWa($phone)
+    {
+        if ($phone === null || $phone === '') {
+            return [null, false];
+        }
+        $digits = preg_replace('/\D/', '', $phone);
+        if ($digits === '') {
+            return [null, false];
+        }
+        if (strlen($digits) === 11 && substr($digits, 0, 2) !== '55') {
+            $digits = '55' . $digits;
+        } elseif (strlen($digits) > 0 && substr($digits, 0, 2) !== '55') {
+            $digits = '55' . $digits;
+        }
+        $len = strlen($digits);
+        $valid = ($len >= 12 && $len <= 13);
+        return [$digits, $valid];
     }
 
     /**

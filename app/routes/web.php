@@ -130,6 +130,7 @@ $router->post('/usuarios/{id}/excluir', [UsuariosController::class, 'excluir'], 
 $router->post('/usuarios/{id}/gerar-senha-temporaria', [UsuariosController::class, 'gerarSenhaTemporaria'], [AuthMiddleware::class]);
 $router->post('/usuarios/{id}/gerar-link-ativacao', [UsuariosController::class, 'gerarLinkAtivacao'], [AuthMiddleware::class]);
 $router->post('/usuarios/{id}/enviar-link-email', [UsuariosController::class, 'enviarLinkEmail'], [AuthMiddleware::class]);
+$router->post('/usuarios/{id}/access-link', [UsuariosController::class, 'accessLink'], [AuthMiddleware::class]);
 
 // Configurações (ADMIN)
 $router->get('/configuracoes/smtp', [ConfiguracoesController::class, 'smtp'], [AuthMiddleware::class]);
