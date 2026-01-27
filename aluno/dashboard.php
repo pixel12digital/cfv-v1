@@ -21,6 +21,13 @@ if (!$user || $user['tipo'] !== 'aluno') {
     exit();
 }
 
+// Consumir flag de primeiro acesso ao fechar/dismiss (mostrar banner apenas uma vez)
+if (isset($_GET['dismiss_first_access'])) {
+    unset($_SESSION['first_access']);
+    header('Location: dashboard.php');
+    exit;
+}
+
 $db = db();
 $notificacoes = new SistemaNotificacoes();
 
@@ -196,10 +203,25 @@ foreach ($exames as $exame) {
 // Configurar variáveis para o layout
 $pageTitle = 'Dashboard - ' . htmlspecialchars($aluno['nome']);
 $homeUrl = '/aluno/dashboard.php';
+$showFirstAccessBanner = !empty($_SESSION['first_access']);
+$installUrl = (defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install';
 
 // Incluir layout mobile-first
 ob_start();
 ?>
+<?php if ($showFirstAccessBanner): ?>
+<!-- Banner primeiro acesso: consumido ao clicar Continuar ou ao navegar -->
+<div class="card border-success mb-3" id="first-access-banner" style="border-left-width: 4px !important;">
+    <div class="card-body">
+        <p class="mb-2 fw-bold text-success"><span aria-hidden="true">✅</span> Acesso criado com sucesso!</p>
+        <p class="mb-3 text-muted small">Você já pode usar o portal. Instale o app no celular para acessar de qualquer lugar.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="<?php echo htmlspecialchars($installUrl); ?>" class="btn btn-primary btn-sm">Instalar app</a>
+            <a href="dashboard.php?dismiss_first_access=1" class="btn btn-outline-secondary btn-sm">Continuar</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <!-- Card de Boas-Vindas (dentro do conteúdo, não como header) -->
 <div class="card card-aluno-dashboard mb-3">
     <div class="card-body aluno-dashboard-header">

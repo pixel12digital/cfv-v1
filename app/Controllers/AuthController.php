@@ -423,8 +423,8 @@ class AuthController extends Controller
         unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change'], $_SESSION['onboarding_token_id']);
         $user = $userModel->find($userId);
         $this->authService->login($user);
-        $_SESSION['success'] = 'Senha definida com sucesso! Agora você pode instalar o app.';
-        redirect(base_url('/install'));
+        $_SESSION['first_access'] = 1;
+        $this->redirectToUserDashboard($userId);
     }
 
     /**

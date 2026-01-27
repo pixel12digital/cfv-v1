@@ -29,6 +29,7 @@ class AuthService
         $_SESSION['user_name'] = $user['nome'];
         $_SESSION['cfc_id'] = $user['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
         $_SESSION['must_change_password'] = !empty($user['must_change_password']) && $user['must_change_password'] == 1;
+        $_SESSION['last_activity'] = time(); // compatível com legacy (includes/auth.php isLoggedIn)
         
         // Definir perfis disponíveis do usuário (RBAC quando existir, fallback para tipo)
         $roles = User::getUserRoles($user['id']);

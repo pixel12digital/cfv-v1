@@ -26,10 +26,10 @@
         <h1 class="install-title">Instalar app do aluno</h1>
         <p style="text-align: center; color: var(--color-text-muted); margin-bottom: 0;">Use o app para acompanhar aulas, financeiro e mais.</p>
 
-        <!-- Estado: Já instalado → só "Abrir app" -->
+        <!-- Estado: Já instalado → CTA principal (portal ou login) -->
         <div id="install-state-installed" class="install-block install-hidden">
             <h4>App já instalado</h4>
-            <a href="<?= htmlspecialchars($loginUrl ?? base_url('login')) ?>" class="install-cta primary">Abrir app</a>
+            <a href="<?= htmlspecialchars($primaryCtaUrl ?? $loginUrl ?? base_url('login')) ?>" class="install-cta primary"><?= htmlspecialchars($primaryCtaLabel ?? 'Abrir app') ?></a>
         </div>
 
         <!-- Estado: Android/Chrome → botão "Instalar app" (quando beforeinstallprompt) -->
@@ -38,20 +38,21 @@
             <p>Toque no botão abaixo para instalar.</p>
             <button type="button" id="install-btn-android" class="install-cta primary" style="cursor: pointer; border: none;">Instalar app</button>
             <p style="margin-top: var(--spacing-sm); font-size: 0.8rem;">Se o botão não aparecer, use o menu ⋮ do navegador → “Instalar app”.</p>
+            <a href="<?= htmlspecialchars($primaryCtaUrl ?? $loginUrl ?? base_url('login')) ?>" class="install-cta outline" style="margin-top: var(--spacing-sm); display: block;"><?= htmlspecialchars($primaryCtaLabel ?? 'Abrir app') ?></a>
         </div>
 
         <!-- Estado: iOS / Safari -->
         <div id="install-state-ios" class="install-block install-hidden">
             <h4>iPhone / Safari</h4>
             <p>Toque em <strong>Compartilhar</strong> (ícone na barra) e depois em <strong>Adicionar à Tela de Início</strong>.</p>
-            <a href="<?= htmlspecialchars($loginUrl ?? base_url('login')) ?>" class="install-cta outline">Abrir no Safari</a>
+            <a href="<?= htmlspecialchars($primaryCtaUrl ?? $loginUrl ?? base_url('login')) ?>" class="install-cta outline"><?= htmlspecialchars($primaryCtaLabel ?? 'Abrir no Safari') ?></a>
         </div>
 
         <!-- Estado: fallback (desktop/outros) ou quando não há deferredPrompt -->
         <div id="install-state-fallback" class="install-block install-hidden">
             <h4>Abrir no celular</h4>
             <p>Abra o link no Chrome (Android) ou Safari (iPhone) para instalar.</p>
-            <a href="<?= htmlspecialchars($loginUrl ?? base_url('login')) ?>" class="install-cta primary">Abrir app</a>
+            <a href="<?= htmlspecialchars($primaryCtaUrl ?? $loginUrl ?? base_url('login')) ?>" class="install-cta primary"><?= htmlspecialchars($primaryCtaLabel ?? 'Abrir app') ?></a>
         </div>
     </div>
 

@@ -9,18 +9,29 @@
     <link rel="stylesheet" href="<?= asset_url('css/layout.css') ?>">
     <link rel="stylesheet" href="<?= asset_url('css/utilities.css') ?>">
     <style>
-        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50); }
-        .auth-container { width: 100%; max-width: 400px; padding: var(--spacing-lg); }
-        .auth-card { background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--spacing-xl); }
-        .auth-logo { text-align: center; margin-bottom: var(--spacing-xl); font-size: 24px; font-weight: bold; color: var(--color-primary); }
+        /* Acessibilidade: título, labels e texto legíveis (WCAG AA) em light/dark */
+        .define-password-page { --dp-title-color: #1a1a1a; --dp-body-color: #374151; --dp-hint-color: #4b5563; }
+        @media (prefers-color-scheme: dark) {
+            .define-password-page { --dp-title-color: #f3f4f6; --dp-body-color: #d1d5db; --dp-hint-color: #9ca3af; }
+            .define-password-page .auth-card { background: #1f2937; }
+        }
+        .define-password-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-gray-50, #f9fafb); }
+        .define-password-page .auth-container { width: 100%; max-width: 400px; padding: var(--spacing-lg); }
+        .define-password-page .auth-card { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--spacing-xl); }
+        .define-password-page .auth-logo { text-align: center; margin-bottom: var(--spacing-xl); font-size: 24px; font-weight: bold; color: var(--color-primary); }
+        .define-password-page .auth-title { margin-bottom: var(--spacing-md); color: var(--dp-title-color); font-size: 1.35rem; font-weight: 600; }
+        .define-password-page .auth-intro { margin-bottom: var(--spacing-lg); color: var(--dp-body-color); font-size: 1rem; line-height: 1.5; }
+        .define-password-page .form-label { color: var(--dp-title-color) !important; font-weight: 500 !important; }
+        .define-password-page .form-text { color: var(--dp-hint-color) !important; }
+        .define-password-page .text-link { color: var(--color-primary); }
     </style>
 </head>
-<body>
+<body class="define-password-page">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-logo">CFC Sistema</div>
-            <h2 style="margin-bottom: var(--spacing-md);">Definir sua senha</h2>
-            <p class="text-muted" style="margin-bottom: var(--spacing-lg);">
+            <h2 class="auth-title">Definir sua senha</h2>
+            <p class="auth-intro">
                 Olá, <strong><?= htmlspecialchars($user['nome'] ?? '') ?></strong>. Defina sua senha de acesso abaixo.
             </p>
 
