@@ -109,14 +109,17 @@ class AuthController extends Controller
             $cfc = $stmt->fetch(\PDO::FETCH_ASSOC);
         }
         
-        // Verificar se tem logo e se o arquivo existe
+        // Verificar se tem logo do CFC e se o arquivo existe
         $logoUrl = null;
         if ($cfc && !empty($cfc['logo_path'])) {
             $filepath = dirname(__DIR__, 2) . '/' . $cfc['logo_path'];
             if (file_exists($filepath)) {
-                // URL pública para servir a logo (rota sem autenticação)
                 $logoUrl = base_url('login/cfc-logo');
             }
+        }
+        // Fallback: logo padrão quando o CFC não tem logo (evita ficar só texto "CFC")
+        if (empty($logoUrl)) {
+            $logoUrl = asset_url('logo.png');
         }
         
         $data = [
@@ -344,6 +347,79 @@ class AuthController extends Controller
 
         $_SESSION['success'] = 'Senha redefinida com sucesso! Faça login com sua nova senha.';
         redirect(base_url('/login'));
+    }
+
+    /**
+     * Tela de definir senha no primeiro acesso (onboarding após /start?token=...).
+     * Acesso permitido só quando há sessão de onboarding (onboarding_user_id + force_password_change).
+     */
+    public function showDefinePassword()
+    {
+        if (empty($_SESSION['onboarding_user_id']) || empty($_SESSION['force_password_change'])) {
+            redirect(base_url('/login'));
+            return;
+        }
+        $userModel = new User();
+        $user = $userModel->find($_SESSION['onboarding_user_id']);
+        if (!$user || ($user['status'] ?? '') !== 'ativo') {
+            unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change']);
+            redirect(base_url('/login'));
+            return;
+        }
+        $data = ['user' => $user];
+        $this->viewRaw('auth/define-password', $data);
+    }
+
+    /**
+     * Processa definição de senha no primeiro acesso.
+     * Atualiza senha, remove must_change_password, faz login e redireciona para /install.
+     */
+    public function definePassword()
+    {
+        if (empty($_SESSION['onboarding_user_id']) || empty($_SESSION['force_password_change'])) {
+            redirect(base_url('/login'));
+            return;
+        }
+        $userId = (int) $_SESSION['onboarding_user_id'];
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->showDefinePassword();
+            return;
+        }
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token de segurança inválido. Tente novamente.';
+            redirect(base_url('/define-password'));
+        }
+        $newPassword = $_POST['new_password'] ?? '';
+        $newPasswordConfirm = $_POST['new_password_confirm'] ?? '';
+        if (empty($newPassword) || empty($newPasswordConfirm)) {
+            $_SESSION['error'] = 'Preencha todos os campos.';
+            redirect(base_url('/define-password'));
+        }
+        if ($newPassword !== $newPasswordConfirm) {
+            $_SESSION['error'] = 'As senhas não coincidem.';
+            redirect(base_url('/define-password'));
+        }
+        if (strlen($newPassword) < 8) {
+            $_SESSION['error'] = 'A senha deve ter no mínimo 8 caracteres.';
+            redirect(base_url('/define-password'));
+        }
+        $userModel = new User();
+        $user = $userModel->find($userId);
+        if (!$user || ($user['status'] ?? '') !== 'ativo') {
+            unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change']);
+            redirect(base_url('/login'));
+            return;
+        }
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+        $userModel->updatePassword($userId, $hashedPassword);
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("UPDATE usuarios SET must_change_password = 0 WHERE id = ?");
+        $stmt->execute([$userId]);
+        unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change']);
+        $user = $userModel->find($userId);
+        $this->authService->login($user);
+        $_SESSION['success'] = 'Senha definida com sucesso! Agora você pode instalar o app.';
+        redirect(base_url('/install'));
     }
 
     /**

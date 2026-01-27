@@ -200,8 +200,11 @@ class AlunosController extends Controller
             }
         }
         
-        $installUrl = base_url('install');
-        $waMessage = str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
+        $installUrl = $this->resolveInstallOrStartUrl($id);
+        $isFirstAccessLink = (strpos($installUrl, '/start?token=') !== false);
+        $waMessage = $isFirstAccessLink
+            ? str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Clique no link para ativar seu acesso e instalar o app:\n\n{LINK}")
+            : str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
         $studentPhoneRaw = $studentModel->getPrimaryPhone($student);
         list($studentPhoneForWa, $hasValidPhone) = $this->normalizePhoneForWa($studentPhoneRaw);
 
@@ -725,9 +728,24 @@ class AlunosController extends Controller
         }
 
             $db->commit();
-            
+
             $_SESSION['success'] = 'Matrícula criada com sucesso!';
             $_SESSION['show_install_cta'] = true;
+
+            // Link personalizado de primeiro acesso (magic link) quando o aluno tem user_id
+            if (!empty($student['user_id'])) {
+                try {
+                    $firstAccessModel = new \App\Models\FirstAccessToken();
+                    $plainToken = $firstAccessModel->create((int) $student['user_id'], 48);
+                    if ($plainToken) {
+                        $_SESSION['first_access_url'] = base_url('start?token=' . $plainToken);
+                        $_SESSION['first_access_url_student_id'] = (int) $id;
+                    }
+                } catch (\Throwable $e) {
+                    error_log("AlunosController::criarMatricula - Erro ao gerar token primeiro acesso: " . $e->getMessage());
+                }
+            }
+
             redirect(base_url("alunos/{$id}?tab=matricula"));
         } catch (\Exception $e) {
             $db->rollBack();
@@ -783,8 +801,12 @@ class AlunosController extends Controller
             $pixAccounts = []; // Array vazio se tabela não existir
         }
 
-        $installUrl = base_url('install');
-        $waMessage = str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
+        $studentIdForLink = (int) ($enrollment['student_id'] ?? 0);
+        $installUrl = $this->resolveInstallOrStartUrl($studentIdForLink);
+        $isFirstAccessLink = (strpos($installUrl, '/start?token=') !== false);
+        $waMessage = $isFirstAccessLink
+            ? str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Clique no link para ativar seu acesso e instalar o app:\n\n{LINK}")
+            : str_replace('{LINK}', $installUrl, "Olá! Sua matrícula no CFC foi confirmada.\n\n📱 Instale o app do aluno (acompanhe aulas, financeiro e mais):\n\n{LINK}\n\n• Android/Chrome: abra o link e toque em \"Instalar\" ou no menu ⋮ → \"Instalar app\".\n• iPhone/Safari: abra o link, toque em compartilhar e \"Adicionar à Tela de Início\".\n\nPara acessar depois, use o mesmo link ou o ícone do app na tela inicial.");
         $enrollmentPhoneRaw = !empty($enrollment['phone_primary']) ? $enrollment['phone_primary'] : ($enrollment['phone'] ?? null);
         list($studentPhoneForWa, $hasValidPhone) = $this->normalizePhoneForWa($enrollmentPhoneRaw);
 
@@ -1743,6 +1765,19 @@ class AlunosController extends Controller
      * Retorna [numeroParaWa, valido].
      * Válido = 12 ou 13 dígitos (55 + DDD + número).
      */
+    /**
+     * Retorna o link a ser enviado ao aluno: /start?token=... quando houver primeiro acesso
+     * em sessão para esse student_id, senão /install.
+     */
+    private function resolveInstallOrStartUrl($studentId)
+    {
+        $sid = (int) $studentId;
+        if ($sid > 0 && isset($_SESSION['first_access_url'], $_SESSION['first_access_url_student_id']) && (int) $_SESSION['first_access_url_student_id'] === $sid) {
+            return $_SESSION['first_access_url'];
+        }
+        return base_url('install');
+    }
+
     private function normalizePhoneForWa($phone)
     {
         if ($phone === null || $phone === '') {

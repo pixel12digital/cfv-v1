@@ -2,6 +2,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\InstallController;
+use App\Controllers\StartController;
 use App\Controllers\DashboardController;
 use App\Controllers\ApiController;
 use App\Controllers\AlunosController;
@@ -39,6 +40,9 @@ $router->post('/reset-password', [AuthController::class, 'resetPassword']);
 $router->get('/ativar-conta', [AuthController::class, 'showActivateAccount']);
 $router->post('/ativar-conta', [AuthController::class, 'activateAccount']);
 $router->get('/install', [InstallController::class, 'show']); // Landing pública: instalar app do aluno (sem auth)
+$router->get('/start', [StartController::class, 'show']); // Magic link primeiro acesso: valida token, onboarding, redirect define-password
+$router->get('/define-password', [AuthController::class, 'showDefinePassword']); // Definir senha (onboarding, sem auth)
+$router->post('/define-password', [AuthController::class, 'definePassword']);
 
 // Rotas protegidas
 $router->get('/dashboard', [DashboardController::class, 'index'], [AuthMiddleware::class]);
