@@ -248,7 +248,7 @@
 
     <?php if (!empty($showPwaInstallOverlay)): 
         $pwaInstallUrlForJs = isset($pwaInstallUrl) ? $pwaInstallUrl : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
-        if (!empty($_GET['pwa_debug'])): ?><!-- PWA_OVERLAY_ACTIVE=1 --><?php endif;
+        if (isset($_GET['pwa_debug']) && $_GET['pwa_debug'] !== ''): ?><!-- PWA_OVERLAY_ACTIVE=1 --><?php endif;
     ?>
     <div id="pwa-install-overlay" role="dialog" aria-modal="true" aria-labelledby="pwa-overlay-title" aria-hidden="false">
         <div class="pwa-overlay-dialog">
@@ -308,7 +308,7 @@
     </script>
     <?php if (!empty($showPwaInstallOverlay)): 
         $pwaInstallUrlScript = isset($pwaInstallUrl) ? $pwaInstallUrl : ((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . '/install');
-        if (!empty($_GET['pwa_debug'])): ?><script>window.__PWA_DEBUG=1;</script><?php endif;
+        if (isset($_GET['pwa_debug']) && $_GET['pwa_debug'] !== ''): ?><script>window.__PWA_DEBUG=1;</script><?php endif;
     ?>
     <script>window.__PWA_INSTALL_URL = <?php echo json_encode($pwaInstallUrlScript); ?>;</script>
     <script src="<?php echo rtrim($basePath, '/'); ?>/assets/js/pwa-install-overlay.js"></script>

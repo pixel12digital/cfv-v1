@@ -6,6 +6,36 @@
 
 ---
 
+## PASSO 1 — Fechar causa do 500 (bloqueador)
+
+**Sintoma:** GET em `/aluno/dashboard.php` ou `/aluno/dashboard.php?pwa_debug=1` retorna HTTP 500 (Internal Server Error). Console pode mostrar `Uncaught SyntaxError: Unexpected identifier 'overlay'` (muitas vezes consequência de resposta 500 parcial).
+
+### Correção aplicada (patch mínimo)
+
+- **Arquivo:** `includes/layout/mobile-first.php`
+- **Causa provável:** Uso de `$_GET['pwa_debug']` sem `isset()` — em PHP 8+ ou com notices promovidas a fatal, “undefined array key” pode gerar 500.
+- **Alteração:** Troca de `!empty($_GET['pwa_debug'])` por `isset($_GET['pwa_debug']) && $_GET['pwa_debug'] !== ''` nos dois pontos em que o debug é avaliado (comentário `PWA_OVERLAY_ACTIVE=1` e injeção de `window.__PWA_DEBUG=1`).
+- **JS:** Em `assets/js/pwa-install-overlay.js`, o log de debug passou a usar `String(...)` e variável `msg` + `console.log(msg)` para evitar qualquer interpretação indevida do texto pelo console.
+
+### Se o 500 continuar após o patch
+
+1. Confirmar se o 500 ocorre **só** com `?pwa_debug=1` ou **também** em `/aluno/dashboard.php` sem querystring.
+2. Coletar no **log do servidor** (Apache/Nginx/PHP-FPM) o trecho do request que retornou 500:
+   - mensagem de erro fatal completa
+   - **arquivo** e **linha**
+   - stack trace (se houver)
+3. Identificar o arquivo que estoura: `aluno/dashboard.php`, `includes/layout/mobile-first.php` ou algum include (config, auth, etc.).
+
+### Deliverable do Passo 1 (preencher após ter o log)
+
+| Campo | Conteúdo |
+|-------|----------|
+| **Erro fatal completo** | (colar aqui a mensagem do log) |
+| **Arquivo / linha** | |
+| **Correção aplicada** | Patch isset em mobile-first.php (já feito). Se o log apontar outro arquivo/linha, descrever a correção adicional. |
+
+---
+
 ## 1) Prova #1 — HTML real servido (produção)
 
 No ambiente onde falha, coletar o **View Source** real de `/aluno/dashboard.php` e anotar presença/ausência de:

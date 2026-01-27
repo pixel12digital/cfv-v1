@@ -124,7 +124,7 @@
             updateHeaderCta(false);
             updateBell(false);
             if (window.__PWA_DEBUG) {
-                console.log('[PWA overlay] installed=1 dismissedToday=' + wasDismissedToday() + ' deferred=' + !!deferredPrompt + ' overlay=hide bell=hide cta=hide');
+                console.log('[PWA overlay] installed=1 dismissedToday=' + String(wasDismissedToday()) + ' deferred=' + (deferredPrompt ? '1' : '0') + ' overlay=hide bell=hide cta=hide');
             }
             return;
         }
@@ -148,7 +148,8 @@
             var ov = overlayEl && !overlayEl.classList.contains('pwa-overlay-hidden');
             var bellVis = bellEl && !bellEl.classList.contains('d-none');
             var ctaVis = headerCtaEl && !headerCtaEl.classList.contains('d-none');
-            console.log('[PWA overlay] installed=0 dismissedToday=' + wasDismissedToday() + ' deferred=' + !!deferredPrompt + ' overlay=' + (ov ? 'show' : 'hide') + ' bell=' + (bellVis ? 'show' : 'hide') + ' cta=' + (ctaVis ? 'show' : 'hide'));
+            var msg = '[PWA overlay] installed=0 dismissedToday=' + String(wasDismissedToday()) + ' deferred=' + (deferredPrompt ? '1' : '0') + ' overlay=' + (ov ? 'show' : 'hide') + ' bell=' + (bellVis ? 'show' : 'hide') + ' cta=' + (ctaVis ? 'show' : 'hide');
+            console.log(msg);
         }
 
         overlayEl.querySelectorAll('.pwa-overlay-btn-dismiss').forEach(function (btn) {
