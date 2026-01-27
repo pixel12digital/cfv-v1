@@ -150,46 +150,17 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
 </div>
 
 <?php if ($isEdit): ?>
-<!-- Bloco: Acesso e Segurança (FORA do formulário principal para evitar conflitos) -->
-<div class="card" style="margin-top: var(--spacing-lg); border-left: 4px solid #007bff;">
+<!-- Bloco: Acesso e Segurança (UI refino: 3 ações principais, status em Mais opções) -->
+<div class="card" style="margin-top: var(--spacing-lg); border-left: 2px solid var(--color-border, #dee2e6);">
     <div class="card-header" style="background-color: #f8f9fa;">
-        <h3 style="margin: 0; font-size: var(--font-size-lg); color: #007bff; display: flex; align-items: center; gap: 8px;">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;">
+        <h3 style="margin: 0; font-size: var(--font-size-lg); color: var(--color-text, #333); display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; opacity: 0.8;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
             Acesso e Segurança
         </h3>
     </div>
     <div class="card-body">
-        <!-- Status de Acesso -->
-        <div style="margin-bottom: var(--spacing-md); padding: var(--spacing-md); background-color: #f8f9fa; border-radius: 4px;">
-            <h4 style="margin: 0 0 var(--spacing-sm) 0; font-size: var(--font-size-md);">Status de Acesso</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-sm);">
-                <div>
-                    <strong>Senha definida:</strong> 
-                    <span class="badge <?= $hasPassword ? 'badge-success' : 'badge-danger' ?>">
-                        <?= $hasPassword ? 'Sim' : 'Não' ?>
-                    </span>
-                </div>
-                <div>
-                    <strong>Troca obrigatória:</strong> 
-                    <span class="badge <?= !empty($user['must_change_password']) ? 'badge-warning' : 'badge-success' ?>">
-                        <?= !empty($user['must_change_password']) ? 'Sim' : 'Não' ?>
-                    </span>
-                </div>
-                <div>
-                    <strong>Link de ativação ativo:</strong> 
-                    <span class="badge <?= $hasActiveToken ? 'badge-success' : 'badge-secondary' ?>">
-                        <?= $hasActiveToken ? 'Sim' : 'Não' ?>
-                    </span>
-                    <?php if ($hasActiveToken && $activeToken): ?>
-                        <small style="display: block; color: #666; margin-top: 4px;">
-                            Expira em: <?= date('d/m/Y H:i', strtotime($activeToken['expires_at'])) ?>
-                        </small>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
 
         <!-- Senha Temporária Gerada (exibir apenas uma vez) -->
         <?php if (!empty($tempPasswordGenerated) && (int)$tempPasswordGenerated['user_id'] === (int)$user['id']): ?>
@@ -249,65 +220,69 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
         </div>
         <?php endif; ?>
 
-        <!-- CTAs principais (igual Matrícula: WhatsApp + Copiar link) -->
+        <!-- 3 ações principais (monocromático, mesmo peso visual) -->
         <div id="acesso-ctas-wrapper" data-access-link-url="<?= htmlspecialchars(base_path("usuarios/{$user['id']}/access-link")) ?>" data-csrf="<?= htmlspecialchars(csrf_token()) ?>">
         <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; margin-bottom: var(--spacing-md);">
-            <button type="button" class="btn btn-primary btn-sm" id="acesso-cta-wa">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; vertical-align: middle; margin-right: 4px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
+            <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-wa" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 Enviar no WhatsApp
             </button>
-            <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; vertical-align: middle; margin-right: 4px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
+            <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 Copiar link
             </button>
-            <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: var(--color-success); margin-left: 4px;"></span>
+            <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" style="margin: 0; display: inline-block;" onsubmit="return confirm('Enviar link por e-mail?');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Enviar por e-mail
+                </button>
+            </form>
+            <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: #666; margin-left: 4px;"></span>
         </div>
         </div>
 
-        <!-- Bloco Link de acesso (aparece após qualquer ação ou quando já existe link gerado) -->
-        <div id="acesso-link-block" style="display: <?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? 'block' : 'none' ?>; margin-bottom: var(--spacing-md); padding: var(--spacing-md); background-color: #f8f9fa; border-radius: 4px; border: 1px solid var(--color-border, #ddd);">
-            <h4 style="margin: 0 0 var(--spacing-sm) 0; font-size: var(--font-size-md);">Link de acesso</h4>
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
-                <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 200px; font-size: 12px; font-family: monospace;" value="<?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? htmlspecialchars($activationLinkGenerated['activation_url'] ?? '') : '' ?>">
+        <!-- Bloco Link de acesso (discreto, aparece após ação) -->
+        <div id="acesso-link-block" style="display: <?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? 'block' : 'none' ?>; margin-bottom: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;">
+            <p style="margin: 0 0 6px 0; font-size: 0.8rem; color: #6c757d;">Link de acesso</p>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 180px; font-size: 11px; font-family: monospace; background: #fff;" value="<?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? htmlspecialchars($activationLinkGenerated['activation_url'] ?? '') : '' ?>">
                 <button type="button" class="btn btn-outline btn-sm" id="acesso-link-copy-btn" title="Copiar link">Copiar</button>
                 <a href="#" class="btn btn-outline btn-sm" id="acesso-link-wa-btn" target="_blank" rel="noopener" style="display: none;">WhatsApp</a>
             </div>
-            <small id="acesso-link-expires" style="color: #666;"><?php if (!empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] && !empty($activationLinkGenerated['expires_at'])): ?>Expira em: <?= date('d/m/Y H:i', strtotime($activationLinkGenerated['expires_at'])) ?><?php endif; ?></small>
+            <small id="acesso-link-expires" style="color: #868e96; font-size: 0.75rem;"><?php if (!empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] && !empty($activationLinkGenerated['expires_at'])): ?>Expira em: <?= date('d/m/Y H:i', strtotime($activationLinkGenerated['expires_at'])) ?><?php endif; ?></small>
         </div>
 
-        <!-- Mais opções (colapsável) -->
+        <!-- Mais opções (colapsável): status discreto + Avançado -->
         <div class="form-section-collapsible" style="margin-top: var(--spacing-md);">
-            <button type="button" class="form-section-toggle" id="acesso-mais-opcoes-toggle" style="width: 100%; text-align: left; padding: 0.5rem 0.75rem; background: var(--color-bg-light, #f5f5f5); border: 1px solid var(--color-border, #ddd); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: var(--font-size-sm);">
+            <button type="button" class="form-section-toggle" id="acesso-mais-opcoes-toggle" style="width: 100%; text-align: left; padding: 0.5rem 0.75rem; background: #f5f5f5; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 0.875rem; color: #495057;">
                 <span>Mais opções</span>
                 <svg id="acesso-mais-opcoes-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div id="acesso-mais-opcoes-body" style="display: none; padding: var(--spacing-md); background: var(--color-bg-light, #f8f9fa); border: 1px solid var(--color-border, #ddd); border-top: none; border-radius: 0 0 4px 4px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-sm);">
-                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" style="margin: 0;" onsubmit="return confirm('Enviar link por e-mail?');">
+            <div id="acesso-mais-opcoes-body" style="display: none; padding: var(--spacing-md); background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 4px 4px;">
+                <!-- Status (linha discreta, sem chips) -->
+                <p style="margin: 0 0 var(--spacing-md) 0; font-size: 0.8rem; color: #6c757d; line-height: 1.5;">
+                    Senha definida: <?= $hasPassword ? 'sim' : 'não' ?>. Troca obrigatória: <?= !empty($user['must_change_password']) ? 'sim' : 'não' ?>. Link ativo: <?= $hasActiveToken ? 'sim' : 'não' ?>.
+                </p>
+                <p style="margin: 0 0 var(--spacing-sm) 0; font-size: 0.75rem; color: #868e96; font-weight: 600;">Avançado</p>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: flex-start;">
+                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-link-ativacao") ?>" style="margin: 0;" onsubmit="return confirm('Regenerar link? O link atual será invalidado.');">
                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <button type="submit" class="btn btn-outline" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            Enviar por e-mail
+                        <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Regenerar link
                         </button>
                     </form>
-                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-senha-temporaria") ?>" style="margin: 0;" onsubmit="return confirm('Gerar senha temporária?');">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <button type="submit" class="btn btn-outline" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                            Gerar senha temporária
-                        </button>
-                    </form>
-                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-link-ativacao") ?>" style="margin: 0;" onsubmit="return confirm('Gerar novo link de ativação? O link anterior será invalidado.');">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <button type="submit" class="btn btn-outline" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                            Gerar novo link
-                        </button>
-                    </form>
+                    <div style="flex: 1; min-width: 200px;">
+                        <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-senha-temporaria") ?>" style="margin: 0;" onsubmit="return confirm('Gerar senha temporária?');">
+                            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                            <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                Gerar senha temporária
+                            </button>
+                        </form>
+                        <small style="display: block; margin-top: 4px; font-size: 0.75rem; color: #6c757d;">Use apenas se não houver WhatsApp/e-mail. O usuário precisará trocar no login.</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -331,7 +306,7 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                 if (!feedback) return;
                 feedback.textContent = msg;
                 feedback.style.display = 'inline';
-                feedback.style.color = isError ? 'var(--color-danger, #c00)' : 'var(--color-success, #28a745)';
+                feedback.style.color = isError ? '#c00' : '#495057';
                 setTimeout(function(){ feedback.style.display = 'none'; }, 4000);
             }
 
