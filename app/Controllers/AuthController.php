@@ -415,7 +415,12 @@ class AuthController extends Controller
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("UPDATE usuarios SET must_change_password = 0 WHERE id = ?");
         $stmt->execute([$userId]);
-        unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change']);
+        // Marcar token de primeiro acesso como usado só agora (evita que preview do WhatsApp invalide o link)
+        if (!empty($_SESSION['onboarding_token_id'])) {
+            $firstAccess = new \App\Models\FirstAccessToken();
+            $firstAccess->markAsUsed((int) $_SESSION['onboarding_token_id']);
+        }
+        unset($_SESSION['onboarding_user_id'], $_SESSION['force_password_change'], $_SESSION['onboarding_token_id']);
         $user = $userModel->find($userId);
         $this->authService->login($user);
         $_SESSION['success'] = 'Senha definida com sucesso! Agora você pode instalar o app.';

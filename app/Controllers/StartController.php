@@ -39,8 +39,10 @@ class StartController extends Controller
             return;
         }
 
-        $tokenModel->markAsUsed($row['id']);
+        // NÃO marcar token como usado aqui. O WhatsApp (e outros) fazem GET no link para preview
+        // e isso invalidava o token antes do aluno abrir. Só marcar quando ele definir a senha.
         $_SESSION['onboarding_user_id'] = (int) $row['user_id'];
+        $_SESSION['onboarding_token_id'] = (int) $row['id'];
         $_SESSION['force_password_change'] = true;
 
         redirect(base_url('define-password'));
