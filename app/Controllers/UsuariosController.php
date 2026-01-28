@@ -967,14 +967,23 @@ class UsuariosController extends Controller
             return;
         }
 
-        list($phoneWa, ) = $this->normalizePhoneForWa($user['telefone'] ?? null);
+        // Telefone: usuário (usuarios.telefone) ou, se for aluno, do cadastro do aluno (students.phone_primary/phone)
+        $phoneRaw = $user['telefone'] ?? null;
+        if (($phoneRaw === null || trim($phoneRaw) === '') && !empty($user['student_id'])) {
+            $studentModel = new Student();
+            $student = $studentModel->find($user['student_id']);
+            if ($student) {
+                $phoneRaw = !empty($student['phone_primary']) ? $student['phone_primary'] : ($student['phone'] ?? null);
+            }
+        }
+        list($phoneWa, $phoneValid) = $this->normalizePhoneForWa($phoneRaw);
         $message = 'Olá! Segue seu link para ativar/recuperar seu acesso: ' . $data['url'];
 
         echo json_encode([
             'ok' => true,
             'url' => $data['url'],
             'expires_at' => $data['expires_at'],
-            'phone_wa' => $phoneWa,
+            'phone_wa' => $phoneValid ? $phoneWa : null,
             'message' => $message,
         ], JSON_UNESCAPED_UNICODE);
     }

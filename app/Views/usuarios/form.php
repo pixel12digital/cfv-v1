@@ -362,9 +362,7 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                             window.open('https://wa.me/' + data.phone_wa + '?text=' + encodeURIComponent(data.message), '_blank');
                             showFeedback('Link gerado. WhatsApp aberto.');
                         } else {
-                            copyToClipboard(data.url).then(function(){
-                                showFeedback('Sem telefone válido — link copiado.');
-                            });
+                            showFeedback('É necessário ter um telefone válido cadastrado para o aluno.', true);
                         }
                         btnWa.disabled = false;
                     }).catch(function(err){
