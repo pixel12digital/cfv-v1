@@ -3,27 +3,27 @@ $currentRole = $currentRole ?? $_SESSION['current_role'] ?? '';
 $isAluno = ($currentRole === 'ALUNO');
 ?>
 <div class="page-header">
-    <div class="page-header-content">
-        <div>
-            <h1>Detalhes da Aula</h1>
-            <p class="text-muted">Informações completas da aula</p>
+    <div class="page-header-content" style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); justify-content: space-between; align-items: flex-start;">
+        <div style="flex: 1; min-width: 200px;">
+            <h1 style="margin: 0; font-size: clamp(1.25rem, 4vw, 1.5rem);">Detalhes da Aula</h1>
+            <p class="text-muted" style="margin: var(--spacing-xs) 0 0 0; font-size: 0.875rem;">Informações completas da aula</p>
         </div>
-        <div style="display: flex; gap: var(--spacing-sm);">
+        <div class="header-actions" style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
             <?php
             $backUrl = 'agenda';
             if (isset($from) && $from === 'dashboard') {
                 $backUrl = 'dashboard';
             }
             ?>
-            <a href="<?= base_path($backUrl) ?>" class="btn btn-outline">Voltar</a>
+            <a href="<?= base_path($backUrl) ?>" class="btn btn-outline" style="flex: 1; min-width: 80px; text-align: center;">Voltar</a>
             <?php if (!$isAluno && !in_array($lesson['status'], ['concluida', 'cancelada'])): ?>
-            <a href="<?= base_path("agenda/{$lesson['id']}/editar") ?>" class="btn btn-primary">Remarcar</a>
+            <a href="<?= base_path("agenda/{$lesson['id']}/editar") ?>" class="btn btn-primary" style="flex: 1; min-width: 100px; text-align: center;">Remarcar</a>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: <?= $isAluno ? '1fr' : '2fr 1fr' ?>; gap: var(--spacing-md);">
+<div class="lesson-details-grid" style="display: grid; grid-template-columns: <?= $isAluno ? '1fr' : '2fr 1fr' ?>; gap: var(--spacing-md);">
     <!-- Informações Principais -->
     <div class="card">
         <div class="card-header">
@@ -474,8 +474,30 @@ document.getElementById('cancelForm')?.addEventListener('submit', function(e) {
     color: #374151;
 }
 
-/* Responsividade mobile para dados do instrutor */
+/* Responsividade mobile para layout principal */
 @media (max-width: 768px) {
+    .lesson-details-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Header responsivo */
+    .page-header-content {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .header-actions .btn {
+        flex: 1;
+    }
+}
+
+/* Responsividade mobile para grids internos (data/hora, km, timestamps) */
+@media (max-width: 480px) {
     div[style*="grid-template-columns: 1fr 1fr"] {
         grid-template-columns: 1fr !important;
         gap: var(--spacing-sm) !important;
