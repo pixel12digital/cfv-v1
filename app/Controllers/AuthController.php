@@ -380,9 +380,37 @@ class AuthController extends Controller
         // Buscar usuário atualizado e fazer login automático
         $user = $userModel->find($tokenData['user_id']);
         if ($user && $user['status'] === 'ativo') {
+            error_log("[RESET_PASSWORD] Senha salva para user_id={$user['id']} email={$user['email']} tipo={$user['tipo']}");
+            
             $this->authService->login($user);
+            
+            error_log("[RESET_PASSWORD] Login realizado. Session user_id=" . ($_SESSION['user_id'] ?? 'VAZIO') . " session_id=" . session_id());
+            
             $_SESSION['success'] = 'Senha redefinida com sucesso!';
-            $this->redirectToUserDashboard($user['id']);
+            
+            // Determinar URL de destino baseado no tipo
+            $tipo = strtolower($user['tipo'] ?? '');
+            switch ($tipo) {
+                case 'admin':
+                case 'secretaria':
+                    $redirectUrl = base_url('/admin/index.php');
+                    break;
+                case 'instrutor':
+                    $redirectUrl = base_url('/instrutor/dashboard.php');
+                    break;
+                case 'aluno':
+                default:
+                    $redirectUrl = base_url('/dashboard');
+                    break;
+            }
+            
+            error_log("[RESET_PASSWORD] Redirecionando tipo={$tipo} para {$redirectUrl}");
+            
+            // Garantir que a sessão seja salva antes do redirect
+            session_write_close();
+            
+            header('Location: ' . $redirectUrl);
+            exit;
         } else {
             $_SESSION['success'] = 'Senha redefinida com sucesso! Faça login com sua nova senha.';
             redirect(base_url('/login'));
@@ -717,10 +745,40 @@ class AuthController extends Controller
 
             // Recarregar usuário atualizado e fazer login automático
             $user = $userModel->find($user['id']);
+            
+            error_log("[ACTIVATE_ACCOUNT] Senha salva com sucesso para user_id={$user['id']} email={$user['email']} tipo={$user['tipo']}");
+            
             $this->authService->login($user);
+            
+            error_log("[ACTIVATE_ACCOUNT] Login realizado. Session user_id=" . ($_SESSION['user_id'] ?? 'VAZIO') . " user_type=" . ($_SESSION['user_type'] ?? 'VAZIO') . " session_id=" . session_id());
 
             $_SESSION['success'] = 'Conta ativada com sucesso!';
-            $this->redirectToUserDashboard($user['id']);
+            
+            // Redirecionar para o dashboard correto baseado no tipo
+            $tipo = strtolower($user['tipo'] ?? '');
+            
+            // Determinar URL de destino
+            switch ($tipo) {
+                case 'admin':
+                case 'secretaria':
+                    $redirectUrl = base_url('/admin/index.php');
+                    break;
+                case 'instrutor':
+                    $redirectUrl = base_url('/instrutor/dashboard.php');
+                    break;
+                case 'aluno':
+                default:
+                    $redirectUrl = base_url('/dashboard');
+                    break;
+            }
+            
+            error_log("[ACTIVATE_ACCOUNT] Redirecionando tipo={$tipo} para {$redirectUrl}");
+            
+            // Garantir que a sessão seja salva antes do redirect
+            session_write_close();
+            
+            header('Location: ' . $redirectUrl);
+            exit;
         } catch (\Exception $e) {
             $db->rollBack();
             $_SESSION['error'] = 'Erro ao ativar conta: ' . $e->getMessage();
