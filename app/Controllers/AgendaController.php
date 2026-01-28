@@ -85,17 +85,30 @@ class AgendaController extends Controller
         }
         
         // Calcular período baseado na view
+        // Para ALUNO em list view: mostrar TODAS as aulas (sem filtro de data por padrão)
+        $dateFromUrl = $_GET['date'] ?? null; // Verificar se data foi explicitamente passada na URL
+        
         if ($view === 'list') {
-            // Lista: se há data específica, usar EXATAMENTE esse dia (00:00-23:59)
-            // Se não há data, buscar período amplo
-            if ($date) {
-                // Data específica selecionada: usar EXATAMENTE esse dia
-                $startDate = $date;
-                $endDate = $date;
+            // Para ALUNO: só filtrar por data se foi explicitamente selecionada
+            if ($isAluno) {
+                if ($dateFromUrl) {
+                    // Aluno selecionou data específica: filtrar por esse dia
+                    $startDate = $date;
+                    $endDate = $date;
+                } else {
+                    // Aluno não selecionou data: mostrar TODAS as aulas
+                    $startDate = null;
+                    $endDate = null;
+                }
             } else {
-                // Sem data específica: período amplo
-                $startDate = null;
-                $endDate = null;
+                // Para outros perfis: manter comportamento atual
+                if ($date) {
+                    $startDate = $date;
+                    $endDate = $date;
+                } else {
+                    $startDate = null;
+                    $endDate = null;
+                }
             }
         } elseif ($view === 'day') {
             $startDate = $date;

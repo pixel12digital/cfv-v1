@@ -49,7 +49,7 @@ $studentModel = new Student();
             <h3 style="margin: 0;"><?= $cardTitle ?></h3>
             <?php if ($nextLesson && $isInProgress): ?>
             <span style="background: var(--color-warning, #f59e0b); color: white; padding: 4px 10px; border-radius: 12px; font-size: var(--font-size-sm); font-weight: 600; animation: pulse 2s infinite;">
-                🚗 Em andamento
+                Em andamento
             </span>
             <?php elseif ($nextLesson): ?>
             <span style="background: var(--color-primary, #3b82f6); color: white; padding: 4px 10px; border-radius: 12px; font-size: var(--font-size-sm);">
@@ -195,11 +195,11 @@ $studentModel = new Student();
                 $displayStatus = $lesson['_display_status'];
                 $lessonDateTime = new \DateTime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}");
                 
-                // Definir cores e ícones por status
+                // Definir cores por status (sem emojis)
                 $statusConfig = [
-                    'em_andamento' => ['bg' => '#fef3c7', 'border' => '#f59e0b', 'icon' => '🚗', 'label' => 'Em andamento'],
-                    'agendada' => ['bg' => '#dbeafe', 'border' => '#3b82f6', 'icon' => '📅', 'label' => 'Agendada'],
-                    'concluida' => ['bg' => '#d1fae5', 'border' => '#10b981', 'icon' => '✅', 'label' => 'Concluída'],
+                    'em_andamento' => ['bg' => '#fef3c7', 'border' => '#f59e0b', 'label' => 'Em andamento'],
+                    'agendada' => ['bg' => '#dbeafe', 'border' => '#3b82f6', 'label' => 'Agendada'],
+                    'concluida' => ['bg' => '#d1fae5', 'border' => '#10b981', 'label' => 'Concluída'],
                 ];
                 $config = $statusConfig[$displayStatus] ?? $statusConfig['agendada'];
                 ?>
@@ -210,7 +210,7 @@ $studentModel = new Student();
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-xs);">
                         <div>
                             <span style="font-weight: 600;">
-                                <?= $config['icon'] ?> <?= $lessonDateTime->format('d/m/Y') ?> às <?= $lessonDateTime->format('H:i') ?>
+                                <?= $lessonDateTime->format('d/m/Y') ?> às <?= $lessonDateTime->format('H:i') ?>
                             </span>
                             <span style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-left: var(--spacing-xs);">
                                 (<?= $lesson['duration_minutes'] ?? 50 ?> min)
