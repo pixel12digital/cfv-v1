@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="<?= base_path('/') ?>">
-    <title>Ativar Conta - Sistema CFC</title>
+    <title>Definir Senha - Sistema CFC</title>
     <link rel="stylesheet" href="<?= asset_url('css/tokens.css') ?>">
     <link rel="stylesheet" href="<?= asset_url('css/components.css') ?>">
     <style>
@@ -60,8 +60,8 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <h1>Ativar Conta</h1>
-                <p class="text-muted">Defina sua senha de acesso</p>
+                <h1>Definir Senha</h1>
+                <p class="text-muted">Crie ou redefina sua senha de acesso</p>
             </div>
 
             <?php if (isset($_SESSION['error'])): ?>
@@ -124,7 +124,7 @@
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" style="width: 100%;">
-                        Ativar Conta
+                        Salvar Senha
                     </button>
                 </div>
             </form>
