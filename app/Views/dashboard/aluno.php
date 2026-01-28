@@ -37,10 +37,25 @@ $studentModel = new Student();
         </div>
     </div>
 
-    <!-- Próxima Aula -->
-    <div class="card" style="margin-bottom: var(--spacing-md);">
-        <div class="card-header">
-            <h3 style="margin: 0;">Próxima Aula</h3>
+    <!-- Próxima Aula / Aula Atual -->
+    <?php 
+    $lessonStatus = $nextLesson['status'] ?? '';
+    $isInProgress = $lessonStatus === 'em_andamento';
+    $cardTitle = $isInProgress ? 'Aula em Andamento' : 'Próxima Aula';
+    $cardBorderColor = $isInProgress ? 'var(--color-warning, #f59e0b)' : 'transparent';
+    ?>
+    <div class="card" style="margin-bottom: var(--spacing-md); border-left: 4px solid <?= $cardBorderColor ?>;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;"><?= $cardTitle ?></h3>
+            <?php if ($nextLesson && $isInProgress): ?>
+            <span style="background: var(--color-warning, #f59e0b); color: white; padding: 4px 10px; border-radius: 12px; font-size: var(--font-size-sm); font-weight: 600; animation: pulse 2s infinite;">
+                🚗 Em andamento
+            </span>
+            <?php elseif ($nextLesson): ?>
+            <span style="background: var(--color-primary, #3b82f6); color: white; padding: 4px 10px; border-radius: 12px; font-size: var(--font-size-sm);">
+                Agendada
+            </span>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <?php if ($nextLesson): ?>
@@ -48,16 +63,32 @@ $studentModel = new Student();
                 $lessonDate = new \DateTime("{$nextLesson['scheduled_date']} {$nextLesson['scheduled_time']}");
                 $endTime = clone $lessonDate;
                 $endTime->modify("+{$nextLesson['duration_minutes']} minutes");
+                $now = new \DateTime();
                 ?>
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+                    <?php if ($isInProgress): ?>
+                    <div style="background: var(--color-warning-light, #fef3c7); padding: var(--spacing-sm); border-radius: var(--radius-md, 8px); margin-bottom: var(--spacing-xs);">
+                        <strong style="color: var(--color-warning-dark, #92400e);">
+                            Sua aula está acontecendo agora!
+                        </strong>
+                        <p style="margin: var(--spacing-xs) 0 0 0; color: var(--color-warning-dark, #92400e); font-size: var(--font-size-sm);">
+                            Iniciada às <?= $nextLesson['started_at'] ? (new \DateTime($nextLesson['started_at']))->format('H:i') : $lessonDate->format('H:i') ?>
+                        </p>
+                    </div>
+                    <?php endif; ?>
                     <div>
                         <strong style="font-size: var(--font-size-lg);">
                             <?= $lessonDate->format('d/m/Y') ?> às <?= $lessonDate->format('H:i') ?>
                         </strong>
+                        <span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">
+                            (<?= $nextLesson['duration_minutes'] ?> min)
+                        </span>
                     </div>
+                    <?php if ($nextLesson['instructor_name']): ?>
                     <div class="text-muted">
                         Instrutor: <?= htmlspecialchars($nextLesson['instructor_name']) ?>
                     </div>
+                    <?php endif; ?>
                     <?php if ($nextLesson['vehicle_plate']): ?>
                     <div class="text-muted">
                         Veículo: <?= htmlspecialchars($nextLesson['vehicle_plate']) ?>
@@ -68,9 +99,8 @@ $studentModel = new Student();
                             Ver detalhes
                         </a>
                         <?php
-                        $now = new \DateTime();
                         $isFuture = $lessonDate > $now;
-                        $isScheduled = ($nextLesson['status'] ?? '') === 'agendada';
+                        $isScheduled = $lessonStatus === 'agendada';
                         $canRequestReschedule = $isFuture && $isScheduled && !($hasPendingRequest ?? false);
                         ?>
                         <?php if ($canRequestReschedule): ?>
@@ -89,9 +119,132 @@ $studentModel = new Student();
                 <p class="text-muted" style="font-size: var(--font-size-sm); margin-top: var(--spacing-xs);">
                     Aguarde contato da secretaria ou consulte sua agenda.
                 </p>
+                <div style="margin-top: var(--spacing-md);">
+                    <a href="<?= base_path('agenda') ?>" class="btn btn-sm btn-outline">
+                        Ver minha agenda
+                    </a>
+                </div>
             <?php endif; ?>
         </div>
     </div>
+    
+    <style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    </style>
+
+    <!-- Minhas Aulas Práticas -->
+    <?php 
+    $hasAnyLesson = !empty($upcomingLessons) || !empty($inProgressLessons) || !empty($recentCompletedLessons);
+    ?>
+    <?php if ($hasAnyLesson): ?>
+    <div class="card" style="margin-bottom: var(--spacing-md);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Minhas Aulas Práticas</h3>
+            <a href="<?= base_path('agenda') ?>" class="btn btn-sm btn-outline">
+                Ver agenda completa
+            </a>
+        </div>
+        <div class="card-body">
+            <?php 
+            // Combinar todas as aulas para exibição
+            $allDisplayLessons = [];
+            
+            // Adicionar em andamento primeiro
+            foreach ($inProgressLessons as $l) {
+                $l['_display_status'] = 'em_andamento';
+                $l['_display_order'] = 0;
+                $allDisplayLessons[] = $l;
+            }
+            
+            // Adicionar próximas (máximo 3)
+            $count = 0;
+            foreach ($upcomingLessons as $l) {
+                if ($count >= 3) break;
+                $l['_display_status'] = 'agendada';
+                $l['_display_order'] = 1;
+                $allDisplayLessons[] = $l;
+                $count++;
+            }
+            
+            // Adicionar concluídas recentes (máximo 2)
+            $count = 0;
+            foreach ($recentCompletedLessons as $l) {
+                if ($count >= 2) break;
+                $l['_display_status'] = 'concluida';
+                $l['_display_order'] = 2;
+                $allDisplayLessons[] = $l;
+                $count++;
+            }
+            
+            // Ordenar: em_andamento > agendada > concluída
+            usort($allDisplayLessons, function($a, $b) {
+                if ($a['_display_order'] !== $b['_display_order']) {
+                    return $a['_display_order'] - $b['_display_order'];
+                }
+                // Mesmo status: ordenar por data
+                return strcmp($a['scheduled_date'] . $a['scheduled_time'], $b['scheduled_date'] . $b['scheduled_time']);
+            });
+            ?>
+            
+            <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+                <?php foreach ($allDisplayLessons as $lesson): ?>
+                <?php
+                $displayStatus = $lesson['_display_status'];
+                $lessonDateTime = new \DateTime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}");
+                
+                // Definir cores e ícones por status
+                $statusConfig = [
+                    'em_andamento' => ['bg' => '#fef3c7', 'border' => '#f59e0b', 'icon' => '🚗', 'label' => 'Em andamento'],
+                    'agendada' => ['bg' => '#dbeafe', 'border' => '#3b82f6', 'icon' => '📅', 'label' => 'Agendada'],
+                    'concluida' => ['bg' => '#d1fae5', 'border' => '#10b981', 'icon' => '✅', 'label' => 'Concluída'],
+                ];
+                $config = $statusConfig[$displayStatus] ?? $statusConfig['agendada'];
+                ?>
+                <a href="<?= base_path("agenda/{$lesson['id']}") ?>" 
+                   style="display: block; padding: var(--spacing-sm); background: <?= $config['bg'] ?>; border-left: 4px solid <?= $config['border'] ?>; border-radius: var(--radius-sm, 6px); text-decoration: none; color: inherit; transition: transform 0.2s;"
+                   onmouseover="this.style.transform='translateX(4px)'" 
+                   onmouseout="this.style.transform='translateX(0)'">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-xs);">
+                        <div>
+                            <span style="font-weight: 600;">
+                                <?= $config['icon'] ?> <?= $lessonDateTime->format('d/m/Y') ?> às <?= $lessonDateTime->format('H:i') ?>
+                            </span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-left: var(--spacing-xs);">
+                                (<?= $lesson['duration_minutes'] ?? 50 ?> min)
+                            </span>
+                        </div>
+                        <span style="font-size: var(--font-size-xs); padding: 2px 8px; border-radius: 10px; background: <?= $config['border'] ?>; color: white;">
+                            <?= $config['label'] ?>
+                        </span>
+                    </div>
+                    <?php if ($lesson['instructor_name'] || $lesson['vehicle_plate']): ?>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: 4px;">
+                        <?php if ($lesson['instructor_name']): ?>
+                        Instrutor: <?= htmlspecialchars($lesson['instructor_name']) ?>
+                        <?php endif; ?>
+                        <?php if ($lesson['instructor_name'] && $lesson['vehicle_plate']): ?> • <?php endif; ?>
+                        <?php if ($lesson['vehicle_plate']): ?>
+                        Veículo: <?= htmlspecialchars($lesson['vehicle_plate']) ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php if (count($upcomingLessons) > 3 || count($recentCompletedLessons) > 2): ?>
+            <div style="margin-top: var(--spacing-md); text-align: center;">
+                <a href="<?= base_path('agenda') ?>" class="btn btn-sm btn-primary">
+                    Ver todas as aulas
+                </a>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Curso Teórico (Detalhes) -->
     <?php if (!empty($theoryClass) && !empty($theoryProgress)): ?>

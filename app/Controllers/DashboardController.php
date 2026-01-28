@@ -291,6 +291,36 @@ class DashboardController extends Controller
         $enrollments = $enrollmentModel->findByStudent($studentId);
         $nextLesson = $lessonModel->findNextByStudent($studentId);
         
+        // Buscar todas as aulas do aluno (para listagem completa)
+        $allLessons = $lessonModel->findByStudent($studentId, 20); // Últimas 20 aulas
+        
+        // Separar aulas por categoria para exibição
+        $today = date('Y-m-d');
+        $upcomingLessons = []; // Agendadas futuras
+        $inProgressLessons = []; // Em andamento
+        $recentCompletedLessons = []; // Concluídas recentes (últimos 30 dias)
+        
+        foreach ($allLessons as $lesson) {
+            $lessonDate = $lesson['scheduled_date'];
+            $status = $lesson['status'] ?? '';
+            
+            if ($status === 'em_andamento') {
+                $inProgressLessons[] = $lesson;
+            } elseif ($status === 'agendada' && $lessonDate >= $today) {
+                $upcomingLessons[] = $lesson;
+            } elseif ($status === 'concluida') {
+                // Só mostrar concluídas dos últimos 30 dias
+                $thirtyDaysAgo = date('Y-m-d', strtotime('-30 days'));
+                if ($lessonDate >= $thirtyDaysAgo) {
+                    $recentCompletedLessons[] = $lesson;
+                }
+            }
+        }
+        
+        // Ordenar: próximas por data ASC, concluídas por data DESC
+        usort($upcomingLessons, fn($a, $b) => strcmp($a['scheduled_date'] . $a['scheduled_time'], $b['scheduled_date'] . $b['scheduled_time']));
+        usort($recentCompletedLessons, fn($a, $b) => strcmp($b['scheduled_date'] . $b['scheduled_time'], $a['scheduled_date'] . $a['scheduled_time']));
+        
         // Verificar se existe solicitação pendente para a próxima aula
         $hasPendingRequest = false;
         if ($nextLesson) {
@@ -442,6 +472,10 @@ class DashboardController extends Controller
             'theoryProgress' => $theoryProgress,
             'nextDueDate' => $nextDueDate,
             'overdueCount' => $overdueCount,
+            // Aulas do aluno separadas por categoria
+            'upcomingLessons' => $upcomingLessons,
+            'inProgressLessons' => $inProgressLessons,
+            'recentCompletedLessons' => $recentCompletedLessons,
             // PWA Install Banner - CSS e JS para prompt de instalação
             'additionalCSS' => ['css/pwa-install-banner.css'],
             'additionalJS' => ['js/pwa-install-banner.js']

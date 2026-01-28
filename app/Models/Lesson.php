@@ -791,13 +791,37 @@ class Lesson extends Model
     }
 
     /**
-     * Busca a próxima aula agendada de um aluno
+     * Busca a próxima aula do aluno (agendada ou em andamento)
+     * Prioridade: 1) em_andamento (aula atual), 2) agendada mais próxima
      * Trata caso onde tabela instructors não existe
      */
     public function findNextByStudent($studentId)
     {
         try {
             $today = date('Y-m-d');
+            
+            // Primeiro: buscar aula em andamento (maior prioridade)
+            $stmt = $this->query(
+                "SELECT l.*,
+                        i.name as instructor_name,
+                        v.plate as vehicle_plate
+                 FROM {$this->table} l
+                 LEFT JOIN instructors i ON l.instructor_id = i.id
+                 LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                 WHERE l.student_id = ?
+                   AND l.status = 'em_andamento'
+                 ORDER BY l.scheduled_date DESC, l.scheduled_time DESC
+                 LIMIT 1",
+                [$studentId]
+            );
+            $inProgress = $stmt->fetch();
+            if ($inProgress) {
+                return $inProgress;
+            }
+            
+            // Segundo: buscar próxima aula agendada (hoje ou futuro)
+            // Para hoje: mostrar aulas mesmo que horário já passou (pode ter atrasado)
+            // Para futuro: qualquer aula agendada
             $stmt = $this->query(
                 "SELECT l.*,
                         i.name as instructor_name,
@@ -807,10 +831,10 @@ class Lesson extends Model
                  LEFT JOIN vehicles v ON l.vehicle_id = v.id
                  WHERE l.student_id = ?
                    AND l.status = 'agendada'
-                   AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= CURTIME()))
+                   AND l.scheduled_date >= ?
                  ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
                  LIMIT 1",
-                [$studentId, $today, $today]
+                [$studentId, $today]
             );
             return $stmt->fetch();
         } catch (\PDOException $e) {
@@ -818,6 +842,26 @@ class Lesson extends Model
             if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
                 error_log("[Lesson::findNextByStudent] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
                 $today = date('Y-m-d');
+                
+                // Primeiro: buscar aula em andamento
+                $stmt = $this->query(
+                    "SELECT l.*,
+                            NULL as instructor_name,
+                            v.plate as vehicle_plate
+                     FROM {$this->table} l
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     WHERE l.student_id = ?
+                       AND l.status = 'em_andamento'
+                     ORDER BY l.scheduled_date DESC, l.scheduled_time DESC
+                     LIMIT 1",
+                    [$studentId]
+                );
+                $inProgress = $stmt->fetch();
+                if ($inProgress) {
+                    return $inProgress;
+                }
+                
+                // Segundo: buscar próxima aula agendada
                 $stmt = $this->query(
                     "SELECT l.*,
                             NULL as instructor_name,
@@ -826,10 +870,10 @@ class Lesson extends Model
                      LEFT JOIN vehicles v ON l.vehicle_id = v.id
                      WHERE l.student_id = ?
                        AND l.status = 'agendada'
-                       AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= CURTIME()))
+                       AND l.scheduled_date >= ?
                      ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
                      LIMIT 1",
-                    [$studentId, $today, $today]
+                    [$studentId, $today]
                 );
                 return $stmt->fetch();
             }
