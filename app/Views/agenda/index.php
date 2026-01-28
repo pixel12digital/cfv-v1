@@ -2,15 +2,16 @@
 $isInstrutor = ($isInstrutor ?? false) || ($_SESSION['current_role'] ?? '') === 'INSTRUTOR';
 $isAdmin = !$isAluno && !$isInstrutor;
 ?>
-<div class="page-header">
-    <div class="page-header-content">
-        <div>
-            <h1><?= ($isAluno || $isInstrutor) ? 'Minha Agenda' : 'Agenda' ?></h1>
-            <p class="text-muted"><?= ($isAluno || $isInstrutor) ? 'Suas aulas agendadas' : 'Agendamento e controle de aulas' ?></p>
+<!-- Header compacto: título + botão na mesma linha -->
+<div class="page-header" style="padding: var(--spacing-sm) 0; margin-bottom: var(--spacing-sm);">
+    <div class="page-header-content" style="display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md);">
+        <div style="display: flex; align-items: baseline; gap: var(--spacing-md);">
+            <h1 style="margin: 0; font-size: 1.5rem;"><?= ($isAluno || $isInstrutor) ? 'Minha Agenda' : 'Agenda' ?></h1>
+            <span class="text-muted" style="font-size: 0.8rem;"><?= ($isAluno || $isInstrutor) ? 'Suas aulas agendadas' : 'Agendamento e controle de aulas' ?></span>
         </div>
         <?php if ($isAdmin): ?>
-        <a href="<?= base_path('agenda/novo') ?>" class="btn btn-primary">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="<?= base_path('agenda/novo') ?>" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
             Nova Aula
@@ -345,13 +346,13 @@ function toggleExtraFilters() {
             $hourHeight = 60 * $pixelsPerMinute; // Altura de cada hora
             ?>
             <!-- Container scrollável com cabeçalho sticky -->
-            <div class="calendar-week" style="max-height: calc(100vh - 200px); overflow-y: auto; position: relative;">
-                <div class="calendar-week-header" style="position: sticky; top: 0; z-index: 10; background: white;">
+            <div class="calendar-week" style="max-height: calc(100vh - 180px); overflow-y: auto; position: relative;">
+                <div class="calendar-week-header" style="position: sticky; top: 0; z-index: 10; background: white; padding: 6px 0;">
                     <div class="calendar-hour-col"></div>
                     <?php foreach ($days as $index => $day): ?>
-                    <div class="calendar-day-header">
-                        <div class="calendar-day-name"><?= $dayNames[$index] ?></div>
-                        <div class="calendar-day-number"><?= $day->format('d/m') ?></div>
+                    <div class="calendar-day-header" style="padding: 4px 0;">
+                        <div class="calendar-day-name" style="font-size: 0.7rem; font-weight: 600; color: #1e3a5f;"><?= $dayNames[$index] ?></div>
+                        <div class="calendar-day-number" style="font-size: 0.95rem; font-weight: 500; color: #374151;"><?= $day->format('d/m') ?></div>
                     </div>
                     <?php endforeach; ?>
                 </div>
