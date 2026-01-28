@@ -193,69 +193,71 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
         </div>
         <?php endif; ?>
 
-        <!-- Ações de acesso: WhatsApp, Copiar, E-mail -->
+        <!-- Acesso: Gerar link primeiro, depois opções de envio -->
         <div id="acesso-ctas-wrapper" data-access-link-url="<?= htmlspecialchars(base_path("usuarios/{$user['id']}/access-link")) ?>" data-csrf="<?= htmlspecialchars(csrf_token()) ?>">
-            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; margin-bottom: var(--spacing-md);">
-                <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-wa" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    Enviar no WhatsApp
+            
+            <!-- Botão principal: Gerar link -->
+            <div id="acesso-gerar-wrapper" style="margin-bottom: var(--spacing-md);">
+                <button type="button" class="btn btn-primary btn-sm" id="acesso-gerar-link" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    Gerar link de acesso
                 </button>
-                <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    Copiar link
-                </button>
-                <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" style="margin: 0; display: inline-block;" onsubmit="return confirm('Enviar link por e-mail?');">
-                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                    <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        Enviar por e-mail
-                    </button>
-                </form>
-                <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: #666; margin-left: 4px;"></span>
+                <small style="display: block; margin-top: 6px; font-size: 0.75rem; color: #6c757d;">
+                    Gera um link para o usuário definir/redefinir sua senha. Links anteriores serão invalidados.
+                </small>
             </div>
 
-            <!-- Link de acesso (único bloco, aparece quando há link ativo) -->
-            <div id="acesso-link-block" style="display: <?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? 'block' : 'none' ?>; margin-bottom: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); background: #e8f4fc; border-radius: 6px; border: 1px solid #b8daef;">
-                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
-                    <svg width="16" height="16" fill="none" stroke="#0d6efd" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                    <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 200px; font-size: 12px; font-family: monospace; background: #fff; border: 1px solid #cce5ff;" value="<?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? htmlspecialchars($activationLinkGenerated['activation_url'] ?? '') : '' ?>">
-                    <button type="button" class="btn btn-primary btn-sm" id="acesso-link-copy-btn" title="Copiar link">Copiar</button>
+            <!-- Bloco do link gerado (aparece após gerar) -->
+            <div id="acesso-link-block" style="display: none; margin-bottom: var(--spacing-md); padding: var(--spacing-md); background: #e8f4fc; border-radius: 6px; border: 1px solid #b8daef;">
+                <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #0d6efd; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Link gerado com sucesso!
+                </p>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 200px; font-size: 11px; font-family: monospace; background: #fff; border: 1px solid #cce5ff;">
                 </div>
-                <small id="acesso-link-expires" style="color: #0d6efd; font-size: 0.75rem; display: block; margin-top: 6px;"><?php if (!empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] && !empty($activationLinkGenerated['expires_at'])): ?>Expira em: <?= date('d/m/Y, H:i', strtotime($activationLinkGenerated['expires_at'])) ?><?php endif; ?></small>
+                <small id="acesso-link-expires" style="color: #6c757d; font-size: 0.75rem; display: block; margin-bottom: 12px;"></small>
+                
+                <!-- Ações após gerar -->
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; padding-top: 8px; border-top: 1px solid #cce5ff;">
+                    <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        Copiar link
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-wa" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        Enviar no WhatsApp
+                    </button>
+                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" id="acesso-email-form" style="margin: 0; display: inline-block;" onsubmit="return confirm('Enviar link por e-mail?');">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                        <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Enviar por e-mail
+                        </button>
+                    </form>
+                    <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: #666; margin-left: 4px;"></span>
+                </div>
             </div>
         </div>
 
-        <!-- Mais opções (colapsável): status discreto + Avançado -->
-        <div class="form-section-collapsible" style="margin-top: var(--spacing-md);">
+        <!-- Mais opções (colapsável) -->
+        <div class="form-section-collapsible" style="margin-top: var(--spacing-sm);">
             <button type="button" class="form-section-toggle" id="acesso-mais-opcoes-toggle" style="width: 100%; text-align: left; padding: 0.5rem 0.75rem; background: #f5f5f5; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 0.875rem; color: #495057;">
                 <span>Mais opções</span>
                 <svg id="acesso-mais-opcoes-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div id="acesso-mais-opcoes-body" style="display: none; padding: var(--spacing-md); background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 4px 4px;">
-                <!-- Status (linha discreta, sem chips) -->
                 <p style="margin: 0 0 var(--spacing-md) 0; font-size: 0.8rem; color: #6c757d; line-height: 1.5;">
-                    Senha definida: <?= $hasPassword ? 'sim' : 'não' ?>. Troca obrigatória: <?= !empty($user['must_change_password']) ? 'sim' : 'não' ?>. Link ativo: <?= $hasActiveToken ? 'sim' : 'não' ?>.
+                    Senha definida: <?= $hasPassword ? 'sim' : 'não' ?>. Troca obrigatória: <?= !empty($user['must_change_password']) ? 'sim' : 'não' ?>.
                 </p>
-                <p style="margin: 0 0 var(--spacing-sm) 0; font-size: 0.75rem; color: #868e96; font-weight: 600;">Avançado</p>
-                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: flex-start;">
-                    <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-link-ativacao") ?>" style="margin: 0;" onsubmit="return confirm('Regenerar link? O link atual será invalidado.');">
-                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                        <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Regenerar link
-                        </button>
-                    </form>
-                    <div style="flex: 1; min-width: 200px;">
-                        <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-senha-temporaria") ?>" style="margin: 0;" onsubmit="return confirm('Gerar senha temporária?');">
-                            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                            <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                Gerar senha temporária
-                            </button>
-                        </form>
-                        <small style="display: block; margin-top: 4px; font-size: 0.75rem; color: #6c757d;">Use apenas se não houver WhatsApp/e-mail. O usuário precisará trocar no login.</small>
-                    </div>
-                </div>
+                <form method="POST" action="<?= base_path("usuarios/{$user['id']}/gerar-senha-temporaria") ?>" style="margin: 0;" onsubmit="return confirm('Gerar senha temporária?');">
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        Gerar senha temporária
+                    </button>
+                </form>
+                <small style="display: block; margin-top: 6px; font-size: 0.75rem; color: #6c757d;">Use apenas se não houver WhatsApp/e-mail. O usuário precisará trocar no login.</small>
             </div>
         </div>
         <script>
@@ -264,21 +266,24 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
             if (!wrapper) return;
             var urlEndpoint = wrapper.getAttribute('data-access-link-url');
             var csrf = wrapper.getAttribute('data-csrf');
-            var btnWa = document.getElementById('acesso-cta-wa');
-            var btnCopy = document.getElementById('acesso-cta-copy');
-            var feedback = document.getElementById('acesso-feedback');
+            
+            // Elementos
+            var btnGerar = document.getElementById('acesso-gerar-link');
+            var gerarWrapper = document.getElementById('acesso-gerar-wrapper');
             var linkBlock = document.getElementById('acesso-link-block');
             var linkUrl = document.getElementById('acesso-link-url');
             var linkExpires = document.getElementById('acesso-link-expires');
-            var linkCopyBtn = document.getElementById('acesso-link-copy-btn');
-            var linkWaBtn = document.getElementById('acesso-link-wa-btn');
+            var btnCopy = document.getElementById('acesso-cta-copy');
+            var btnWa = document.getElementById('acesso-cta-wa');
+            var feedback = document.getElementById('acesso-feedback');
+            
             var lastData = null;
 
             function showFeedback(msg, isError) {
                 if (!feedback) return;
                 feedback.textContent = msg;
                 feedback.style.display = 'inline';
-                feedback.style.color = isError ? '#c00' : '#495057';
+                feedback.style.color = isError ? '#c00' : '#28a745';
                 setTimeout(function(){ feedback.style.display = 'none'; }, 4000);
             }
 
@@ -294,17 +299,17 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                         linkExpires.textContent = 'Expira em: ' + d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                     } catch(e) { linkExpires.textContent = 'Expira em: ' + data.expires_at; }
                 }
-                if (linkWaBtn && data.phone_wa) {
-                    linkWaBtn.href = 'https://wa.me/' + data.phone_wa + '?text=' + encodeURIComponent(data.message || data.url);
-                    linkWaBtn.style.display = 'inline-flex';
-                } else if (linkWaBtn) { linkWaBtn.style.display = 'none'; }
+                // Esconder o botão "Gerar link" após gerar
+                if (gerarWrapper) {
+                    gerarWrapper.style.display = 'none';
+                }
             }
 
-            function fetchAccessLink() {
+            function fetchAccessLink(forceNew) {
                 return fetch(urlEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ csrf_token: csrf })
+                    body: JSON.stringify({ csrf_token: csrf, force_new: forceNew ? 1 : 0 })
                 }).then(function(r){ return r.json(); });
             }
 
@@ -324,44 +329,47 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                 return Promise.resolve();
             }
 
-            if (btnWa) {
-                btnWa.addEventListener('click', function(){
-                    btnWa.disabled = true;
-                    fetchAccessLink().then(function(data){
-                        if (!data || !data.ok) { showFeedback(data && data.message ? data.message : 'Erro ao obter link.', true); btnWa.disabled = false; return; }
-                        showLinkBlock(data);
-                        if (data.phone_wa && data.message) {
-                            window.open('https://wa.me/' + data.phone_wa + '?text=' + encodeURIComponent(data.message), '_blank');
-                            showFeedback('Link gerado. WhatsApp aberto.');
-                        } else {
-                            showFeedback('É necessário ter um telefone válido cadastrado para o aluno.', true);
+            // Botão principal: Gerar link
+            if (btnGerar) {
+                btnGerar.addEventListener('click', function(){
+                    btnGerar.disabled = true;
+                    btnGerar.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;animation:spin 1s linear infinite;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Gerando...';
+                    fetchAccessLink(true).then(function(data){
+                        if (!data || !data.ok) {
+                            showFeedback(data && data.message ? data.message : 'Erro ao gerar link.', true);
+                            btnGerar.disabled = false;
+                            btnGerar.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> Gerar link de acesso';
+                            return;
                         }
-                        btnWa.disabled = false;
+                        showLinkBlock(data);
+                        btnGerar.disabled = false;
                     }).catch(function(err){
-                        showFeedback('Erro ao obter link. Tente novamente.', true);
-                        btnWa.disabled = false;
+                        showFeedback('Erro ao gerar link. Tente novamente.', true);
+                        btnGerar.disabled = false;
+                        btnGerar.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> Gerar link de acesso';
                     });
                 });
             }
 
+            // Copiar link (só funciona se lastData existir)
             if (btnCopy) {
                 btnCopy.addEventListener('click', function(){
-                    btnCopy.disabled = true;
-                    fetchAccessLink().then(function(data){
-                        if (!data || !data.ok) { showFeedback(data && data.message ? data.message : 'Erro ao obter link.', true); btnCopy.disabled = false; return; }
-                        showLinkBlock(data);
-                        copyToClipboard(data.url).then(function(){ showFeedback('Link copiado.'); });
-                        btnCopy.disabled = false;
-                    }).catch(function(err){
-                        showFeedback('Erro ao obter link. Tente novamente.', true);
-                        btnCopy.disabled = false;
-                    });
+                    if (linkUrl && linkUrl.value) {
+                        copyToClipboard(linkUrl.value).then(function(){ showFeedback('Link copiado!'); });
+                    }
                 });
             }
 
-            if (linkCopyBtn && linkUrl) {
-                linkCopyBtn.addEventListener('click', function(){
-                    copyToClipboard(linkUrl.value).then(function(){ showFeedback('Link copiado.'); });
+            // Enviar WhatsApp (só funciona se lastData existir)
+            if (btnWa) {
+                btnWa.addEventListener('click', function(){
+                    if (!lastData) return;
+                    if (lastData.phone_wa && lastData.message) {
+                        window.open('https://wa.me/' + lastData.phone_wa + '?text=' + encodeURIComponent(lastData.message), '_blank');
+                        showFeedback('WhatsApp aberto!');
+                    } else {
+                        showFeedback('É necessário ter um telefone válido cadastrado.', true);
+                    }
                 });
             }
 
