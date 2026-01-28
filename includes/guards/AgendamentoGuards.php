@@ -410,41 +410,16 @@ class AgendamentoGuards {
      * @return array Resultado da validação
      */
     public function verificarHorarioFuncionamento($horaInicio, $horaFim) {
-        try {
-            // Converter para timestamp para comparação correta
-            $horaInicioTimestamp = strtotime($horaInicio);
-            $horaFimTimestamp = strtotime($horaFim);
-            
-            // Horário de funcionamento: 7h às 22h (configurável)
-            $horaMinimaTimestamp = strtotime('07:00:00');
-            $horaMaximaTimestamp = strtotime('22:00:00');
-            
-            if ($horaInicioTimestamp < $horaMinimaTimestamp || $horaFimTimestamp > $horaMaximaTimestamp) {
-                return [
-                    'valida' => false,
-                    'motivo' => "Horário fora do período de funcionamento (7h às 22h). Horário solicitado: {$horaInicio} às {$horaFim}",
-                    'tipo' => 'horario_fora_expediente',
-                    'hora_inicio' => $horaInicio,
-                    'hora_fim' => $horaFim,
-                    'hora_minima' => '07:00',
-                    'hora_maxima' => '22:00'
-                ];
-            }
-            
-            return [
-                'valida' => true,
-                'motivo' => 'Horário dentro do período de funcionamento',
-                'tipo' => 'horario_valido'
-            ];
-            
-        } catch (Exception $e) {
-            error_log("Erro ao verificar horário de funcionamento: " . $e->getMessage());
-            return [
-                'valida' => false,
-                'motivo' => 'Erro ao verificar horário de funcionamento',
-                'tipo' => 'erro_sistema'
-            ];
-        }
+        // NOTA: Restrição de horário (07:00-22:00) removida em Jan/2026
+        // Agora permite agendamentos em qualquer horário do dia
+        // Mantida a estrutura do método para compatibilidade com chamadas existentes
+        return [
+            'valida' => true,
+            'motivo' => 'Horário permitido (sem restrição de janela)',
+            'tipo' => 'horario_valido',
+            'hora_inicio' => $horaInicio,
+            'hora_fim' => $horaFim
+        ];
     }
     
     /**

@@ -2522,8 +2522,8 @@ function inicializarCalendario() {
         editable: false, // Desabilitar edição por drag & drop por enquanto
         slotDuration: '00:30:00',
         slotLabelInterval: '01:00',
-        slotMinTime: '06:00:00',
-        slotMaxTime: '22:00:00',
+        slotMinTime: '05:00:00', // Expandido para permitir visualização de aulas muito cedo
+        slotMaxTime: '24:00:00', // Expandido para permitir visualização até meia-noite
         eventTimeFormat: {
             hour: '2-digit',
             minute: '2-digit',

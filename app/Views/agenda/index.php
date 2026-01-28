@@ -327,9 +327,9 @@ $isAdmin = !$isAluno && !$isInstrutor;
                 $dateObj->modify('+1 day');
             }
             
-            // Configurações da grade
-            $startHour = 7; // 7:00
-            $endHour = 22; // 22:00
+            // Configurações da grade (expandido para permitir horários fora do expediente padrão)
+            $startHour = 5; // 5:00 - permite visualizar aulas muito cedo
+            $endHour = 24; // 24:00 (meia-noite) - permite visualizar aulas até tarde
             $totalMinutes = ($endHour - $startHour) * 60; // Total de minutos do dia (900 min = 15 horas)
             $pixelsPerMinute = 2; // 2px por minuto (120px por hora) - ideal para leitura
             $dayColumnHeight = $totalMinutes * $pixelsPerMinute;
@@ -532,8 +532,9 @@ $isAdmin = !$isAluno && !$isInstrutor;
                 
                 <div class="calendar-day-body">
                     <?php
-                    $startHour = 7;
-                    $endHour = 22;
+                    // Configurações da grade diária (expandido para horários fora do expediente padrão)
+                    $startHour = 5; // 5:00 - permite visualizar aulas muito cedo
+                    $endHour = 24; // 24:00 (meia-noite) - permite visualizar aulas até tarde
                     $totalMinutes = ($endHour - $startHour) * 60;
                     $pixelsPerMinute = 2; // 2px por minuto (120px por hora) - ideal para leitura
                     $dayColumnHeight = $totalMinutes * $pixelsPerMinute;

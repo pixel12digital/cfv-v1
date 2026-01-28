@@ -12,12 +12,14 @@ if (!$turmaAtual) {
 // Obter disciplinas do curso (priorizando disciplinas selecionadas pelo usuário)
 $disciplinasCurso = $turmaManager->obterDisciplinasParaAgendamento($turmaAtual['id']);
 
-// Gerar horários disponíveis (07:00 às 21:10, intervalos de 50min)
-// Padrão: 07:00, 07:50, 08:40, 09:30, 10:20, 11:10, 13:00, etc até 21:10
+// Gerar horários disponíveis (05:00 às 23:10, intervalos de 50min)
+// Expandido para permitir aulas fora do horário comercial padrão
 $horariosDisponiveis = [
+    '05:00', '05:50', '06:00', '06:50', // Horários muito cedo
     '07:00', '07:50', '08:40', '09:30', '10:20', '11:10',
+    '12:00', '12:50', // Horário do almoço (adicionado)
     '13:00', '13:50', '14:40', '15:30', '16:20', '17:10', '18:00',
-    '18:50', '19:40', '20:30', '21:10'
+    '18:50', '19:40', '20:30', '21:10', '22:00', '22:50', '23:10' // Horários noturnos
 ];
 ?>
 

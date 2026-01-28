@@ -443,11 +443,12 @@ class AgendamentoController {
                 }
             }
             
-            // 6. Verificar se o horário está dentro do horário de funcionamento
+            // 6. Verificar horário (restrição 07-22h removida em Jan/2026 - agora permite qualquer horário)
+            // Mantido o método para compatibilidade, mas sempre retorna true
             if (!$this->verificarHorarioFuncionamento($horaInicio, $horaFim)) {
                 return [
                     'disponivel' => false,
-                    'motivo' => 'Horário fora do período de funcionamento (7h às 22h)',
+                    'motivo' => 'Horário inválido',
                     'tipo' => 'horario'
                 ];
             }
@@ -869,14 +870,9 @@ class AgendamentoController {
      * @return bool True se dentro do horário de funcionamento
      */
     private function verificarHorarioFuncionamento($horaInicio, $horaFim) {
-        $horaInicioInt = (int) str_replace(':', '', $horaInicio);
-        $horaFimInt = (int) str_replace(':', '', $horaFim);
-        
-        // Horário de funcionamento: 7h às 22h
-        $horaMinima = 700; // 7:00
-        $horaMaxima = 2200; // 22:00
-        
-        return $horaInicioInt >= $horaMinima && $horaFimInt <= $horaMaxima;
+        // NOTA: Restrição de horário (07:00-22:00) removida em Jan/2026
+        // Agora permite agendamentos em qualquer horário do dia
+        return true;
     }
     
     /**
