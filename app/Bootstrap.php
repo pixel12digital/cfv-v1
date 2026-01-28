@@ -7,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
         'cookie_lifetime' => 86400, // 24 horas
         'cookie_httponly' => true,
         'cookie_secure' => isset($_SERVER['HTTPS']),
-        'cookie_samesite' => 'Strict'
+        'cookie_samesite' => 'Lax' // Lax permite navegação top-level de links externos (wa.me, email)
     ]);
 }
 
