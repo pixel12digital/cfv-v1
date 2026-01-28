@@ -921,6 +921,10 @@ function toggleExtraFilters() {
     margin: 2px 0;
     font-size: 0.8rem;
     line-height: 1.2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* Garantir que nome completo seja visível */
+    white-space: normal;
 }
 
 .lesson-card-instructor,

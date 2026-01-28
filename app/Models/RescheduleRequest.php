@@ -47,7 +47,7 @@ class RescheduleRequest extends Model
     {
         $sql = "SELECT rr.*, 
                        l.scheduled_date, l.scheduled_time, l.status as lesson_status,
-                       s.name as student_name, s.cpf as student_cpf,
+                       COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                        u.nome as resolved_by_name
                 FROM {$this->table} rr
                 INNER JOIN lessons l ON rr.lesson_id = l.id
@@ -76,7 +76,7 @@ class RescheduleRequest extends Model
             "SELECT rr.*, 
                     l.scheduled_date, l.scheduled_time, l.status as lesson_status,
                     l.instructor_id, l.vehicle_id,
-                    s.name as student_name, s.cpf as student_cpf,
+                    COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                     u.nome as resolved_by_name
              FROM {$this->table} rr
              INNER JOIN lessons l ON rr.lesson_id = l.id

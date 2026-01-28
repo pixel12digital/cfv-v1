@@ -353,7 +353,7 @@ class FinanceiroController extends Controller
         $hasGatewayColumns = $this->columnExists('enrollments', 'gateway_charge_id');
         
         $sql = "SELECT e.*, 
-                       s.name as student_name, 
+                       COALESCE(s.full_name, s.name) as student_name, 
                        s.full_name as student_full_name, 
                        s.cpf as student_cpf,
                        sv.name as service_name,

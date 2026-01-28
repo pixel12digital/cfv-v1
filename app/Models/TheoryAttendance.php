@@ -13,7 +13,7 @@ class TheoryAttendance extends Model
     {
         $stmt = $this->query(
             "SELECT ta.*, 
-                    s.name as student_name, s.cpf as student_cpf,
+                    COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                     u.nome as marked_by_name
              FROM {$this->table} ta
              INNER JOIN students s ON ta.student_id = s.id

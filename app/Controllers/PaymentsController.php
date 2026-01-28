@@ -383,7 +383,7 @@ class PaymentsController extends Controller
         }
         
         $sql = "SELECT e.*, 
-                       s.name as student_name, 
+                       COALESCE(s.full_name, s.name) as student_name, 
                        s.full_name as student_full_name, 
                        s.cpf as student_cpf,
                        sv.name as service_name

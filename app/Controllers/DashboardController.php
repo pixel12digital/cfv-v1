@@ -538,7 +538,7 @@ class DashboardController extends Controller
             try {
                 $stmt = $db->prepare(
                     "SELECT l.*,
-                            s.name as student_name,
+                            COALESCE(s.full_name, s.name) as student_name,
                             v.plate as vehicle_plate
                      FROM lessons l
                      INNER JOIN students s ON l.student_id = s.id

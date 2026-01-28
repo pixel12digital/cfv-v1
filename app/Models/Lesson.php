@@ -15,7 +15,7 @@ class Lesson extends Model
         try {
             $stmt = $this->query(
                 "SELECT l.*,
-                        s.name as student_name, s.cpf as student_cpf,
+                        COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                         e.id as enrollment_id, e.financial_status,
                         i.name as instructor_name,
                         v.plate as vehicle_plate, v.model as vehicle_model,
@@ -38,7 +38,7 @@ class Lesson extends Model
                 error_log("[Lesson::findWithDetails] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
                 $stmt = $this->query(
                     "SELECT l.*,
-                            s.name as student_name, s.cpf as student_cpf,
+                            COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                             e.id as enrollment_id, e.financial_status,
                             NULL as instructor_name,
                             v.plate as vehicle_plate, v.model as vehicle_model,
@@ -68,7 +68,7 @@ class Lesson extends Model
     {
         try {
             $sql = "SELECT l.*,
-                           s.name as student_name,
+                           COALESCE(s.full_name, s.name) as student_name,
                            i.name as instructor_name,
                            v.plate as vehicle_plate
                     FROM {$this->table} l
@@ -119,7 +119,7 @@ class Lesson extends Model
             if ($e->getCode() === '42S02' || strpos($e->getMessage(), "doesn't exist") !== false || strpos($e->getMessage(), 'instructors') !== false) {
                 error_log("[Lesson::findByPeriod] Tabela 'instructors' não existe. Fazendo query sem JOIN.");
                 $sql = "SELECT l.*,
-                               s.name as student_name,
+                               COALESCE(s.full_name, s.name) as student_name,
                                NULL as instructor_name,
                                v.plate as vehicle_plate
                         FROM {$this->table} l
@@ -202,7 +202,7 @@ class Lesson extends Model
                              NULL as discipline_name,
                              NULL as class_name,
                              i.name as instructor_name,
-                             s.name as student_name,
+                             COALESCE(s.full_name, s.name) as student_name,
                              v.plate as vehicle_plate,
                              1 as student_count,
                              'pratica' as lesson_type,
@@ -467,7 +467,7 @@ class Lesson extends Model
                                   1 as student_count,
                                   'pratica' as lesson_type,
                                   NULL as student_names,
-                                  s.name as student_name,
+                                  COALESCE(s.full_name, s.name) as student_name,
                                   v.plate as vehicle_plate
                            FROM {$this->table} l
                            INNER JOIN students s ON l.student_id = s.id

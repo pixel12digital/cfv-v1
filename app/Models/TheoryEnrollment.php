@@ -13,7 +13,7 @@ class TheoryEnrollment extends Model
     {
         $stmt = $this->query(
             "SELECT te.*, 
-                    s.name as student_name, s.cpf as student_cpf,
+                    COALESCE(s.full_name, s.name) as student_name, s.cpf as student_cpf,
                     e.id as enrollment_id, e.status as enrollment_status
              FROM {$this->table} te
              INNER JOIN students s ON te.student_id = s.id
