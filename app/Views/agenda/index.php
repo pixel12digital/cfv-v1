@@ -19,16 +19,21 @@ $isAdmin = !$isAluno && !$isInstrutor;
     </div>
 </div>
 
-<!-- Filtros e Controles -->
-<div class="card" style="margin-bottom: var(--spacing-md);">
-    <div class="card-body">
+<!-- Filtros e Controles (compactado) -->
+<?php if ($isAdmin): ?>
+<?php 
+// Detectar se há filtros extras ativos
+$hasExtraFilters = !empty($filters['instructor_id']) || !empty($filters['vehicle_id']) || !empty($filters['status']) || ($showCanceled ?? false);
+?>
+<div class="card" style="margin-bottom: var(--spacing-sm);">
+    <div class="card-body" style="padding: var(--spacing-sm) var(--spacing-md);">
         <form method="GET" action="<?= base_path('agenda') ?>" id="filtersForm">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md);">
-                <!-- View (apenas para admin/secretaria) -->
-                <?php if ($isAdmin): ?>
-                <div class="form-group">
-                    <label class="form-label">Visualização</label>
-                    <select name="view" class="form-input" onchange="this.form.submit()">
+            <!-- Linha principal: filtros essenciais + navegação -->
+            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: flex-end;">
+                <!-- Visualização -->
+                <div class="form-group" style="margin-bottom: 0; min-width: 120px;">
+                    <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Visualização</label>
+                    <select name="view" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" onchange="this.form.submit()">
                         <option value="list" <?= $viewType === 'list' ? 'selected' : '' ?>>Lista</option>
                         <option value="week" <?= $viewType === 'week' ? 'selected' : '' ?>>Semanal</option>
                         <option value="day" <?= $viewType === 'day' ? 'selected' : '' ?>>Diária</option>
@@ -36,105 +41,109 @@ $isAdmin = !$isAluno && !$isInstrutor;
                 </div>
                 
                 <!-- Data -->
-                <div class="form-group">
-                    <label class="form-label">Data</label>
-                    <input type="date" name="date" class="form-input" value="<?= htmlspecialchars($date) ?>" onchange="this.form.submit()">
+                <div class="form-group" style="margin-bottom: 0; min-width: 140px;">
+                    <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Data</label>
+                    <input type="date" name="date" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" value="<?= htmlspecialchars($date) ?>" onchange="this.form.submit()">
                 </div>
-                <?php endif; ?>
                 
-                <?php if ($isAdmin): ?>
-                <!-- Tipo (Prática/Teórica) -->
-                <div class="form-group">
-                    <label class="form-label">Tipo</label>
-                    <select name="type" class="form-input" onchange="this.form.submit()">
+                <!-- Tipo -->
+                <div class="form-group" style="margin-bottom: 0; min-width: 100px;">
+                    <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Tipo</label>
+                    <select name="type" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" onchange="this.form.submit()">
                         <option value="">Todas</option>
                         <option value="pratica" <?= ($filters['type'] ?? '') === 'pratica' ? 'selected' : '' ?>>Prática</option>
                         <option value="teoria" <?= ($filters['type'] ?? '') === 'teoria' ? 'selected' : '' ?>>Teórica</option>
                     </select>
                 </div>
                 
-                <!-- Instrutor (apenas administrativo) -->
-                <div class="form-group">
-                    <label class="form-label">Instrutor</label>
-                    <select name="instructor_id" class="form-input" onchange="this.form.submit()">
-                        <option value="">Todos</option>
-                        <?php foreach ($instructors as $instructor): ?>
-                        <option value="<?= $instructor['id'] ?>" <?= ($filters['instructor_id'] ?? '') == $instructor['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($instructor['name']) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
+                <!-- Navegação de Data (inline) -->
+                <div style="display: flex; gap: 4px; align-items: center; margin-left: auto;">
+                    <button type="button" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="navigateDate(-1)" title="<?= $viewType === 'week' ? 'Semana Anterior' : 'Dia Anterior' ?>">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="navigateDate(0)">Hoje</button>
+                    <button type="button" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="navigateDate(1)" title="<?= $viewType === 'week' ? 'Próxima Semana' : 'Próximo Dia' ?>">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
                 </div>
                 
-                <!-- Veículo (apenas administrativo, desabilitado para teóricas) -->
-                <div class="form-group">
-                    <label class="form-label">Veículo</label>
-                    <select name="vehicle_id" id="vehicle_filter" class="form-input" onchange="this.form.submit()" <?= ($filters['type'] ?? '') === 'teoria' ? 'disabled' : '' ?>>
-                        <option value="">Todos</option>
-                        <?php foreach ($vehicles as $vehicle): ?>
-                        <option value="<?= $vehicle['id'] ?>" <?= ($filters['vehicle_id'] ?? '') == $vehicle['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($vehicle['plate']) ?> - <?= htmlspecialchars($vehicle['model'] ?? '') ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if (($filters['type'] ?? '') === 'teoria'): ?>
-                    <small class="form-hint" style="color: var(--color-text-muted);">Não se aplica a aulas teóricas</small>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Status -->
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-input" onchange="this.form.submit()">
-                        <option value="">Todos</option>
-                        <option value="agendada" <?= ($filters['status'] ?? '') === 'agendada' ? 'selected' : '' ?>>Agendada</option>
-                        <option value="scheduled" <?= ($filters['status'] ?? '') === 'scheduled' ? 'selected' : '' ?>>Agendada (Teórica)</option>
-                        <option value="em_andamento" <?= ($filters['status'] ?? '') === 'em_andamento' ? 'selected' : '' ?>>Em Andamento</option>
-                        <option value="in_progress" <?= ($filters['status'] ?? '') === 'in_progress' ? 'selected' : '' ?>>Em Andamento (Teórica)</option>
-                        <option value="concluida" <?= ($filters['status'] ?? '') === 'concluida' ? 'selected' : '' ?>>Concluída</option>
-                        <option value="done" <?= ($filters['status'] ?? '') === 'done' ? 'selected' : '' ?>>Concluída (Teórica)</option>
-                        <option value="cancelada" <?= ($filters['status'] ?? '') === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
-                        <option value="canceled" <?= ($filters['status'] ?? '') === 'canceled' ? 'selected' : '' ?>>Cancelada (Teórica)</option>
-                    </select>
-                </div>
-                <?php endif; ?>
+                <!-- Botão Mais Filtros -->
+                <button type="button" class="btn <?= $hasExtraFilters ? 'btn-primary' : 'btn-outline' ?>" style="padding: 6px 12px; font-size: 0.8rem;" onclick="toggleExtraFilters()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtros<?= $hasExtraFilters ? ' (ativos)' : '' ?>
+                </button>
             </div>
             
-            <?php if ($isAdmin): ?>
-            <!-- Filtro para exibir canceladas (apenas administrativo) -->
-            <div style="margin-top: var(--spacing-sm); padding-top: var(--spacing-sm); border-top: 1px solid var(--color-border, #e0e0e0);">
-                <label style="display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer;">
-                    <input type="checkbox" name="show_canceled" value="1" 
-                           <?= ($showCanceled ?? false) ? 'checked' : '' ?>
-                           onchange="this.form.submit()">
-                    <span>Exibir aulas canceladas</span>
-                </label>
+            <!-- Filtros extras (colapsável) -->
+            <div id="extraFilters" style="display: <?= $hasExtraFilters ? 'block' : 'none' ?>; margin-top: var(--spacing-sm); padding-top: var(--spacing-sm); border-top: 1px solid var(--color-border, #e0e0e0);">
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: flex-end;">
+                    <!-- Instrutor -->
+                    <div class="form-group" style="margin-bottom: 0; min-width: 160px; flex: 1;">
+                        <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Instrutor</label>
+                        <select name="instructor_id" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <?php foreach ($instructors as $instructor): ?>
+                            <option value="<?= $instructor['id'] ?>" <?= ($filters['instructor_id'] ?? '') == $instructor['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($instructor['name']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Veículo -->
+                    <div class="form-group" style="margin-bottom: 0; min-width: 160px; flex: 1;">
+                        <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Veículo</label>
+                        <select name="vehicle_id" id="vehicle_filter" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" onchange="this.form.submit()" <?= ($filters['type'] ?? '') === 'teoria' ? 'disabled' : '' ?>>
+                            <option value="">Todos</option>
+                            <?php foreach ($vehicles as $vehicle): ?>
+                            <option value="<?= $vehicle['id'] ?>" <?= ($filters['vehicle_id'] ?? '') == $vehicle['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($vehicle['plate']) ?> - <?= htmlspecialchars($vehicle['model'] ?? '') ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
+                        <label class="form-label" style="font-size: 0.75rem; margin-bottom: 2px;">Status</label>
+                        <select name="status" class="form-input" style="padding: 6px 10px; font-size: 0.875rem;" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <option value="agendada" <?= ($filters['status'] ?? '') === 'agendada' ? 'selected' : '' ?>>Agendada</option>
+                            <option value="scheduled" <?= ($filters['status'] ?? '') === 'scheduled' ? 'selected' : '' ?>>Agendada (Teórica)</option>
+                            <option value="em_andamento" <?= ($filters['status'] ?? '') === 'em_andamento' ? 'selected' : '' ?>>Em Andamento</option>
+                            <option value="in_progress" <?= ($filters['status'] ?? '') === 'in_progress' ? 'selected' : '' ?>>Em Andamento (Teórica)</option>
+                            <option value="concluida" <?= ($filters['status'] ?? '') === 'concluida' ? 'selected' : '' ?>>Concluída</option>
+                            <option value="done" <?= ($filters['status'] ?? '') === 'done' ? 'selected' : '' ?>>Concluída (Teórica)</option>
+                            <option value="cancelada" <?= ($filters['status'] ?? '') === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
+                            <option value="canceled" <?= ($filters['status'] ?? '') === 'canceled' ? 'selected' : '' ?>>Cancelada (Teórica)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Exibir canceladas -->
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;">
+                        <input type="checkbox" name="show_canceled" value="1" 
+                               <?= ($showCanceled ?? false) ? 'checked' : '' ?>
+                               onchange="this.form.submit()">
+                        <span>Exibir canceladas</span>
+                    </label>
+                </div>
             </div>
-            <?php endif; ?>
-            
-            <?php if ($isAdmin): ?>
-            <!-- Navegação de Data -->
-            <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-md); align-items: center; justify-content: center;">
-                <button type="button" class="btn btn-outline" onclick="navigateDate(-1)">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    <?= $viewType === 'week' ? 'Semana Anterior' : 'Dia Anterior' ?>
-                </button>
-                <button type="button" class="btn btn-outline" onclick="navigateDate(0)">
-                    Hoje
-                </button>
-                <button type="button" class="btn btn-outline" onclick="navigateDate(1)">
-                    <?= $viewType === 'week' ? 'Próxima Semana' : 'Próximo Dia' ?>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </button>
-            </div>
-            <?php endif; ?>
         </form>
     </div>
 </div>
+<script>
+function toggleExtraFilters() {
+    const el = document.getElementById('extraFilters');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+<?php endif; ?>
 
 <!-- Calendário / Lista -->
 <div class="card">
@@ -335,8 +344,9 @@ $isAdmin = !$isAluno && !$isInstrutor;
             $dayColumnHeight = $totalMinutes * $pixelsPerMinute;
             $hourHeight = 60 * $pixelsPerMinute; // Altura de cada hora
             ?>
-            <div class="calendar-week">
-                <div class="calendar-week-header">
+            <!-- Container scrollável com cabeçalho sticky -->
+            <div class="calendar-week" style="max-height: calc(100vh - 200px); overflow-y: auto; position: relative;">
+                <div class="calendar-week-header" style="position: sticky; top: 0; z-index: 10; background: white;">
                     <div class="calendar-hour-col"></div>
                     <?php foreach ($days as $index => $day): ?>
                     <div class="calendar-day-header">
