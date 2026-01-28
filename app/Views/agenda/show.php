@@ -1,6 +1,8 @@
 <?php
 $currentRole = $currentRole ?? $_SESSION['current_role'] ?? '';
 $isAluno = ($currentRole === 'ALUNO');
+$isInstrutor = ($currentRole === 'INSTRUTOR');
+$isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
 ?>
 <div class="page-header">
     <div class="page-header-content" style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); justify-content: space-between; align-items: flex-start;">
@@ -91,17 +93,15 @@ $isAluno = ($currentRole === 'ALUNO');
                     </div>
                 </div>
                 
-                <!-- Matrícula (link apenas para não-alunos) -->
+                <!-- Matrícula e Status Financeiro -->
+                <?php if ($isAdmin): ?>
+                <!-- Admin/Secretaria: informações completas -->
                 <div>
                     <label class="form-label">Matrícula</label>
                     <div>
-                        <?php if (!$isAluno): ?>
                         <a href="<?= base_path("matriculas/{$lesson['enrollment_id']}") ?>" style="color: var(--color-primary); text-decoration: none;">
                             Matrícula #<?= $lesson['enrollment_id'] ?>
                         </a>
-                        <?php else: ?>
-                        Matrícula #<?= $lesson['enrollment_id'] ?>
-                        <?php endif; ?>
                         <br>
                         <small class="text-muted">
                             Status Financeiro: 
@@ -117,6 +117,20 @@ $isAluno = ($currentRole === 'ALUNO');
                         </small>
                     </div>
                 </div>
+                <?php elseif ($isInstrutor && $lesson['financial_status'] === 'bloqueado'): ?>
+                <!-- Instrutor: alerta apenas quando bloqueado -->
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm, 4px); padding: var(--spacing-sm); margin-top: var(--spacing-xs);">
+                    <div style="display: flex; align-items: center; gap: var(--spacing-xs);">
+                        <svg width="18" height="18" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span style="color: #dc2626; font-weight: 500; font-size: 0.875rem;">Pendência financeira</span>
+                    </div>
+                    <p style="margin: var(--spacing-xs) 0 0 0; font-size: 0.8125rem; color: #7f1d1d;">
+                        Aluno com situação financeira irregular. Orientar a entrar em contato com a secretaria.
+                    </p>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Instrutor -->
                 <div>
