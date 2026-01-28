@@ -360,16 +360,22 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                 });
             }
 
-            // Enviar WhatsApp (só funciona se lastData existir)
+            // Enviar WhatsApp
             if (btnWa) {
                 btnWa.addEventListener('click', function(){
-                    if (!lastData) return;
-                    if (lastData.phone_wa && lastData.message) {
-                        window.open('https://wa.me/' + lastData.phone_wa + '?text=' + encodeURIComponent(lastData.message), '_blank');
+                    if (!lastData || !lastData.message) return;
+                    
+                    var waUrl;
+                    if (lastData.phone_wa) {
+                        // Com telefone: abre direto para o contato
+                        waUrl = 'https://wa.me/' + lastData.phone_wa + '?text=' + encodeURIComponent(lastData.message);
                         showFeedback('WhatsApp aberto!');
                     } else {
-                        showFeedback('É necessário ter um telefone válido cadastrado.', true);
+                        // Sem telefone: abre WhatsApp para escolher contato
+                        waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(lastData.message);
+                        showFeedback('Escolha o contato no WhatsApp');
                     }
+                    window.open(waUrl, '_blank');
                 });
             }
 
