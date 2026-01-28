@@ -967,8 +967,22 @@ class UsuariosController extends Controller
             return;
         }
 
-        // Telefone: usuário (usuarios.telefone) ou, se for aluno, do cadastro do aluno (students.phone_primary/phone)
+        // Telefone: buscar em ordem de prioridade
+        // 1. usuarios.telefone
+        // 2. instructors.phone (se for instrutor)
+        // 3. students.phone_primary ou students.phone (se for aluno)
         $phoneRaw = $user['telefone'] ?? null;
+        
+        // Se não tem telefone no usuário, buscar no instrutor
+        if (($phoneRaw === null || trim($phoneRaw) === '') && !empty($user['instructor_id'])) {
+            $instructorModel = new Instructor();
+            $instructor = $instructorModel->find($user['instructor_id']);
+            if ($instructor && !empty($instructor['phone'])) {
+                $phoneRaw = $instructor['phone'];
+            }
+        }
+        
+        // Se não tem telefone no instrutor, buscar no aluno
         if (($phoneRaw === null || trim($phoneRaw) === '') && !empty($user['student_id'])) {
             $studentModel = new Student();
             $student = $studentModel->find($user['student_id']);
