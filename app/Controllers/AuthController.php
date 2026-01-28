@@ -677,7 +677,10 @@ class AuthController extends Controller
             return;
         }
 
+        error_log("[ACTIVATE_ACCOUNT] POST recebido. Iniciando validações...");
+
         if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: CSRF inválido");
             $_SESSION['error'] = 'Token CSRF inválido.';
             redirect(base_url('/login'));
         }
@@ -686,22 +689,28 @@ class AuthController extends Controller
         $newPassword = $_POST['new_password'] ?? '';
         $newPasswordConfirm = $_POST['new_password_confirm'] ?? '';
 
+        error_log("[ACTIVATE_ACCOUNT] Token length=" . strlen($token) . " password_length=" . strlen($newPassword));
+
         if (empty($token)) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Token vazio");
             $_SESSION['error'] = 'Token de ativação não fornecido.';
             redirect(base_url('/login'));
         }
 
         if (empty($newPassword) || empty($newPasswordConfirm)) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Senha vazia");
             $_SESSION['error'] = 'Preencha todos os campos.';
             redirect(base_url("/ativar-conta?token={$token}"));
         }
 
         if ($newPassword !== $newPasswordConfirm) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Senhas não coincidem");
             $_SESSION['error'] = 'As senhas não coincidem.';
             redirect(base_url("/ativar-conta?token={$token}"));
         }
 
         if (strlen($newPassword) < 8) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Senha curta");
             $_SESSION['error'] = 'A senha deve ter no mínimo 8 caracteres.';
             redirect(base_url("/ativar-conta?token={$token}"));
         }
@@ -711,7 +720,10 @@ class AuthController extends Controller
         $tokenModel = new AccountActivationToken();
         $tokenData = $tokenModel->findByTokenHash($tokenHash);
 
+        error_log("[ACTIVATE_ACCOUNT] Token hash calculado. TokenData encontrado=" . ($tokenData ? 'SIM' : 'NÃO'));
+
         if (!$tokenData) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Token não encontrado ou expirado/usado. Hash prefix=" . substr($tokenHash, 0, 16));
             $_SESSION['error'] = 'Token de ativação inválido ou expirado. Solicite um novo link.';
             redirect(base_url('/login'));
         }
@@ -720,7 +732,10 @@ class AuthController extends Controller
         $userModel = new User();
         $user = $userModel->find($tokenData['user_id']);
 
+        error_log("[ACTIVATE_ACCOUNT] User encontrado=" . ($user ? 'SIM' : 'NÃO') . " status=" . ($user['status'] ?? 'N/A'));
+
         if (!$user || $user['status'] !== 'ativo') {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: Usuário não encontrado ou inativo");
             $_SESSION['error'] = 'Usuário não encontrado ou inativo.';
             redirect(base_url('/login'));
         }
@@ -798,8 +813,8 @@ class AuthController extends Controller
             header('Location: ' . $redirectUrl);
             exit;
         } catch (\Exception $e) {
-            $db->rollBack();
-            $_SESSION['error'] = 'Erro ao ativar conta: ' . $e->getMessage();
+            error_log("[ACTIVATE_ACCOUNT] EXCEÇÃO: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
+            $_SESSION['error'] = 'Erro ao ativar conta. Por favor, tente novamente.';
             redirect(base_url("/ativar-conta?token={$token}"));
         }
     }
