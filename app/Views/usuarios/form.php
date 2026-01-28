@@ -193,64 +193,36 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
         </div>
         <?php endif; ?>
 
-        <!-- Link de Ativação Gerado (exibir apenas uma vez) -->
-        <?php if (!empty($activationLinkGenerated) && $activationLinkGenerated['user_id'] == $user['id']): ?>
-        <div class="alert alert-info" style="margin-bottom: var(--spacing-md);">
-            <h4 style="margin: 0 0 var(--spacing-sm) 0; display: flex; align-items: center; gap: 8px;">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                </svg>
-                Link de Ativação Gerado
-            </h4>
-            <p style="margin: 0 0 var(--spacing-sm) 0;">
-                <strong>Link:</strong><br>
-                <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; word-break: break-all; display: block; margin-top: 4px;" id="activation-link">
-                    <?= htmlspecialchars($activationLinkGenerated['activation_url']) ?>
-                </code>
-                <button type="button" onclick="copyToClipboard('activation-link')" class="btn btn-sm btn-outline" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                    Copiar Link
-                </button>
-            </p>
-            <small style="color: #666;">
-                Expira em: <?= date('d/m/Y H:i', strtotime($activationLinkGenerated['expires_at'])) ?>
-            </small>
-        </div>
-        <?php endif; ?>
-
-        <!-- 3 ações principais (monocromático, mesmo peso visual) -->
+        <!-- Ações de acesso: WhatsApp, Copiar, E-mail -->
         <div id="acesso-ctas-wrapper" data-access-link-url="<?= htmlspecialchars(base_path("usuarios/{$user['id']}/access-link")) ?>" data-csrf="<?= htmlspecialchars(csrf_token()) ?>">
-        <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; margin-bottom: var(--spacing-md);">
-            <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-wa" style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                Enviar no WhatsApp
-            </button>
-            <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy" style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                Copiar link
-            </button>
-            <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" style="margin: 0; display: inline-block;" onsubmit="return confirm('Enviar link por e-mail?');">
-                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    Enviar por e-mail
+            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); align-items: center; margin-bottom: var(--spacing-md);">
+                <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-wa" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Enviar no WhatsApp
                 </button>
-            </form>
-            <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: #666; margin-left: 4px;"></span>
-        </div>
-        </div>
-
-        <!-- Bloco Link de acesso (discreto, aparece após ação) -->
-        <div id="acesso-link-block" style="display: <?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? 'block' : 'none' ?>; margin-bottom: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef;">
-            <p style="margin: 0 0 6px 0; font-size: 0.8rem; color: #6c757d;">Link de acesso</p>
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 180px; font-size: 11px; font-family: monospace; background: #fff;" value="<?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? htmlspecialchars($activationLinkGenerated['activation_url'] ?? '') : '' ?>">
-                <button type="button" class="btn btn-outline btn-sm" id="acesso-link-copy-btn" title="Copiar link">Copiar</button>
-                <a href="#" class="btn btn-outline btn-sm" id="acesso-link-wa-btn" target="_blank" rel="noopener" style="display: none;">WhatsApp</a>
+                <button type="button" class="btn btn-outline btn-sm" id="acesso-cta-copy" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Copiar link
+                </button>
+                <form method="POST" action="<?= base_path("usuarios/{$user['id']}/enviar-link-email") ?>" style="margin: 0; display: inline-block;" onsubmit="return confirm('Enviar link por e-mail?');">
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <button type="submit" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Enviar por e-mail
+                    </button>
+                </form>
+                <span id="acesso-feedback" style="display: none; font-size: var(--font-size-sm); color: #666; margin-left: 4px;"></span>
             </div>
-            <small id="acesso-link-expires" style="color: #868e96; font-size: 0.75rem;"><?php if (!empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] && !empty($activationLinkGenerated['expires_at'])): ?>Expira em: <?= date('d/m/Y H:i', strtotime($activationLinkGenerated['expires_at'])) ?><?php endif; ?></small>
+
+            <!-- Link de acesso (único bloco, aparece quando há link ativo) -->
+            <div id="acesso-link-block" style="display: <?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? 'block' : 'none' ?>; margin-bottom: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); background: #e8f4fc; border-radius: 6px; border: 1px solid #b8daef;">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" fill="none" stroke="#0d6efd" viewBox="0 0 24 24" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    <input type="text" id="acesso-link-url" readonly class="form-input" style="flex: 1; min-width: 200px; font-size: 12px; font-family: monospace; background: #fff; border: 1px solid #cce5ff;" value="<?= !empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] ? htmlspecialchars($activationLinkGenerated['activation_url'] ?? '') : '' ?>">
+                    <button type="button" class="btn btn-primary btn-sm" id="acesso-link-copy-btn" title="Copiar link">Copiar</button>
+                </div>
+                <small id="acesso-link-expires" style="color: #0d6efd; font-size: 0.75rem; display: block; margin-top: 6px;"><?php if (!empty($activationLinkGenerated) && (int)($activationLinkGenerated['user_id'] ?? 0) === (int)$user['id'] && !empty($activationLinkGenerated['expires_at'])): ?>Expira em: <?= date('d/m/Y, H:i', strtotime($activationLinkGenerated['expires_at'])) ?><?php endif; ?></small>
+            </div>
         </div>
 
         <!-- Mais opções (colapsável): status discreto + Avançado -->
