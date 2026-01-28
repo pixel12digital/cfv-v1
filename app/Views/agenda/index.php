@@ -349,7 +349,7 @@ $isAdmin = !$isAluno && !$isInstrutor;
                 <div class="calendar-week-body">
                     <!-- Coluna de horas -->
                     <div class="calendar-hours-col">
-                        <?php for ($h = $startHour; $h <= $endHour; $h++): ?>
+                        <?php for ($h = $startHour; $h < $endHour; $h++): ?>
                         <div class="calendar-hour-mark" style="height: <?= $hourHeight ?>px;">
                             <?= str_pad($h, 2, '0', STR_PAD_LEFT) ?>:00
                         </div>
