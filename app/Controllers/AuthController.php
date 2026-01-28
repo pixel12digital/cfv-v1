@@ -364,16 +364,29 @@ class AuthController extends Controller
             redirect(base_url('/forgot-password'));
         }
 
-        // Atualizar senha
+        // Atualizar senha e remover flag de troca obrigatória
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
         $userModel = new User();
         $userModel->updatePassword($tokenData['user_id'], $hashedPassword);
+        
+        // Remover flag must_change_password
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("UPDATE usuarios SET must_change_password = 0 WHERE id = ?");
+        $stmt->execute([$tokenData['user_id']]);
 
         // Marcar token como usado
         $tokenModel->markAsUsed($token);
 
-        $_SESSION['success'] = 'Senha redefinida com sucesso! Faça login com sua nova senha.';
-        redirect(base_url('/login'));
+        // Buscar usuário atualizado e fazer login automático
+        $user = $userModel->find($tokenData['user_id']);
+        if ($user && $user['status'] === 'ativo') {
+            $this->authService->login($user);
+            $_SESSION['success'] = 'Senha redefinida com sucesso!';
+            $this->redirectToUserDashboard($user['id']);
+        } else {
+            $_SESSION['success'] = 'Senha redefinida com sucesso! Faça login com sua nova senha.';
+            redirect(base_url('/login'));
+        }
     }
 
     /**
@@ -702,8 +715,12 @@ class AuthController extends Controller
 
             $db->commit();
 
-            $_SESSION['success'] = 'Conta ativada com sucesso! Você já pode fazer login.';
-            redirect(base_url('/login'));
+            // Recarregar usuário atualizado e fazer login automático
+            $user = $userModel->find($user['id']);
+            $this->authService->login($user);
+
+            $_SESSION['success'] = 'Conta ativada com sucesso!';
+            $this->redirectToUserDashboard($user['id']);
         } catch (\Exception $e) {
             $db->rollBack();
             $_SESSION['error'] = 'Erro ao ativar conta: ' . $e->getMessage();
