@@ -677,12 +677,25 @@ class AuthController extends Controller
             return;
         }
 
-        error_log("[ACTIVATE_ACCOUNT] POST recebido. Iniciando validações...");
+        $sessionId = session_id();
+        $csrfPost = $_POST['csrf_token'] ?? '';
+        $csrfSession = $_SESSION['csrf_token'] ?? 'VAZIO';
+        
+        error_log("[ACTIVATE_ACCOUNT] POST recebido. session_id={$sessionId} csrf_post_prefix=" . substr($csrfPost, 0, 16) . " csrf_session_prefix=" . substr($csrfSession, 0, 16));
 
-        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
-            error_log("[ACTIVATE_ACCOUNT] FALHOU: CSRF inválido");
-            $_SESSION['error'] = 'Token CSRF inválido.';
-            redirect(base_url('/login'));
+        if (!csrf_verify($csrfPost)) {
+            error_log("[ACTIVATE_ACCOUNT] FALHOU: CSRF inválido. POST=" . substr($csrfPost, 0, 32) . " SESSION=" . substr($csrfSession, 0, 32));
+            
+            // Se o CSRF falhar mas temos um token válido no POST, tentar continuar
+            // (workaround para navegadores in-app que não mantém sessão)
+            $token = $_POST['token'] ?? '';
+            if (!empty($token) && strlen($token) === 64) {
+                error_log("[ACTIVATE_ACCOUNT] Tentando bypass CSRF - token presente, continuando...");
+                // Não redirecionar, continuar o fluxo
+            } else {
+                $_SESSION['error'] = 'Sessão expirada. Por favor, tente novamente.';
+                redirect(base_url('/login'));
+            }
         }
 
         $token = $_POST['token'] ?? '';
