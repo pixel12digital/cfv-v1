@@ -56,22 +56,22 @@
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
-    <!-- Sessões -->
+    <!-- Aulas -->
     <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">Sessões</h3>
+            <h3 style="margin: 0;">Aulas</h3>
             <?php if (\App\Services\PermissionService::check('turmas_teoricas', 'create')): ?>
             <a href="<?= base_path("turmas-teoricas/{$class['id']}/sessoes/novo") ?>" class="btn btn-sm btn-primary">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                Nova Sessão
+                Nova Aula
             </a>
             <?php endif; ?>
         </div>
         <div class="card-body">
             <?php if (empty($sessions)): ?>
-                <p class="text-muted">Nenhuma sessão cadastrada.</p>
+                <p class="text-muted">Nenhuma aula cadastrada.</p>
             <?php else: ?>
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
                     <?php foreach ($sessions as $session): ?>
@@ -94,7 +94,7 @@
                                         ✓
                                     </a>
                                     <?php if (\App\Services\PermissionService::check('turmas_teoricas', 'update') && $session['status'] === 'scheduled'): ?>
-                                    <a href="<?= base_path("turmas-teoricas/{$class['id']}/sessoes/{$session['id']}/editar") ?>" class="btn btn-sm btn-outline" title="Editar sessão">
+                                    <a href="<?= base_path("turmas-teoricas/{$class['id']}/sessoes/{$session['id']}/editar") ?>" class="btn btn-sm btn-outline" title="Editar aula">
                                         ✏️
                                     </a>
                                     <?php endif; ?>

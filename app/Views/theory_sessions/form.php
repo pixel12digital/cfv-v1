@@ -3,7 +3,7 @@ use App\Helpers\TheoryHelper;
 ?>
 <div class="page-header">
     <div>
-        <h1><?= $session ? 'Editar' : 'Nova' ?> Sessão Teórica</h1>
+        <h1><?= $session ? 'Editar' : 'Nova' ?> Aula Teórica</h1>
         <p class="text-muted">Turma: <?= htmlspecialchars($class['name'] ?: $class['course_name']) ?></p>
     </div>
     <a href="<?= base_path("turmas-teoricas/{$class['id']}") ?>" class="btn btn-outline">
@@ -53,7 +53,7 @@ use App\Helpers\TheoryHelper;
                 </select>
                 <?php if ($session): ?>
                 <input type="hidden" name="discipline_id" value="<?= $session['discipline_id'] ?>">
-                <small class="form-hint">A disciplina não pode ser alterada após a criação da sessão</small>
+                <small class="form-hint">A disciplina não pode ser alterada após a criação da aula</small>
                 <?php endif; ?>
             </div>
 
@@ -83,12 +83,12 @@ use App\Helpers\TheoryHelper;
                         </div>
                     </div>
                     <div id="context-last-session" style="display: none; padding: var(--spacing-sm); background: var(--color-bg, #fff); border-radius: var(--radius-md); margin-bottom: var(--spacing-sm);">
-                        <div style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Última sessão agendada:</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Última aula agendada:</div>
                         <div style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold);" id="context-last-session-date">-</div>
                     </div>
                     <div id="context-sessions-link" style="display: none;">
                         <a href="#" id="view-sessions-link" style="font-size: var(--font-size-sm); color: var(--color-primary); text-decoration: none;">
-                            Ver todas as sessões agendadas →
+                            Ver todas as aulas agendadas →
                         </a>
                     </div>
                     <div id="context-warning" style="display: none; padding: var(--spacing-sm); background: var(--color-warning-light, #fff3cd); border: 1px solid var(--color-warning, #ffc107); border-radius: var(--radius-md); margin-top: var(--spacing-sm); color: var(--color-warning-dark, #856404);">
@@ -111,7 +111,7 @@ use App\Helpers\TheoryHelper;
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="lessons_count">Quantidade de Aulas nesta Sessão *</label>
+                <label class="form-label" for="lessons_count">Quantidade de aulas *</label>
                 <input 
                     type="number" 
                     id="lessons_count" 
@@ -131,7 +131,7 @@ use App\Helpers\TheoryHelper;
                     required
                     onchange="validateLessonsCount(); calculateEndTime();"
                 >
-                <small class="form-hint" id="lessons-hint">Número de aulas consecutivas nesta sessão</small>
+                <small class="form-hint" id="lessons-hint">Número de aulas consecutivas</small>
                 <div id="lessons-error" style="display: none; margin-top: var(--spacing-xs); padding: var(--spacing-xs); background: var(--color-danger-light, #fee); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: var(--color-danger); font-size: var(--font-size-sm);"></div>
             </div>
 
@@ -186,7 +186,7 @@ use App\Helpers\TheoryHelper;
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
-                    <?= $session ? 'Atualizar' : 'Criar' ?> Sessão
+                    <?= $session ? 'Atualizar' : 'Criar' ?> Aula
                 </button>
                 <a href="<?= base_path("turmas-teoricas/{$class['id']}") ?>" class="btn btn-outline">
                     Cancelar
@@ -292,9 +292,9 @@ function updateDisciplineContext(disciplineId) {
     // Atualizar hint e validar
     const lessonsHint = document.getElementById('lessons-hint');
     if (stats.lessons_remaining > 0) {
-        lessonsHint.textContent = `Número de aulas consecutivas nesta sessão (máximo: ${stats.lessons_remaining} aulas pendentes)`;
+        lessonsHint.textContent = `Número de aulas consecutivas (máximo: ${stats.lessons_remaining} aulas pendentes)`;
     } else {
-        lessonsHint.textContent = 'Número de aulas consecutivas nesta sessão';
+        lessonsHint.textContent = 'Número de aulas consecutivas';
     }
     
     // Mostrar aviso se não há aulas pendentes
@@ -344,7 +344,7 @@ function validateLessonsCount() {
     const maxLessons = stats.lessons_remaining || 0;
     
     if (maxLessons === 0 && stats.lessons_planned > 0) {
-        lessonsError.textContent = 'Disciplina já totalmente agendada. Não é possível criar novas sessões.';
+        lessonsError.textContent = 'Disciplina já totalmente agendada. Não é possível criar novas aulas.';
         lessonsError.style.display = 'block';
         lessonsCountInput.setAttribute('disabled', 'disabled');
         if (submitBtn) submitBtn.disabled = true;
