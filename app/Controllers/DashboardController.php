@@ -515,18 +515,50 @@ class DashboardController extends Controller
             $cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
             $today = date('Y-m-d');
             
-            // Buscar próxima aula agendada (com dedupe de sessões teóricas)
+            // Buscar próxima aula: prioridade para em_andamento, depois agendada mais próxima
+            $nextLesson = null;
             try {
-                $lessonModel = new \App\Models\Lesson();
-                $nextLessons = $lessonModel->findByInstructorWithTheoryDedupe(
-                    $instructorId,
-                    $cfcId,
-                    ['tab' => 'proximas']
+                // 1) Buscar aula em_andamento (prioridade máxima - está acontecendo agora)
+                $stmtInProgress = $db->prepare(
+                    "SELECT l.*,
+                            COALESCE(s.full_name, s.name) as student_name,
+                            v.plate as vehicle_plate
+                     FROM lessons l
+                     INNER JOIN students s ON l.student_id = s.id
+                     LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                     WHERE l.instructor_id = ?
+                       AND l.cfc_id = ?
+                       AND l.status = 'em_andamento'
+                     ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
+                     LIMIT 1"
                 );
-                $nextLesson = !empty($nextLessons) ? $nextLessons[0] : null;
-                error_log('[DashboardController::dashboardInstrutor] Próximas aulas encontradas: ' . count($nextLessons));
+                $stmtInProgress->execute([$instructorId, $cfcId]);
+                $nextLesson = $stmtInProgress->fetch();
+                
+                // 2) Se não há aula em andamento, buscar próxima agendada
+                if (!$nextLesson) {
+                    $now = date('H:i:s');
+                    $stmtNext = $db->prepare(
+                        "SELECT l.*,
+                                COALESCE(s.full_name, s.name) as student_name,
+                                v.plate as vehicle_plate
+                         FROM lessons l
+                         INNER JOIN students s ON l.student_id = s.id
+                         LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                         WHERE l.instructor_id = ?
+                           AND l.cfc_id = ?
+                           AND l.status = 'agendada'
+                           AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))
+                         ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
+                         LIMIT 1"
+                    );
+                    $stmtNext->execute([$instructorId, $cfcId, $today, $today, $now]);
+                    $nextLesson = $stmtNext->fetch();
+                }
+                
+                error_log('[DashboardController::dashboardInstrutor] Próxima aula encontrada: ' . ($nextLesson ? 'sim (status=' . $nextLesson['status'] . ')' : 'não'));
             } catch (\PDOException $e) {
-                error_log('[DashboardController::dashboardInstrutor] ERRO em findByInstructorWithTheoryDedupe():');
+                error_log('[DashboardController::dashboardInstrutor] ERRO ao buscar próxima aula:');
                 error_log('[DashboardController::dashboardInstrutor]   - Classe: ' . get_class($e));
                 error_log('[DashboardController::dashboardInstrutor]   - SQLSTATE: ' . $e->getCode());
                 error_log('[DashboardController::dashboardInstrutor]   - Mensagem: ' . $e->getMessage());
