@@ -727,35 +727,53 @@ class AuthController extends Controller
 
         try {
             $db = Database::getInstance()->getConnection();
-            $db->beginTransaction();
+            
+            error_log("[ACTIVATE_ACCOUNT] Iniciando para user_id={$user['id']} email={$user['email']}");
 
             // Atualizar senha e remover flag de troca obrigatória
             $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            
             $stmt = $db->prepare("
                 UPDATE usuarios 
                 SET password = ?, must_change_password = 0 
                 WHERE id = ?
             ");
-            $stmt->execute([$hashedPassword, $user['id']]);
+            $updateResult = $stmt->execute([$hashedPassword, $user['id']]);
+            $rowsAffected = $stmt->rowCount();
+            
+            error_log("[ACTIVATE_ACCOUNT] UPDATE executado. Result={$updateResult}, rows_affected={$rowsAffected}");
 
-            // Marcar token como usado
+            // Verificar se a senha foi salva corretamente
+            $userModel2 = new User();
+            $userAfterUpdate = $userModel2->find($user['id']);
+            $verifyResult = password_verify($newPassword, $userAfterUpdate['password'] ?? '');
+            
+            error_log("[ACTIVATE_ACCOUNT] Verificação pós-update: password_verify=" . ($verifyResult ? 'OK' : 'FALHOU') . 
+                      " hash_length=" . strlen($userAfterUpdate['password'] ?? '') .
+                      " hash_prefix=" . substr($userAfterUpdate['password'] ?? '', 0, 7));
+            
+            if (!$verifyResult) {
+                error_log("[ACTIVATE_ACCOUNT] ERRO CRÍTICO: Senha não pode ser verificada após salvar!");
+                $_SESSION['error'] = 'Erro ao salvar senha. Tente novamente.';
+                redirect(base_url("/ativar-conta?token={$token}"));
+                return;
+            }
+
+            // Só marcar token como usado DEPOIS de confirmar que a senha foi salva
             $tokenModel->markAsUsed($tokenData['id']);
-
-            $db->commit();
-
-            // Recarregar usuário atualizado e fazer login automático
-            $user = $userModel->find($user['id']);
             
-            error_log("[ACTIVATE_ACCOUNT] Senha salva com sucesso para user_id={$user['id']} email={$user['email']} tipo={$user['tipo']}");
+            error_log("[ACTIVATE_ACCOUNT] Token marcado como usado. Fazendo login...");
             
-            $this->authService->login($user);
+            $this->authService->login($userAfterUpdate);
             
-            error_log("[ACTIVATE_ACCOUNT] Login realizado. Session user_id=" . ($_SESSION['user_id'] ?? 'VAZIO') . " user_type=" . ($_SESSION['user_type'] ?? 'VAZIO') . " session_id=" . session_id());
+            error_log("[ACTIVATE_ACCOUNT] Login realizado. Session: user_id=" . ($_SESSION['user_id'] ?? 'VAZIO') . 
+                      " user_type=" . ($_SESSION['user_type'] ?? 'VAZIO') . 
+                      " session_id=" . session_id());
 
             $_SESSION['success'] = 'Conta ativada com sucesso!';
             
             // Redirecionar para o dashboard correto baseado no tipo
-            $tipo = strtolower($user['tipo'] ?? '');
+            $tipo = strtolower($userAfterUpdate['tipo'] ?? '');
             
             // Determinar URL de destino
             switch ($tipo) {
