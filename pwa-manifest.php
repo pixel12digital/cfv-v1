@@ -51,9 +51,9 @@ function getBaseUrl($path = '') {
 
 // Manifest padrão (sempre válido)
 $manifest = [
-    'name' => 'CFC Sistema de Gestão',
-    'short_name' => 'CFC Sistema',
-    'description' => 'Sistema de gestão para Centros de Formação de Condutores',
+    'name' => 'CFC Bom Conselho',
+    'short_name' => 'CFC',
+    'description' => 'Sistema de gestão para Centro de Formação de Condutores',
     'start_url' => getBaseUrl('dashboard'),
     'scope' => getBaseUrl(''),
     'display' => 'standalone',
@@ -62,16 +62,28 @@ $manifest = [
     'background_color' => '#ffffff',
     'icons' => [
         [
-            'src' => getBaseUrl('icons/1/icon-192x192.png'),
+            'src' => getBaseUrl('pwa/icons/icon-192.png'),
             'sizes' => '192x192',
             'type' => 'image/png',
-            'purpose' => 'any maskable'
+            'purpose' => 'any'
         ],
         [
-            'src' => getBaseUrl('icons/1/icon-512x512.png'),
+            'src' => getBaseUrl('pwa/icons/icon-192-maskable.png'),
+            'sizes' => '192x192',
+            'type' => 'image/png',
+            'purpose' => 'maskable'
+        ],
+        [
+            'src' => getBaseUrl('pwa/icons/icon-512.png'),
             'sizes' => '512x512',
             'type' => 'image/png',
-            'purpose' => 'any maskable'
+            'purpose' => 'any'
+        ],
+        [
+            'src' => getBaseUrl('pwa/icons/icon-512-maskable.png'),
+            'sizes' => '512x512',
+            'type' => 'image/png',
+            'purpose' => 'maskable'
         ]
     ]
 ];
