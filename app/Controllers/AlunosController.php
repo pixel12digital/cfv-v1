@@ -466,6 +466,7 @@ class AlunosController extends Controller
         $entryAmount = !empty($_POST['entry_amount']) ? floatval($_POST['entry_amount']) : 0;
         $entryPaymentMethod = !empty($_POST['entry_payment_method']) ? $_POST['entry_payment_method'] : null;
         $entryPaymentDate = !empty($_POST['entry_payment_date']) ? $_POST['entry_payment_date'] : null;
+        $entryPixAccountId = !empty($_POST['entry_pix_account_id']) ? (int)$_POST['entry_pix_account_id'] : null;
         
         // Validações de entrada
         if ($entryAmount > 0) {
@@ -488,11 +489,22 @@ class AlunosController extends Controller
                 $_SESSION['error'] = 'Se houver entrada, a data da entrada é obrigatória.';
                 redirect(base_url("alunos/{$id}/matricular"));
             }
+            
+            // Se forma de pagamento da entrada for PIX, validar conta PIX
+            if ($entryPaymentMethod === 'pix' && $entryPixAccountId) {
+                $pixAccountModel = new \App\Models\CfcPixAccount();
+                $pixAccount = $pixAccountModel->findByIdAndCfc($entryPixAccountId, $this->cfcId);
+                if (!$pixAccount || !$pixAccount['is_active']) {
+                    $_SESSION['error'] = 'Conta PIX da entrada selecionada não é válida ou está inativa.';
+                    redirect(base_url("alunos/{$id}/matricular"));
+                }
+            }
         } else {
             // Se não há entrada, limpar campos relacionados
             $entryAmount = null;
             $entryPaymentMethod = null;
             $entryPaymentDate = null;
+            $entryPixAccountId = null;
         }
         
         // Calcular saldo devedor
@@ -629,6 +641,7 @@ class AlunosController extends Controller
             // Campos de entrada
             'entry_amount' => $entryAmount,
             'entry_payment_method' => $entryPaymentMethod,
+            'entry_pix_account_id' => $entryPixAccountId,
             'entry_payment_date' => $entryPaymentDate,
             'outstanding_amount' => $outstandingAmount,
             // Campos de parcelamento
@@ -871,6 +884,7 @@ class AlunosController extends Controller
         $entryAmount = !empty($_POST['entry_amount']) ? floatval($_POST['entry_amount']) : 0;
         $entryPaymentMethod = !empty($_POST['entry_payment_method']) ? $_POST['entry_payment_method'] : null;
         $entryPaymentDate = !empty($_POST['entry_payment_date']) ? $_POST['entry_payment_date'] : null;
+        $entryPixAccountId = !empty($_POST['entry_pix_account_id']) ? (int)$_POST['entry_pix_account_id'] : null;
         
         // Recalcular valor final
         $finalPrice = $enrollmentModel->calculateFinalPrice($basePrice, $discountValue, $extraValue);
@@ -896,11 +910,22 @@ class AlunosController extends Controller
                 $_SESSION['error'] = 'Se houver entrada, a data da entrada é obrigatória.';
                 redirect(base_url("matriculas/{$id}"));
             }
+            
+            // Se forma de pagamento da entrada for PIX, validar conta PIX
+            if ($entryPaymentMethod === 'pix' && $entryPixAccountId) {
+                $pixAccountModel = new \App\Models\CfcPixAccount();
+                $pixAccount = $pixAccountModel->findByIdAndCfc($entryPixAccountId, $this->cfcId);
+                if (!$pixAccount || !$pixAccount['is_active']) {
+                    $_SESSION['error'] = 'Conta PIX da entrada selecionada não é válida ou está inativa.';
+                    redirect(base_url("matriculas/{$id}"));
+                }
+            }
         } else {
             // Se não há entrada, limpar campos relacionados
             $entryAmount = null;
             $entryPaymentMethod = null;
             $entryPaymentDate = null;
+            $entryPixAccountId = null;
         }
         
         // Calcular saldo devedor
@@ -1041,6 +1066,7 @@ class AlunosController extends Controller
             // Campos de entrada
             'entry_amount' => $entryAmount,
             'entry_payment_method' => $entryPaymentMethod,
+            'entry_pix_account_id' => $entryPixAccountId,
             'entry_payment_date' => $entryPaymentDate,
             'outstanding_amount' => $outstandingAmount,
             // Campos de parcelamento (só atualiza se pode editar)

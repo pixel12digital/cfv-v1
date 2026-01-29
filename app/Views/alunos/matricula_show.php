@@ -132,13 +132,38 @@
 
                 <div class="form-group">
                     <label class="form-label" for="entry_payment_method">Forma de Pagamento da Entrada</label>
-                    <select id="entry_payment_method" name="entry_payment_method" class="form-select">
+                    <select id="entry_payment_method" name="entry_payment_method" class="form-select" onchange="toggleEntryPixAccount()">
                         <option value="">Selecione (se houver entrada)</option>
                         <option value="dinheiro" <?= ($enrollment['entry_payment_method'] ?? '') === 'dinheiro' ? 'selected' : '' ?>>Dinheiro</option>
                         <option value="pix" <?= ($enrollment['entry_payment_method'] ?? '') === 'pix' ? 'selected' : '' ?>>PIX</option>
                         <option value="cartao" <?= ($enrollment['entry_payment_method'] ?? '') === 'cartao' ? 'selected' : '' ?>>Cartão</option>
                         <option value="boleto" <?= ($enrollment['entry_payment_method'] ?? '') === 'boleto' ? 'selected' : '' ?>>Boleto</option>
                     </select>
+                </div>
+
+                <!-- Seletor de Conta PIX para Entrada (aparece quando entry_payment_method = 'pix') -->
+                <div id="entryPixAccountSelector" style="display: <?= ($enrollment['entry_payment_method'] ?? '') === 'pix' ? 'block' : 'none' ?>;">
+                    <div class="form-group">
+                        <label class="form-label" for="entry_pix_account_id">Conta PIX da Entrada</label>
+                        <select id="entry_pix_account_id" name="entry_pix_account_id" class="form-select">
+                            <option value="">Selecione uma conta PIX</option>
+                            <?php if (!empty($pixAccounts)): ?>
+                                <?php foreach ($pixAccounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>" 
+                                        <?= (!empty($enrollment['entry_pix_account_id']) && $enrollment['entry_pix_account_id'] == $account['id']) ? 'selected' : '' ?>
+                                        <?= ($account['is_default'] ?? 0) ? 'data-default="1"' : '' ?>>
+                                        <?= htmlspecialchars($account['label']) ?> 
+                                        <?php if (!empty($account['bank_name'])): ?>
+                                            - <?= htmlspecialchars($account['bank_name']) ?>
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>Nenhuma conta PIX configurada</option>
+                            <?php endif; ?>
+                        </select>
+                        <small class="form-hint">Conta PIX que recebeu a entrada</small>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -788,9 +813,26 @@ function togglePixAccountSelector() {
     }
 }
 
-// Inicializar visibilidade do seletor ao carregar a página
+function toggleEntryPixAccount() {
+    const entryPaymentMethod = document.getElementById('entry_payment_method').value;
+    const entryPixSelector = document.getElementById('entryPixAccountSelector');
+    const entryPixSelect = document.getElementById('entry_pix_account_id');
+    
+    if (entryPaymentMethod === 'pix') {
+        entryPixSelector.style.display = 'block';
+    } else {
+        entryPixSelector.style.display = 'none';
+        // Limpar seleção quando não for PIX
+        if (entryPixSelect) {
+            entryPixSelect.value = '';
+        }
+    }
+}
+
+// Inicializar visibilidade dos seletores ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
     togglePixAccountSelector();
+    toggleEntryPixAccount();
 });
 
 document.getElementById('enrollmentForm')?.addEventListener('submit', function(e) {

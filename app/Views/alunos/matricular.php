@@ -106,13 +106,24 @@
 
                 <div class="form-group">
                     <label class="form-label" for="entry_payment_method">Forma de Pagamento da Entrada</label>
-                    <select id="entry_payment_method" name="entry_payment_method" class="form-select">
+                    <select id="entry_payment_method" name="entry_payment_method" class="form-select" onchange="toggleEntryPixAccount()">
                         <option value="">Selecione (se houver entrada)</option>
                         <option value="dinheiro">Dinheiro</option>
                         <option value="pix">PIX</option>
                         <option value="cartao">Cartão</option>
                         <option value="boleto">Boleto</option>
                     </select>
+                </div>
+
+                <!-- Seletor de Conta PIX para Entrada (aparece quando entry_payment_method = 'pix') -->
+                <div id="entryPixAccountSelector" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="entry_pix_account_id">Conta PIX da Entrada *</label>
+                        <select id="entry_pix_account_id" name="entry_pix_account_id" class="form-select">
+                            <option value="">Selecione uma conta PIX</option>
+                        </select>
+                        <small class="form-hint">Selecione qual conta PIX recebeu a entrada</small>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -533,13 +544,15 @@ function togglePaymentConditions() {
     }
 }
 
+// Dados das contas PIX carregados do servidor
+const pixAccountsData = <?= json_encode($pixAccounts ?? []) ?>;
+
 function carregarContasPix() {
     const select = document.getElementById('pix_account_id');
-    const pixAccounts = <?= json_encode($pixAccounts ?? []) ?>;
     
     select.innerHTML = '';
     
-    if (pixAccounts.length === 0) {
+    if (pixAccountsData.length === 0) {
         select.innerHTML = '<option value="">Nenhuma conta PIX configurada</option>';
         select.disabled = true;
         return;
@@ -548,9 +561,53 @@ function carregarContasPix() {
     select.disabled = false;
     
     // Encontrar conta padrão
-    const defaultAccount = pixAccounts.find(a => a.is_default == 1);
+    const defaultAccount = pixAccountsData.find(a => a.is_default == 1);
     
-    pixAccounts.forEach(account => {
+    pixAccountsData.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = account.label + (account.bank_name ? ' - ' + account.bank_name : '');
+        if (defaultAccount && account.id == defaultAccount.id) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+function toggleEntryPixAccount() {
+    const entryPaymentMethod = document.getElementById('entry_payment_method').value;
+    const entryPixSelector = document.getElementById('entryPixAccountSelector');
+    const entryPixSelect = document.getElementById('entry_pix_account_id');
+    
+    if (entryPaymentMethod === 'pix') {
+        entryPixSelector.style.display = 'block';
+        entryPixSelect.setAttribute('required', 'required');
+        carregarContasPixEntrada();
+    } else {
+        entryPixSelector.style.display = 'none';
+        entryPixSelect.removeAttribute('required');
+        entryPixSelect.value = '';
+    }
+}
+
+function carregarContasPixEntrada() {
+    const select = document.getElementById('entry_pix_account_id');
+    
+    select.innerHTML = '';
+    
+    if (pixAccountsData.length === 0) {
+        select.innerHTML = '<option value="">Nenhuma conta PIX configurada</option>';
+        select.disabled = true;
+        return;
+    }
+    
+    select.disabled = false;
+    select.innerHTML = '<option value="">Selecione uma conta PIX</option>';
+    
+    // Encontrar conta padrão
+    const defaultAccount = pixAccountsData.find(a => a.is_default == 1);
+    
+    pixAccountsData.forEach(account => {
         const option = document.createElement('option');
         option.value = account.id;
         option.textContent = account.label + (account.bank_name ? ' - ' + account.bank_name : '');
@@ -597,6 +654,16 @@ document.getElementById('enrollmentForm')?.addEventListener('submit', function(e
             e.preventDefault();
             alert('Se houver entrada, a data da entrada é obrigatória.');
             return false;
+        }
+        
+        // Validar conta PIX da entrada se forma de pagamento for PIX
+        if (entryPaymentMethod === 'pix') {
+            const entryPixAccountId = document.getElementById('entry_pix_account_id').value;
+            if (!entryPixAccountId) {
+                e.preventDefault();
+                alert('Selecione a conta PIX que recebeu a entrada.');
+                return false;
+            }
         }
         
         if (entryAmount >= finalPrice) {
