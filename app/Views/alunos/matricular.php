@@ -493,18 +493,17 @@ function togglePaymentConditions() {
     });
     
     // Mostrar seção apropriada
-    if (paymentMethod === 'boleto' || paymentMethod === 'pix') {
+    if (paymentMethod === 'pix') {
+        // PIX é pagamento à vista - não mostrar parcelas, apenas seletor de conta
+        conditionsSection.style.display = 'none';
+        pixAccountSelector.style.display = 'block';
+        document.getElementById('pix_account_id').setAttribute('required', 'required');
+        carregarContasPix();
+    } else if (paymentMethod === 'boleto') {
         conditionsSection.style.display = 'block';
         boletoPixDiv.style.display = 'block';
         document.getElementById('installments').setAttribute('required', 'required');
         document.getElementById('first_due_date').setAttribute('required', 'required');
-        
-        // Se for PIX, mostrar seletor de conta
-        if (paymentMethod === 'pix') {
-            pixAccountSelector.style.display = 'block';
-            document.getElementById('pix_account_id').setAttribute('required', 'required');
-            carregarContasPix();
-        }
     } else if (paymentMethod === 'cartao') {
         conditionsSection.style.display = 'block';
         cartaoDiv.style.display = 'block';

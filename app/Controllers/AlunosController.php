@@ -529,7 +529,10 @@ class AlunosController extends Controller
         $firstDueDate = null;
 
         // Validações de parcelamento conforme método de pagamento
-        if (in_array($paymentMethod, ['boleto', 'pix', 'cartao', 'entrada_parcelas'])) {
+        if ($paymentMethod === 'pix') {
+            // PIX é pagamento à vista - sempre 1 parcela
+            $installments = 1;
+        } elseif (in_array($paymentMethod, ['boleto', 'cartao', 'entrada_parcelas'])) {
             $installments = !empty($_POST['installments']) ? intval($_POST['installments']) : null;
             
             // Validação dinâmica de parcelas conforme método de pagamento
@@ -541,7 +544,7 @@ class AlunosController extends Controller
         }
 
         // Validações específicas por método
-        if (in_array($paymentMethod, ['boleto', 'pix'])) {
+        if ($paymentMethod === 'boleto') {
             $firstDueDate = !empty($_POST['first_due_date']) ? $_POST['first_due_date'] : null;
             if (!$firstDueDate) {
                 $_SESSION['error'] = 'Data de vencimento da primeira parcela é obrigatória.';
@@ -961,7 +964,10 @@ class AlunosController extends Controller
 
         if ($canEditPaymentPlan) {
             // Validações de parcelamento conforme método de pagamento
-            if (in_array($paymentMethod, ['boleto', 'pix', 'cartao', 'entrada_parcelas'])) {
+            if ($paymentMethod === 'pix') {
+                // PIX é pagamento à vista - sempre 1 parcela
+                $installments = 1;
+            } elseif (in_array($paymentMethod, ['boleto', 'cartao', 'entrada_parcelas'])) {
                 // Em edição de matrícula, o formulário atual exibe as parcelas apenas em modo leitura.
                 // Portanto, se o campo "installments" não vier no POST, usamos o valor já salvo na matrícula.
                 if (isset($_POST['installments']) && $_POST['installments'] !== '') {
@@ -979,7 +985,7 @@ class AlunosController extends Controller
             }
 
             // Validações específicas por método
-            if (in_array($paymentMethod, ['boleto', 'pix'])) {
+            if ($paymentMethod === 'boleto') {
                 // Se não veio no POST, usar o valor já salvo na matrícula
                 if (isset($_POST['first_due_date']) && $_POST['first_due_date'] !== '') {
                     $firstDueDate = $_POST['first_due_date'];

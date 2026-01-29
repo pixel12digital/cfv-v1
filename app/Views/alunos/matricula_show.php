@@ -925,8 +925,20 @@ function updatePaymentPlanFields() {
         return; // Campos não existem (modo somente leitura)
     }
     
-    // Métodos que requerem parcelas
-    const methodsWithInstallments = ['boleto', 'pix', 'cartao', 'entrada_parcelas'];
+    // PIX é pagamento à vista - não requer parcelas nem data de vencimento
+    if (paymentMethod === 'pix') {
+        installmentsField.style.display = 'none';
+        firstDueDateField.style.display = 'none';
+        if (installmentsInput) {
+            installmentsInput.removeAttribute('required');
+            installmentsInput.value = 1; // PIX sempre é 1 parcela (à vista)
+        }
+        firstDueDateField.querySelector('#first_due_date')?.removeAttribute('required');
+        return;
+    }
+    
+    // Métodos que requerem parcelas (exceto PIX que é à vista)
+    const methodsWithInstallments = ['boleto', 'cartao', 'entrada_parcelas'];
     
     if (methodsWithInstallments.includes(paymentMethod)) {
         installmentsField.style.display = 'block';
@@ -949,8 +961,8 @@ function updatePaymentPlanFields() {
             }
         }
         
-        // Métodos que requerem data do primeiro vencimento
-        if (['boleto', 'pix'].includes(paymentMethod)) {
+        // Apenas Boleto requer data do primeiro vencimento
+        if (paymentMethod === 'boleto') {
             firstDueDateField.style.display = 'block';
             firstDueDateField.querySelector('#first_due_date').setAttribute('required', 'required');
         } else {
@@ -963,7 +975,7 @@ function updatePaymentPlanFields() {
         if (installmentsInput) {
             installmentsInput.removeAttribute('required');
         }
-        firstDueDateField.querySelector('#first_due_date').removeAttribute('required');
+        firstDueDateField.querySelector('#first_due_date')?.removeAttribute('required');
     }
 }
 
