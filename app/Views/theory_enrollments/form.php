@@ -21,8 +21,9 @@
                 <select id="student_id" name="student_id" class="form-input" required onchange="loadEnrollments(this.value)">
                     <option value="">Selecione um aluno</option>
                     <?php foreach ($students as $student): ?>
+                        <?php $displayName = $student['full_name'] ?: $student['name']; ?>
                         <option value="<?= $student['id'] ?>">
-                            <?= htmlspecialchars($student['name']) ?>
+                            <?= htmlspecialchars($displayName) ?>
                             <?php if ($student['cpf']): ?>
                                 - CPF: <?= htmlspecialchars($student['cpf']) ?>
                             <?php endif; ?>
