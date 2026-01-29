@@ -173,15 +173,25 @@ use App\Helpers\TheoryHelper;
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="location">Local (opcional)</label>
-                <input 
-                    type="text" 
-                    id="location" 
-                    name="location" 
-                    class="form-input" 
-                    value="<?= htmlspecialchars($session['location'] ?? '') ?>"
-                    placeholder="Ex: Sala 1, Auditório, etc."
-                >
+                <label class="form-label" for="location">Local</label>
+                <?php 
+                    $locationOptions = ['Online', 'Sala de aula', 'Online + Sala de aula'];
+                    $currentLocation = $session['location'] ?? '';
+                ?>
+                <select id="location" name="location" class="form-input">
+                    <option value="">Selecione o local</option>
+                    <?php foreach ($locationOptions as $option): ?>
+                        <option value="<?= htmlspecialchars($option) ?>" <?= $currentLocation === $option ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($option) ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <?php if ($currentLocation && !in_array($currentLocation, $locationOptions)): ?>
+                        <!-- Valor legado (texto livre anterior) -->
+                        <option value="<?= htmlspecialchars($currentLocation) ?>" selected>
+                            <?= htmlspecialchars($currentLocation) ?> (anterior)
+                        </option>
+                    <?php endif; ?>
+                </select>
             </div>
 
             <div class="form-actions">
