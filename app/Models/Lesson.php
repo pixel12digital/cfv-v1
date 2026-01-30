@@ -901,9 +901,30 @@ class Lesson extends Model
                 [$instructorId, $studentId, $enrollmentId]
             )->fetch();
             
-            // Última aula concluída deste instrutor com este aluno
+            // Contagem por tipo de aula prática
+            $byType = $this->query(
+                "SELECT practice_type, COUNT(*) as total 
+                 FROM {$this->table} 
+                 WHERE instructor_id = ? 
+                   AND student_id = ? 
+                   AND enrollment_id = ?
+                   AND status = 'concluida'
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)
+                   AND practice_type IS NOT NULL
+                 GROUP BY practice_type",
+                [$instructorId, $studentId, $enrollmentId]
+            )->fetchAll();
+            
+            $typeCounts = ['rua' => 0, 'garagem' => 0, 'baliza' => 0];
+            foreach ($byType as $row) {
+                if (isset($typeCounts[$row['practice_type']])) {
+                    $typeCounts[$row['practice_type']] = (int)$row['total'];
+                }
+            }
+            
+            // Última aula concluída deste instrutor com este aluno (com tipo)
             $lastLesson = $this->query(
-                "SELECT scheduled_date, scheduled_time 
+                "SELECT scheduled_date, scheduled_time, practice_type 
                  FROM {$this->table} 
                  WHERE instructor_id = ? 
                    AND student_id = ? 
@@ -931,7 +952,9 @@ class Lesson extends Model
                 'completed_count' => (int)($completed['total'] ?? 0),
                 'last_lesson_date' => $lastLesson ? $lastLesson['scheduled_date'] : null,
                 'last_lesson_time' => $lastLesson ? $lastLesson['scheduled_time'] : null,
-                'upcoming_count' => (int)($upcoming['total'] ?? 0)
+                'last_lesson_type' => $lastLesson ? $lastLesson['practice_type'] : null,
+                'upcoming_count' => (int)($upcoming['total'] ?? 0),
+                'type_counts' => $typeCounts
             ];
         } catch (\PDOException $e) {
             error_log("[Lesson::getStudentSummaryForInstructor] Erro: " . $e->getMessage());
@@ -939,7 +962,9 @@ class Lesson extends Model
                 'completed_count' => 0,
                 'last_lesson_date' => null,
                 'last_lesson_time' => null,
-                'upcoming_count' => 0
+                'last_lesson_type' => null,
+                'upcoming_count' => 0,
+                'type_counts' => ['rua' => 0, 'garagem' => 0, 'baliza' => 0]
             ];
         }
     }

@@ -41,20 +41,36 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
         <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
             <strong style="color: var(--color-text, #333);">Histórico com este aluno</strong>
         </div>
+        <?php 
+        $count = $studentSummary['completed_count'];
+        $lastDate = $studentSummary['last_lesson_date'];
+        $lastTime = $studentSummary['last_lesson_time'];
+        $lastType = $studentSummary['last_lesson_type'] ?? null;
+        $upcoming = $studentSummary['upcoming_count'];
+        $typeCounts = $studentSummary['type_counts'] ?? ['rua' => 0, 'garagem' => 0, 'baliza' => 0];
+        $typeLabels = ['rua' => 'Rua', 'garagem' => 'Garagem', 'baliza' => 'Baliza'];
+        ?>
         <div style="font-size: 0.95rem; color: var(--color-text, #333);">
-            <?php 
-            $count = $studentSummary['completed_count'];
-            $lastDate = $studentSummary['last_lesson_date'];
-            $lastTime = $studentSummary['last_lesson_time'];
-            $upcoming = $studentSummary['upcoming_count'];
-            ?>
             <strong><?= $count ?></strong> aula<?= $count !== 1 ? 's' : '' ?> concluída<?= $count !== 1 ? 's' : '' ?>
             <?php if ($lastDate): ?>
-                • Última: <strong><?= date('d/m', strtotime($lastDate)) ?></strong> às <?= date('H:i', strtotime($lastTime)) ?>
+                • Última: <strong><?= date('d/m', strtotime($lastDate)) ?></strong><?php if ($lastType): ?> (<?= $typeLabels[$lastType] ?? $lastType ?>)<?php endif; ?>
             <?php else: ?>
                 • Sem aulas anteriores registradas
             <?php endif; ?>
         </div>
+        <?php if ($count > 0 && array_sum($typeCounts) > 0): ?>
+        <div style="font-size: 0.875rem; color: var(--color-text, #333); margin-top: var(--spacing-xs);">
+            <?php 
+            $typeDisplay = [];
+            foreach ($typeCounts as $type => $typeCount) {
+                if ($typeCount > 0) {
+                    $typeDisplay[] = "{$typeLabels[$type]}: {$typeCount}";
+                }
+            }
+            echo implode(' | ', $typeDisplay);
+            ?>
+        </div>
+        <?php endif; ?>
         <div style="font-size: 0.875rem; color: var(--color-text-muted, #666); margin-top: var(--spacing-xs);">
             Próximas agendadas: <strong><?= $upcoming ?></strong>
         </div>
