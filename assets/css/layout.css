@@ -430,6 +430,11 @@
 }
 
 @media (max-width: 768px) {
+  /* Mobile: Ocultar seletor de modo - multi-usuários usam INSTRUTOR por padrão */
+  .topbar-role-selector {
+    display: none !important;
+  }
+
   .sidebar {
     position: fixed;
     top: var(--header-height);
