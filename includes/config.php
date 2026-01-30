@@ -351,6 +351,31 @@ if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     session_start();
 }
 
+// Mobile: Forçar papel INSTRUTOR para usuários multi-role (Admin+Instrutor, Secretaria+Instrutor)
+// Isso garante que no celular sempre abra como Instrutor, sem opção de alternar
+if (isset($_SESSION['user_id']) && isset($_SESSION['available_roles'])) {
+    $isMobile = preg_match('/Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|Opera Mini|IEMobile/i', $_SERVER['HTTP_USER_AGENT'] ?? '');
+    $availableRoles = $_SESSION['available_roles'] ?? [];
+    $hasMultipleRoles = is_array($availableRoles) && count($availableRoles) > 1;
+    
+    if ($isMobile && $hasMultipleRoles) {
+        // Verificar se INSTRUTOR está entre os papéis disponíveis
+        $hasInstrutor = false;
+        foreach ($availableRoles as $role) {
+            $roleCode = is_array($role) ? ($role['role'] ?? '') : $role;
+            if (strtoupper($roleCode) === 'INSTRUTOR') {
+                $hasInstrutor = true;
+                break;
+            }
+        }
+        // Se tem INSTRUTOR disponível, forçar este papel no mobile
+        if ($hasInstrutor) {
+            $_SESSION['current_role'] = 'INSTRUTOR';
+            $_SESSION['active_role'] = 'INSTRUTOR';
+        }
+    }
+}
+
 // Configurações de Upload
 if (!headers_sent()) {
     ini_set('upload_max_filesize', UPLOAD_MAX_SIZE);

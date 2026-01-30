@@ -129,21 +129,7 @@
 
                 $hasMultipleRoles = count($normalizedRoles) > 1;
                 
-                // Mobile: Forçar INSTRUTOR se usuário tem múltiplos papéis incluindo INSTRUTOR
-                $isMobile = preg_match('/Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|Opera Mini|IEMobile/i', $_SERVER['HTTP_USER_AGENT'] ?? '');
-                if ($isMobile && $hasMultipleRoles) {
-                    $hasInstrutor = false;
-                    foreach ($normalizedRoles as $role) {
-                        if ($role['role'] === 'INSTRUTOR') {
-                            $hasInstrutor = true;
-                            break;
-                        }
-                    }
-                    if ($hasInstrutor && ($_SESSION['current_role'] ?? '') !== 'INSTRUTOR') {
-                        $_SESSION['current_role'] = 'INSTRUTOR';
-                        $_SESSION['active_role'] = 'INSTRUTOR';
-                    }
-                }
+                // Nota: A lógica de forçar INSTRUTOR no mobile está em config.php (antes do roteamento)
                 
                 // Determinar label amigável para o papel atual
                 $currentRoleCode = strtoupper($_SESSION['active_role'] ?? $_SESSION['current_role'] ?? 'ALUNO');
