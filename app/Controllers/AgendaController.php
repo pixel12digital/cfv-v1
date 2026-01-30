@@ -220,6 +220,9 @@ class AgendaController extends Controller
         $instructors = ($isAluno || $isInstrutor) ? [] : $instructorModel->findAvailableForAgenda($this->cfcId);
         $vehicles = ($isAluno || $isInstrutor) ? [] : $vehicleModel->findActive($this->cfcId);
         
+        // Marcar aulas consecutivas com informações de bloco (para exibição visual)
+        $lessons = $lessonModel->markConsecutiveBlocks($lessons);
+        
         $data = [
             'pageTitle' => ($isAluno || $isInstrutor) ? 'Minha Agenda' : 'Agenda',
             'viewType' => $view,

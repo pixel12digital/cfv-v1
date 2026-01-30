@@ -283,6 +283,11 @@ function toggleExtraFilters() {
                                             <?= htmlspecialchars($practiceLabel) ?>
                                         </span>
                                         <?php endif; ?>
+                                        <?php if (!empty($lesson['block_total']) && $lesson['block_total'] > 1): ?>
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd;">
+                                            Bloco <?= $lesson['block_position'] ?>/<?= $lesson['block_total'] ?>
+                                        </span>
+                                        <?php endif; ?>
                                         <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background: <?= $status['bg'] ?>; color: <?= $status['color'] ?>;">
                                             <?= $status['label'] ?>
                                         </span>

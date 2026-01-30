@@ -1061,6 +1061,114 @@ class Lesson extends Model
     }
 
     /**
+     * Marca aulas consecutivas em um array de lessons com informações de bloco
+     * @param array $lessons Array de aulas
+     * @return array Array de aulas com campos block_id, block_position, block_total adicionados
+     */
+    public function markConsecutiveBlocks(array $lessons): array
+    {
+        if (empty($lessons)) {
+            return $lessons;
+        }
+        
+        // Agrupar por student_id + scheduled_date
+        $grouped = [];
+        foreach ($lessons as $idx => $lesson) {
+            // Ignorar aulas teóricas e canceladas para agrupamento
+            $isTheory = ($lesson['lesson_type'] ?? '') === 'teoria' || !empty($lesson['theory_session_id']);
+            if ($isTheory || ($lesson['status'] ?? '') === 'cancelada') {
+                $lessons[$idx]['block_id'] = null;
+                $lessons[$idx]['block_position'] = null;
+                $lessons[$idx]['block_total'] = null;
+                continue;
+            }
+            
+            $key = ($lesson['student_id'] ?? '') . '_' . ($lesson['scheduled_date'] ?? '');
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [];
+            }
+            $grouped[$key][] = $idx;
+        }
+        
+        // Para cada grupo, verificar se são consecutivas
+        $blockId = 0;
+        foreach ($grouped as $key => $indices) {
+            if (count($indices) < 2) {
+                // Aula única, não faz parte de bloco
+                foreach ($indices as $idx) {
+                    $lessons[$idx]['block_id'] = null;
+                    $lessons[$idx]['block_position'] = null;
+                    $lessons[$idx]['block_total'] = null;
+                }
+                continue;
+            }
+            
+            // Ordenar pelo horário
+            usort($indices, function($a, $b) use ($lessons) {
+                return strcmp($lessons[$a]['scheduled_time'] ?? '', $lessons[$b]['scheduled_time'] ?? '');
+            });
+            
+            // Identificar blocos consecutivos
+            $currentBlock = [$indices[0]];
+            
+            for ($i = 1; $i < count($indices); $i++) {
+                $prevIdx = $indices[$i - 1];
+                $currIdx = $indices[$i];
+                
+                $prevLesson = $lessons[$prevIdx];
+                $currLesson = $lessons[$currIdx];
+                
+                // Calcular fim da aula anterior
+                $prevEnd = new \DateTime($prevLesson['scheduled_date'] . ' ' . $prevLesson['scheduled_time']);
+                $prevEnd->modify("+{$prevLesson['duration_minutes']} minutes");
+                
+                // Início da aula atual
+                $currStart = new \DateTime($currLesson['scheduled_date'] . ' ' . $currLesson['scheduled_time']);
+                
+                // Verificar se são consecutivas (fim = início)
+                if ($prevEnd->format('H:i') === $currStart->format('H:i')) {
+                    $currentBlock[] = $currIdx;
+                } else {
+                    // Não consecutiva, finalizar bloco anterior e iniciar novo
+                    $this->assignBlockInfo($lessons, $currentBlock, $blockId);
+                    if (count($currentBlock) > 1) $blockId++;
+                    $currentBlock = [$currIdx];
+                }
+            }
+            
+            // Finalizar último bloco
+            $this->assignBlockInfo($lessons, $currentBlock, $blockId);
+            if (count($currentBlock) > 1) $blockId++;
+        }
+        
+        return $lessons;
+    }
+    
+    /**
+     * Atribui informações de bloco às aulas
+     */
+    private function assignBlockInfo(array &$lessons, array $blockIndices, int $blockId): void
+    {
+        $total = count($blockIndices);
+        if ($total < 2) {
+            // Não é um bloco, marcar como null
+            foreach ($blockIndices as $idx) {
+                $lessons[$idx]['block_id'] = null;
+                $lessons[$idx]['block_position'] = null;
+                $lessons[$idx]['block_total'] = null;
+            }
+            return;
+        }
+        
+        // Marcar cada aula com sua posição no bloco
+        foreach ($blockIndices as $position => $idx) {
+            $lessons[$idx]['block_id'] = $blockId;
+            $lessons[$idx]['block_position'] = $position + 1; // 1-based
+            $lessons[$idx]['block_total'] = $total;
+        }
+    }
+
+    /**
      * Encontra o bloco de aulas consecutivas que inclui a aula fornecida
      * @param array $lesson Aula de referência
      * @return array|null Dados do bloco ou null se não houver consecutivas
