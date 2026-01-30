@@ -1223,6 +1223,14 @@ class Lesson extends Model
                     $firstLesson = $block['lessons'][0];
                     $lastLesson = end($block['lessons']);
                     
+                    // Encontrar posição da aula atual no bloco
+                    $currentPosition = array_search($lesson['id'], $lessonIds) + 1; // 1-based
+                    
+                    // Calcular horário individual desta aula
+                    $thisLessonStart = new \DateTime($lesson['scheduled_date'] . ' ' . $lesson['scheduled_time']);
+                    $thisLessonEnd = clone $thisLessonStart;
+                    $thisLessonEnd->modify("+{$lesson['duration_minutes']} minutes");
+                    
                     $startTime = new \DateTime($firstLesson['scheduled_date'] . ' ' . $firstLesson['scheduled_time']);
                     $totalDuration = array_sum(array_column($block['lessons'], 'duration_minutes'));
                     $endTime = clone $startTime;
@@ -1231,9 +1239,12 @@ class Lesson extends Model
                     return [
                         'lessons' => $block['lessons'],
                         'count' => count($block['lessons']),
+                        'current_position' => $currentPosition,
                         'first_lesson_id' => $firstLesson['id'],
                         'start_time' => $startTime->format('H:i'),
                         'end_time' => $endTime->format('H:i'),
+                        'this_start_time' => $thisLessonStart->format('H:i'),
+                        'this_end_time' => $thisLessonEnd->format('H:i'),
                         'total_duration' => $totalDuration,
                         'is_first' => ($lesson['id'] == $firstLesson['id']),
                         'is_last' => ($lesson['id'] == $lastLesson['id'])

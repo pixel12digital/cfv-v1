@@ -141,24 +141,40 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                     $blockEndTime = $consecutiveBlock['end_time'];
                     $blockDuration = $consecutiveBlock['total_duration'];
                     $blockCount = $consecutiveBlock['count'];
+                    $currentPosition = $consecutiveBlock['current_position'];
+                    $thisStartTime = $consecutiveBlock['this_start_time'];
+                    $thisEndTime = $consecutiveBlock['this_end_time'];
                     $hours = floor($blockDuration / 60);
                     $mins = $blockDuration % 60;
-                    $durationText = $hours > 0 
+                    $blockDurationText = $hours > 0 
                         ? ($mins > 0 ? "{$hours}h{$mins}min" : "{$hours}h") 
                         : "{$mins} minutos";
                 }
                 ?>
+                
+                <?php if ($hasConsecutive): ?>
+                <!-- Indicador de Bloco -->
+                <div style="background: #dbeafe; border: 1px solid #93c5fd; border-radius: var(--radius-md, 8px); padding: var(--spacing-sm) var(--spacing-md); margin-bottom: var(--spacing-md);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-sm);">
+                        <div>
+                            <strong style="color: #1e40af;">Aula <?= $currentPosition ?>/<?= $blockCount ?> do bloco</strong>
+                            <span style="color: #1e40af; margin-left: var(--spacing-sm);">
+                                (Bloco total: <?= $blockStartTime ?> - <?= $blockEndTime ?>, <?= $blockDurationText ?>)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
                     <div>
                         <label class="form-label">Data</label>
                         <div><?= date('d/m/Y', strtotime($lesson['scheduled_date'])) ?></div>
                     </div>
                     <div>
-                        <label class="form-label">Hora</label>
+                        <label class="form-label">Hora desta aula</label>
                         <?php if ($hasConsecutive): ?>
-                        <div>
-                            <?= $blockStartTime ?> - <?= $blockEndTime ?>
-                        </div>
+                        <div><?= $thisStartTime ?> - <?= $thisEndTime ?></div>
                         <?php else: ?>
                         <div><?= date('H:i', strtotime($lesson['scheduled_time'])) ?></div>
                         <?php endif; ?>
@@ -167,17 +183,8 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                 
                 <!-- Duração -->
                 <div>
-                    <label class="form-label">Duração</label>
-                    <?php if ($hasConsecutive): ?>
-                    <div>
-                        <?= $durationText ?>
-                        <span style="margin-left: var(--spacing-xs); background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">
-                            <?= $blockCount ?> aulas consecutivas
-                        </span>
-                    </div>
-                    <?php else: ?>
+                    <label class="form-label">Duração desta aula</label>
                     <div><?= $lesson['duration_minutes'] ?> minutos</div>
-                    <?php endif; ?>
                 </div>
                 
                 <!-- Aluno (link apenas para não-alunos) -->

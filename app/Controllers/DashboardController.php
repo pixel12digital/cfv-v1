@@ -846,9 +846,15 @@ class DashboardController extends Controller
                     $currentGroup['lessons'][] = $lesson;
                     $currentGroup['total_duration'] += (int)$lesson['duration_minutes'];
                     $currentGroup['is_group'] = true;
-                    // Status do grupo: se alguma em_andamento, grupo em_andamento; se todas concluídas, concluído
-                    if ($lesson['status'] === 'em_andamento') {
+                    // Status do grupo: prioridade em_andamento > agendada > concluida
+                    // Recalcular status considerando todas as aulas do grupo
+                    $statuses = array_column($currentGroup['lessons'], 'status');
+                    if (in_array('em_andamento', $statuses)) {
                         $currentGroup['status'] = 'em_andamento';
+                    } elseif (in_array('agendada', $statuses)) {
+                        $currentGroup['status'] = 'agendada';
+                    } else {
+                        $currentGroup['status'] = 'concluida';
                     }
                 } else {
                     // Finalizar grupo anterior e iniciar novo
