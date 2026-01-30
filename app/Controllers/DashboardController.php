@@ -544,8 +544,9 @@ class DashboardController extends Controller
                 $nextLesson = $stmtInProgress->fetch();
                 
                 // 2) Se não há aula em andamento, buscar próxima agendada
+                // CORREÇÃO: Não filtrar por horário - mostrar a mais antiga 'agendada' 
+                // mesmo que o horário já tenha passado (aguardando ação do instrutor)
                 if (!$nextLesson) {
-                    $now = date('H:i:s');
                     $stmtNext = $db->prepare(
                         "SELECT l.*,
                                 COALESCE(s.full_name, s.name) as student_name,
@@ -556,11 +557,11 @@ class DashboardController extends Controller
                          WHERE l.instructor_id = ?
                            AND l.cfc_id = ?
                            AND l.status = 'agendada'
-                           AND (l.scheduled_date > ? OR (l.scheduled_date = ? AND l.scheduled_time >= ?))
+                           AND l.scheduled_date >= ?
                          ORDER BY l.scheduled_date ASC, l.scheduled_time ASC
                          LIMIT 1"
                     );
-                    $stmtNext->execute([$instructorId, $cfcId, $today, $today, $now]);
+                    $stmtNext->execute([$instructorId, $cfcId, $today]);
                     $nextLesson = $stmtNext->fetch();
                 }
                 

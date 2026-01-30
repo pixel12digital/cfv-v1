@@ -15,9 +15,31 @@ $currentRole = $_SESSION['current_role'] ?? '';
     </div>
 <?php else: ?>
     <!-- Próxima Aula -->
-    <div class="card" style="margin-bottom: var(--spacing-md);">
-        <div class="card-header">
-            <h3 style="margin: 0;">Próxima Aula</h3>
+    <?php 
+    // Verificar se aula está atrasada (horário passou mas não foi iniciada)
+    $isOverdue = false;
+    $isInProgress = false;
+    if ($nextLesson) {
+        $lessonDateTime = new \DateTime("{$nextLesson['scheduled_date']} {$nextLesson['scheduled_time']}");
+        $now = new \DateTime();
+        $isOverdue = ($nextLesson['status'] === 'agendada' && $lessonDateTime < $now);
+        $isInProgress = ($nextLesson['status'] === 'em_andamento');
+    }
+    $cardBorderColor = $isOverdue ? 'var(--color-danger, #ef4444)' : ($isInProgress ? 'var(--color-warning, #f59e0b)' : 'transparent');
+    $cardTitle = $isOverdue ? 'Aula Atrasada' : ($isInProgress ? 'Aula em Andamento' : 'Próxima Aula');
+    ?>
+    <div class="card" style="margin-bottom: var(--spacing-md); border-left: 4px solid <?= $cardBorderColor ?>;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;"><?= $cardTitle ?></h3>
+            <?php if ($isOverdue): ?>
+            <span style="background: var(--color-danger, #ef4444); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                Aguardando início
+            </span>
+            <?php elseif ($isInProgress): ?>
+            <span style="background: var(--color-warning, #f59e0b); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                Em andamento
+            </span>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <?php if ($nextLesson): ?>
@@ -26,6 +48,11 @@ $currentRole = $_SESSION['current_role'] ?? '';
                 $endTime = clone $lessonDate;
                 $endTime->modify("+{$nextLesson['duration_minutes']} minutes");
                 ?>
+                <?php if ($isOverdue): ?>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: var(--spacing-sm); border-radius: var(--radius-sm, 4px); margin-bottom: var(--spacing-sm); color: #991b1b; font-size: 0.875rem;">
+                    Esta aula estava agendada para <?= $lessonDate->format('H:i') ?> e ainda não foi iniciada.
+                </div>
+                <?php endif; ?>
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
                     <div>
                         <strong style="font-size: var(--font-size-lg);">
