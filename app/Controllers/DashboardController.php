@@ -602,12 +602,21 @@ class DashboardController extends Controller
                 $todayLessons = [];
             }
         
-            // Contadores
+            // Contadores (antes de agrupar)
             $totalToday = count($todayLessons);
             $completedToday = count(array_filter($todayLessons, function($l) {
                 return $l['status'] === 'concluida';
             }));
             $pendingToday = $totalToday - $completedToday;
+            
+            // Agrupar aulas consecutivas do mesmo aluno
+            $groupedLessons = $this->groupConsecutiveLessons($todayLessons);
+            
+            // Verificar se próxima aula tem consecutiva
+            $consecutiveLessons = [];
+            if ($nextLesson) {
+                $consecutiveLessons = $this->findConsecutiveLessons($nextLesson, $todayLessons);
+            }
             
             error_log('[DashboardController::dashboardInstrutor] Preparando dados para view');
             
@@ -615,7 +624,8 @@ class DashboardController extends Controller
                 'pageTitle' => 'Dashboard',
                 'instructor' => $user,
                 'nextLesson' => $nextLesson,
-                'todayLessons' => $todayLessons,
+                'consecutiveLessons' => $consecutiveLessons,
+                'todayLessons' => $groupedLessons,
                 'totalToday' => $totalToday,
                 'completedToday' => $completedToday,
                 'pendingToday' => $pendingToday
@@ -786,5 +796,122 @@ class DashboardController extends Controller
         ];
         
         $this->view('dashboard/admin', $data);
+    }
+    
+    /**
+     * Agrupa aulas consecutivas do mesmo aluno em blocos
+     * @param array $lessons Lista de aulas ordenadas por horário
+     * @return array Lista de aulas/grupos
+     */
+    private function groupConsecutiveLessons(array $lessons): array
+    {
+        if (empty($lessons)) {
+            return [];
+        }
+        
+        $grouped = [];
+        $currentGroup = null;
+        
+        foreach ($lessons as $lesson) {
+            if ($currentGroup === null) {
+                // Primeira aula - iniciar grupo
+                $currentGroup = [
+                    'lessons' => [$lesson],
+                    'first_lesson' => $lesson,
+                    'student_id' => $lesson['student_id'],
+                    'student_name' => $lesson['student_name'],
+                    'vehicle_plate' => $lesson['vehicle_plate'],
+                    'start_time' => $lesson['scheduled_time'],
+                    'scheduled_date' => $lesson['scheduled_date'],
+                    'total_duration' => (int)$lesson['duration_minutes'],
+                    'status' => $lesson['status'],
+                    'is_group' => false
+                ];
+            } else {
+                // Verificar se é consecutiva do mesmo aluno
+                $lastLesson = end($currentGroup['lessons']);
+                $lastEndTime = new \DateTime($lastLesson['scheduled_date'] . ' ' . $lastLesson['scheduled_time']);
+                $lastEndTime->modify("+{$lastLesson['duration_minutes']} minutes");
+                
+                $currentStartTime = new \DateTime($lesson['scheduled_date'] . ' ' . $lesson['scheduled_time']);
+                
+                $isConsecutive = (
+                    $lesson['student_id'] == $currentGroup['student_id'] &&
+                    $lesson['scheduled_date'] == $currentGroup['scheduled_date'] &&
+                    $lastEndTime->format('H:i') == $currentStartTime->format('H:i')
+                );
+                
+                if ($isConsecutive) {
+                    // Adicionar ao grupo atual
+                    $currentGroup['lessons'][] = $lesson;
+                    $currentGroup['total_duration'] += (int)$lesson['duration_minutes'];
+                    $currentGroup['is_group'] = true;
+                    // Status do grupo: se alguma em_andamento, grupo em_andamento; se todas concluídas, concluído
+                    if ($lesson['status'] === 'em_andamento') {
+                        $currentGroup['status'] = 'em_andamento';
+                    }
+                } else {
+                    // Finalizar grupo anterior e iniciar novo
+                    $grouped[] = $currentGroup;
+                    $currentGroup = [
+                        'lessons' => [$lesson],
+                        'first_lesson' => $lesson,
+                        'student_id' => $lesson['student_id'],
+                        'student_name' => $lesson['student_name'],
+                        'vehicle_plate' => $lesson['vehicle_plate'],
+                        'start_time' => $lesson['scheduled_time'],
+                        'scheduled_date' => $lesson['scheduled_date'],
+                        'total_duration' => (int)$lesson['duration_minutes'],
+                        'status' => $lesson['status'],
+                        'is_group' => false
+                    ];
+                }
+            }
+        }
+        
+        // Adicionar último grupo
+        if ($currentGroup !== null) {
+            $grouped[] = $currentGroup;
+        }
+        
+        return $grouped;
+    }
+    
+    /**
+     * Encontra aulas consecutivas à aula fornecida
+     * @param array $lesson Aula de referência
+     * @param array $allLessons Todas as aulas do dia
+     * @return array Lista de aulas consecutivas (incluindo a original)
+     */
+    private function findConsecutiveLessons(array $lesson, array $allLessons): array
+    {
+        $consecutive = [$lesson];
+        
+        // Calcular fim da aula atual
+        $currentEndTime = new \DateTime($lesson['scheduled_date'] . ' ' . $lesson['scheduled_time']);
+        $currentEndTime->modify("+{$lesson['duration_minutes']} minutes");
+        
+        foreach ($allLessons as $otherLesson) {
+            // Pular a própria aula
+            if ($otherLesson['id'] == $lesson['id']) {
+                continue;
+            }
+            
+            // Verificar se é consecutiva
+            $otherStartTime = new \DateTime($otherLesson['scheduled_date'] . ' ' . $otherLesson['scheduled_time']);
+            
+            if (
+                $otherLesson['student_id'] == $lesson['student_id'] &&
+                $otherLesson['scheduled_date'] == $lesson['scheduled_date'] &&
+                $currentEndTime->format('H:i') == $otherStartTime->format('H:i')
+            ) {
+                $consecutive[] = $otherLesson;
+                // Atualizar fim para verificar mais consecutivas
+                $currentEndTime = clone $otherStartTime;
+                $currentEndTime->modify("+{$otherLesson['duration_minutes']} minutes");
+            }
+        }
+        
+        return count($consecutive) > 1 ? $consecutive : [];
     }
 }

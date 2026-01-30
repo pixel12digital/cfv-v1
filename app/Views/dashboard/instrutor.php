@@ -45,8 +45,26 @@ $currentRole = $_SESSION['current_role'] ?? '';
             <?php if ($nextLesson): ?>
                 <?php
                 $lessonDate = new \DateTime("{$nextLesson['scheduled_date']} {$nextLesson['scheduled_time']}");
+                
+                // Calcular duração total (incluindo consecutivas)
+                $hasConsecutive = !empty($consecutiveLessons) && count($consecutiveLessons) > 1;
+                $totalDuration = $nextLesson['duration_minutes'];
+                if ($hasConsecutive) {
+                    $totalDuration = 0;
+                    foreach ($consecutiveLessons as $consLesson) {
+                        $totalDuration += (int)$consLesson['duration_minutes'];
+                    }
+                }
+                
                 $endTime = clone $lessonDate;
-                $endTime->modify("+{$nextLesson['duration_minutes']} minutes");
+                $endTime->modify("+{$totalDuration} minutes");
+                
+                // Formatar duração para exibição
+                $hours = floor($totalDuration / 60);
+                $mins = $totalDuration % 60;
+                $durationText = $hours > 0 
+                    ? ($mins > 0 ? "{$hours}h{$mins}min" : "{$hours}h") 
+                    : "{$mins}min";
                 ?>
                 <?php if ($isOverdue): ?>
                 <div style="background: #fef2f2; border: 1px solid #fecaca; padding: var(--spacing-sm); border-radius: var(--radius-sm, 4px); margin-bottom: var(--spacing-sm); color: #991b1b; font-size: 0.875rem;">
@@ -56,8 +74,13 @@ $currentRole = $_SESSION['current_role'] ?? '';
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
                     <div>
                         <strong style="font-size: var(--font-size-lg);">
-                            <?= $lessonDate->format('d/m/Y') ?> às <?= $lessonDate->format('H:i') ?>
+                            <?= $lessonDate->format('d/m/Y') ?> às <?= $lessonDate->format('H:i') ?> - <?= $endTime->format('H:i') ?>
                         </strong>
+                        <?php if ($hasConsecutive): ?>
+                        <span style="margin-left: var(--spacing-xs); background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">
+                            <?= count($consecutiveLessons) ?> aulas consecutivas (<?= $durationText ?>)
+                        </span>
+                        <?php endif; ?>
                     </div>
                     <div class="text-muted">
                         Aluno: <?= htmlspecialchars($nextLesson['student_name']) ?>
@@ -108,32 +131,53 @@ $currentRole = $_SESSION['current_role'] ?? '';
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
-                    <?php foreach ($todayLessons as $lesson): ?>
+                    <?php foreach ($todayLessons as $group): ?>
                         <?php
-                        $lessonDate = new \DateTime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}");
+                        // Dados do grupo (pode ser uma única aula ou grupo de consecutivas)
+                        $firstLesson = $group['first_lesson'];
+                        $lessonDate = new \DateTime("{$group['scheduled_date']} {$group['start_time']}");
                         $endTime = clone $lessonDate;
-                        $endTime->modify("+{$lesson['duration_minutes']} minutes");
+                        $endTime->modify("+{$group['total_duration']} minutes");
+                        $isGroup = $group['is_group'];
+                        $lessonCount = count($group['lessons']);
+                        
+                        // Formatar duração
+                        $hours = floor($group['total_duration'] / 60);
+                        $mins = $group['total_duration'] % 60;
+                        $durationText = $hours > 0 
+                            ? ($mins > 0 ? "{$hours}h{$mins}" : "{$hours}h") 
+                            : "{$mins}min";
                         
                         $statusConfig = [
                             'agendada' => ['label' => 'Agendada', 'color' => '#3b82f6', 'bg' => '#dbeafe'],
                             'em_andamento' => ['label' => 'Em Andamento', 'color' => '#f59e0b', 'bg' => '#fef3c7'],
                             'concluida' => ['label' => 'Concluída', 'color' => '#10b981', 'bg' => '#d1fae5'],
                         ];
-                        $status = $statusConfig[$lesson['status']] ?? ['label' => $lesson['status'], 'color' => '#666', 'bg' => '#f3f4f6'];
+                        $status = $statusConfig[$group['status']] ?? ['label' => $group['status'], 'color' => '#666', 'bg' => '#f3f4f6'];
                         ?>
-                        <a href="<?= base_path("agenda/{$lesson['id']}") ?>" 
-                           style="display: block; padding: var(--spacing-md); border: 1px solid var(--color-border, #e0e0e0); border-radius: var(--radius-md, 8px); text-decoration: none; color: inherit; background: white; transition: all 0.2s;">
+                        <a href="<?= base_path("agenda/{$firstLesson['id']}") ?>" 
+                           style="display: block; padding: var(--spacing-md); border: 1px solid var(--color-border, #e0e0e0); border-radius: var(--radius-md, 8px); text-decoration: none; color: inherit; background: white; transition: all 0.2s; <?= $isGroup ? 'border-left: 3px solid #3b82f6;' : '' ?>">
                             <div style="display: grid; gap: var(--spacing-xs);">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--spacing-sm); flex-wrap: wrap;">
                                     <div style="flex: 1; min-width: 200px;">
                                         <div style="font-weight: 600; font-size: 1rem; margin-bottom: var(--spacing-xs);">
                                             <?= $lessonDate->format('H:i') ?> – <?= $endTime->format('H:i') ?>
+                                            <?php if ($isGroup): ?>
+                                            <span style="margin-left: var(--spacing-xs); font-size: 0.75rem; color: #1e40af; font-weight: 500;">
+                                                (<?= $durationText ?>)
+                                            </span>
+                                            <?php endif; ?>
                                         </div>
                                         <div style="color: var(--color-text-muted, #666); font-size: 0.875rem;">
-                                            <?= htmlspecialchars($lesson['student_name']) ?>
+                                            <?= htmlspecialchars($group['student_name']) ?>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div style="display: flex; gap: var(--spacing-xs); flex-wrap: wrap;">
+                                        <?php if ($isGroup): ?>
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background: #dbeafe; color: #1e40af;">
+                                            <?= $lessonCount ?> aulas
+                                        </span>
+                                        <?php endif; ?>
                                         <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background: <?= $status['bg'] ?>; color: <?= $status['color'] ?>;">
                                             <?= $status['label'] ?>
                                         </span>
