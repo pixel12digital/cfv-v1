@@ -78,22 +78,19 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
                         <input type="radio" name="practice_type" value="rua" required style="display: none;">
                         <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
-                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🚗</div>
-                            <div style="font-weight: 600;">Rua</div>
+                            <div style="font-weight: 600; font-size: 1rem;">Rua</div>
                         </div>
                     </label>
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
                         <input type="radio" name="practice_type" value="garagem" required style="display: none;">
                         <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
-                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🏠</div>
-                            <div style="font-weight: 600;">Garagem</div>
+                            <div style="font-weight: 600; font-size: 1rem;">Garagem</div>
                         </div>
                     </label>
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
                         <input type="radio" name="practice_type" value="baliza" required style="display: none;">
                         <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
-                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🅿️</div>
-                            <div style="font-weight: 600;">Baliza</div>
+                            <div style="font-weight: 600; font-size: 1rem;">Baliza</div>
                         </div>
                     </label>
                 </div>
