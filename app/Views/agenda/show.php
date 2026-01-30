@@ -84,6 +84,14 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                     <label class="form-label">Tipo</label>
                     <div>
                         Aula Prática
+                        <?php if (!empty($lesson['practice_type'])): 
+                            $practiceTypeLabels = ['rua' => 'Rua', 'garagem' => 'Garagem', 'baliza' => 'Baliza'];
+                            $practiceLabel = $practiceTypeLabels[$lesson['practice_type']] ?? $lesson['practice_type'];
+                        ?>
+                        <span style="margin-left: var(--spacing-xs); padding: 2px 8px; background: var(--color-bg-light, #f1f5f9); border-radius: 4px; font-size: 0.875rem;">
+                            <?= htmlspecialchars($practiceLabel) ?>
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 

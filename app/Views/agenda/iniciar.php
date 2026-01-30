@@ -72,6 +72,36 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
             
             <div class="form-group">
                 <label class="form-label">
+                    Tipo de Aula <span style="color: var(--color-danger);">*</span>
+                </label>
+                <div class="practice-type-options" style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+                    <label class="practice-type-option" style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="practice_type" value="rua" required style="display: none;">
+                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🚗</div>
+                            <div style="font-weight: 600;">Rua</div>
+                        </div>
+                    </label>
+                    <label class="practice-type-option" style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="practice_type" value="garagem" required style="display: none;">
+                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🏠</div>
+                            <div style="font-weight: 600;">Garagem</div>
+                        </div>
+                    </label>
+                    <label class="practice-type-option" style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="practice_type" value="baliza" required style="display: none;">
+                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                            <div style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">🅿️</div>
+                            <div style="font-weight: 600;">Baliza</div>
+                        </div>
+                    </label>
+                </div>
+                <small class="form-hint">Selecione o tipo de aula prática</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
                     Quilometragem Inicial <span style="color: var(--color-danger);">*</span>
                 </label>
                 <input type="number" 
@@ -80,7 +110,6 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
                        min="0" 
                        step="1"
                        required 
-                       autofocus
                        placeholder="Ex: 12345"
                        style="font-size: 1.25rem; font-weight: 600; text-align: center;">
                 <small class="form-hint">Informe a quilometragem atual do veículo</small>
@@ -107,9 +136,34 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
 </div>
 
 <script>
+// Seleção de tipo de aula
+document.querySelectorAll('input[name="practice_type"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        // Remover seleção de todos
+        document.querySelectorAll('.practice-type-card').forEach(function(card) {
+            card.style.borderColor = 'var(--color-border, #e2e8f0)';
+            card.style.background = 'transparent';
+        });
+        // Marcar selecionado
+        if (this.checked) {
+            var card = this.nextElementSibling;
+            card.style.borderColor = 'var(--color-primary, #3b82f6)';
+            card.style.background = 'var(--color-primary-light, #eff6ff)';
+        }
+    });
+});
+
 // Prevenir duplo submit
 document.getElementById('iniciarForm')?.addEventListener('submit', function(e) {
-    const btn = document.getElementById('submitBtn');
+    // Verificar se tipo foi selecionado
+    var tipoSelecionado = document.querySelector('input[name="practice_type"]:checked');
+    if (!tipoSelecionado) {
+        e.preventDefault();
+        alert('Selecione o tipo de aula (Rua, Garagem ou Baliza).');
+        return false;
+    }
+    
+    var btn = document.getElementById('submitBtn');
     if (btn && btn.disabled) {
         e.preventDefault();
         return false;
@@ -119,9 +173,6 @@ document.getElementById('iniciarForm')?.addEventListener('submit', function(e) {
         btn.textContent = 'Iniciando...';
     }
 });
-
-// Focar no campo de km ao carregar
-document.querySelector('input[name="km_start"]')?.focus();
 </script>
 
 <style>

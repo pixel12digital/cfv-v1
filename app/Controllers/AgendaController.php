@@ -1005,6 +1005,14 @@ class AgendaController extends Controller
             redirect(base_url('agenda'));
         }
         
+        // Validar tipo de aula prática (obrigatório)
+        $practiceType = isset($_POST['practice_type']) ? trim($_POST['practice_type']) : '';
+        $validPracticeTypes = ['rua', 'garagem', 'baliza'];
+        if (empty($practiceType) || !in_array($practiceType, $validPracticeTypes)) {
+            $_SESSION['error'] = 'Selecione o tipo de aula (Rua, Garagem ou Baliza).';
+            redirect(base_url('agenda/' . $id . '/iniciar'));
+        }
+        
         // Validar km inicial (obrigatório)
         $kmStart = isset($_POST['km_start']) ? trim($_POST['km_start']) : '';
         if (empty($kmStart)) {
@@ -1035,7 +1043,8 @@ class AgendaController extends Controller
         $updateData = [
             'status' => Constants::AULA_EM_ANDAMENTO,
             'started_at' => $now,
-            'km_start' => $kmStart
+            'km_start' => $kmStart,
+            'practice_type' => $practiceType
         ];
         
         // Observação inicial opcional (pode ser usado como observação geral)
@@ -1048,9 +1057,13 @@ class AgendaController extends Controller
         // Registrar no histórico
         $dateTime = date('d/m/Y H:i', strtotime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}"));
         
+        // Mapear tipo para exibição
+        $practiceTypeLabels = ['rua' => 'Rua', 'garagem' => 'Garagem', 'baliza' => 'Baliza'];
+        $practiceTypeLabel = $practiceTypeLabels[$practiceType] ?? $practiceType;
+        
         $this->historyService->logAgendaEvent(
             $lesson['student_id'],
-            "Aula prática iniciada (agendada para {$dateTime}) - KM inicial: {$kmStart}"
+            "Aula prática ({$practiceTypeLabel}) iniciada (agendada para {$dateTime}) - KM inicial: {$kmStart}"
         );
         
         // Auditoria
