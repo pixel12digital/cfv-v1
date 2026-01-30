@@ -916,13 +916,13 @@ class Lesson extends Model
             )->fetch();
             
             // Próximas agendadas do aluno nesta matrícula (qualquer instrutor)
+            // Conta todas com status agendada/em_andamento (independente de horário)
             $upcoming = $this->query(
                 "SELECT COUNT(*) as total 
                  FROM {$this->table} 
                  WHERE student_id = ? 
                    AND enrollment_id = ?
                    AND status IN ('agendada', 'em_andamento')
-                   AND (scheduled_date > CURDATE() OR (scheduled_date = CURDATE() AND scheduled_time > CURTIME()))
                    AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
                 [$studentId, $enrollmentId]
             )->fetch();
@@ -977,13 +977,13 @@ class Lesson extends Model
                 $paramsUpcoming[] = $enrollmentId;
             }
             
+            // Conta todas com status agendada/em_andamento (independente de horário)
             $upcoming = $this->query(
                 "SELECT COUNT(*) as total 
                  FROM {$this->table} 
                  WHERE student_id = ? 
                    {$enrollmentFilterUpcoming}
                    AND status IN ('agendada', 'em_andamento')
-                   AND (scheduled_date > CURDATE() OR (scheduled_date = CURDATE() AND scheduled_time > CURTIME()))
                    AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
                 $paramsUpcoming
             )->fetch();

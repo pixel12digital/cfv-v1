@@ -39,10 +39,9 @@ $studentModel = new Student();
 
     <!-- Resumo de Aulas Práticas (contador para o aluno) -->
     <?php if (isset($lessonSummary) && ($lessonSummary['completed_count'] > 0 || $lessonSummary['upcoming_count'] > 0)): ?>
-    <div class="card" style="margin-bottom: var(--spacing-md); background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-left: 4px solid var(--color-success, #10b981);">
+    <div class="card" style="margin-bottom: var(--spacing-md); background: var(--color-bg-light, #f8fafc); border-left: 4px solid var(--color-success, #10b981);">
         <div class="card-body" style="padding: var(--spacing-md);">
             <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
-                <span style="font-size: 1.25rem;">📈</span>
                 <strong style="color: var(--color-text, #333);">Seu progresso em aulas práticas</strong>
             </div>
             <div style="font-size: 0.95rem; color: var(--color-text, #333);">

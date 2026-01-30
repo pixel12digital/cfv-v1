@@ -36,11 +36,10 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
 
 <?php if (isset($studentSummary)): ?>
 <!-- Resumo do histórico com este aluno (atende pedido do cliente) -->
-<div class="card" style="margin-bottom: var(--spacing-md); background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid var(--color-primary, #3b82f6);">
+<div class="card" style="margin-bottom: var(--spacing-md); background: var(--color-bg-light, #f8fafc); border-left: 4px solid var(--color-primary, #3b82f6);">
     <div class="card-body" style="padding: var(--spacing-md);">
         <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
-            <span style="font-size: 1.25rem;">📊</span>
-            <strong style="color: var(--color-text, #333);">Com este aluno</strong>
+            <strong style="color: var(--color-text, #333);">Histórico com este aluno</strong>
         </div>
         <div style="font-size: 0.95rem; color: var(--color-text, #333);">
             <?php 
