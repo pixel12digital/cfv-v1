@@ -20,7 +20,10 @@ class Lesson extends Model
                         i.name as instructor_name,
                         v.plate as vehicle_plate, v.model as vehicle_model,
                         u.nome as created_by_name,
-                        uc.nome as canceled_by_name
+                        uc.nome as canceled_by_name,
+                        td.name as theory_discipline_name,
+                        tc.name as theory_course_name,
+                        ts.location as theory_location
                  FROM {$this->table} l
                  INNER JOIN students s ON l.student_id = s.id
                  INNER JOIN enrollments e ON l.enrollment_id = e.id
@@ -28,6 +31,10 @@ class Lesson extends Model
                  LEFT JOIN vehicles v ON l.vehicle_id = v.id
                  LEFT JOIN usuarios u ON l.created_by = u.id
                  LEFT JOIN usuarios uc ON l.canceled_by = uc.id
+                 LEFT JOIN theory_sessions ts ON l.theory_session_id = ts.id
+                 LEFT JOIN theory_disciplines td ON ts.discipline_id = td.id
+                 LEFT JOIN theory_classes tcl ON ts.class_id = tcl.id
+                 LEFT JOIN theory_courses tc ON tcl.course_id = tc.id
                  WHERE l.id = ?",
                 [$id]
             );
@@ -43,7 +50,10 @@ class Lesson extends Model
                             NULL as instructor_name,
                             v.plate as vehicle_plate, v.model as vehicle_model,
                             u.nome as created_by_name,
-                            uc.nome as canceled_by_name
+                            uc.nome as canceled_by_name,
+                            NULL as theory_discipline_name,
+                            NULL as theory_course_name,
+                            NULL as theory_location
                      FROM {$this->table} l
                      INNER JOIN students s ON l.student_id = s.id
                      INNER JOIN enrollments e ON l.enrollment_id = e.id

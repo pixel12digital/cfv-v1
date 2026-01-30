@@ -103,10 +103,22 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                     <label class="form-label">Tipo</label>
                     <div>
                         <?php if ($isTheoryLesson): ?>
-                        Aula Teórica Online
+                        Aula Teórica
+                        <?php if (!empty($lesson['theory_location'])): ?>
                         <span style="margin-left: var(--spacing-xs); padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 4px; font-size: 0.875rem;">
-                            Curso de Formação
+                            <?= htmlspecialchars($lesson['theory_location']) ?>
                         </span>
+                        <?php endif; ?>
+                        <?php if (!empty($lesson['theory_discipline_name'])): ?>
+                        <div style="margin-top: var(--spacing-xs); font-size: 0.875rem; color: var(--color-text-muted, #666);">
+                            Disciplina: <?= htmlspecialchars($lesson['theory_discipline_name']) ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($lesson['theory_course_name'])): ?>
+                        <div style="font-size: 0.875rem; color: var(--color-text-muted, #666);">
+                            Curso: <?= htmlspecialchars($lesson['theory_course_name']) ?>
+                        </div>
+                        <?php endif; ?>
                         <?php else: ?>
                         Aula Prática
                         <?php if (!empty($lesson['practice_type'])): 
