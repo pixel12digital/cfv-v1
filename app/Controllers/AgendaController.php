@@ -551,6 +551,9 @@ class AgendaController extends Controller
             );
         }
         
+        // Buscar aulas consecutivas do mesmo aluno no mesmo dia
+        $consecutiveBlock = $this->findConsecutiveBlock($lesson, $lessonModel);
+        
         $data = [
             'pageTitle' => 'Detalhes da Aula',
             'lesson' => $lesson,
@@ -558,7 +561,8 @@ class AgendaController extends Controller
             'from' => $from,
             'isAluno' => $isAluno,
             'hasPendingRequest' => $hasPendingRequest,
-            'studentSummary' => $studentSummary
+            'studentSummary' => $studentSummary,
+            'consecutiveBlock' => $consecutiveBlock
         ];
         
         $this->view('agenda/show', $data);
@@ -1111,5 +1115,84 @@ class AgendaController extends Controller
         }
         
         $this->json($events);
+    }
+    
+    /**
+     * Encontra o bloco de aulas consecutivas que inclui a aula fornecida
+     * @param array $lesson Aula de referência
+     * @param \App\Models\Lesson $lessonModel Model de aulas
+     * @return array|null Dados do bloco ou null se não houver consecutivas
+     */
+    private function findConsecutiveBlock(array $lesson, $lessonModel): ?array
+    {
+        // Buscar todas as aulas do mesmo aluno no mesmo dia
+        $allLessons = $lessonModel->query(
+            "SELECT * FROM lessons 
+             WHERE student_id = ? 
+               AND scheduled_date = ?
+               AND status != 'cancelada'
+             ORDER BY scheduled_time ASC",
+            [$lesson['student_id'], $lesson['scheduled_date']]
+        )->fetchAll();
+        
+        if (count($allLessons) < 2) {
+            return null;
+        }
+        
+        // Encontrar o bloco que contém a aula atual
+        $blocks = [];
+        $currentBlock = null;
+        
+        foreach ($allLessons as $l) {
+            if ($currentBlock === null) {
+                $currentBlock = ['lessons' => [$l]];
+            } else {
+                $lastLesson = end($currentBlock['lessons']);
+                $lastEndTime = new \DateTime($lastLesson['scheduled_date'] . ' ' . $lastLesson['scheduled_time']);
+                $lastEndTime->modify("+{$lastLesson['duration_minutes']} minutes");
+                
+                $currentStartTime = new \DateTime($l['scheduled_date'] . ' ' . $l['scheduled_time']);
+                
+                // Verificar se é consecutiva (horário de término = horário de início)
+                if ($lastEndTime->format('H:i') == $currentStartTime->format('H:i')) {
+                    $currentBlock['lessons'][] = $l;
+                } else {
+                    $blocks[] = $currentBlock;
+                    $currentBlock = ['lessons' => [$l]];
+                }
+            }
+        }
+        $blocks[] = $currentBlock;
+        
+        // Encontrar qual bloco contém a aula atual
+        foreach ($blocks as $block) {
+            $lessonIds = array_column($block['lessons'], 'id');
+            if (in_array($lesson['id'], $lessonIds)) {
+                if (count($block['lessons']) > 1) {
+                    // Calcular dados do bloco
+                    $firstLesson = $block['lessons'][0];
+                    $lastLesson = end($block['lessons']);
+                    
+                    $startTime = new \DateTime($firstLesson['scheduled_date'] . ' ' . $firstLesson['scheduled_time']);
+                    $totalDuration = array_sum(array_column($block['lessons'], 'duration_minutes'));
+                    $endTime = clone $startTime;
+                    $endTime->modify("+{$totalDuration} minutes");
+                    
+                    return [
+                        'lessons' => $block['lessons'],
+                        'count' => count($block['lessons']),
+                        'first_lesson_id' => $firstLesson['id'],
+                        'start_time' => $startTime->format('H:i'),
+                        'end_time' => $endTime->format('H:i'),
+                        'total_duration' => $totalDuration,
+                        'is_first' => ($lesson['id'] == $firstLesson['id']),
+                        'is_last' => ($lesson['id'] == $lastLesson['id'])
+                    ];
+                }
+                break;
+            }
+        }
+        
+        return null;
     }
 }

@@ -112,6 +112,20 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                 </div>
                 
                 <!-- Data e Hora -->
+                <?php 
+                $hasConsecutive = !empty($consecutiveBlock);
+                if ($hasConsecutive) {
+                    $blockStartTime = $consecutiveBlock['start_time'];
+                    $blockEndTime = $consecutiveBlock['end_time'];
+                    $blockDuration = $consecutiveBlock['total_duration'];
+                    $blockCount = $consecutiveBlock['count'];
+                    $hours = floor($blockDuration / 60);
+                    $mins = $blockDuration % 60;
+                    $durationText = $hours > 0 
+                        ? ($mins > 0 ? "{$hours}h{$mins}min" : "{$hours}h") 
+                        : "{$mins} minutos";
+                }
+                ?>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
                     <div>
                         <label class="form-label">Data</label>
@@ -119,14 +133,29 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                     </div>
                     <div>
                         <label class="form-label">Hora</label>
+                        <?php if ($hasConsecutive): ?>
+                        <div>
+                            <?= $blockStartTime ?> - <?= $blockEndTime ?>
+                        </div>
+                        <?php else: ?>
                         <div><?= date('H:i', strtotime($lesson['scheduled_time'])) ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
                 <!-- Duração -->
                 <div>
                     <label class="form-label">Duração</label>
+                    <?php if ($hasConsecutive): ?>
+                    <div>
+                        <?= $durationText ?>
+                        <span style="margin-left: var(--spacing-xs); background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">
+                            <?= $blockCount ?> aulas consecutivas
+                        </span>
+                    </div>
+                    <?php else: ?>
                     <div><?= $lesson['duration_minutes'] ?> minutos</div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Aluno (link apenas para não-alunos) -->
