@@ -9,13 +9,14 @@ class Database
 
     private function __construct()
     {
+        // Usar constantes de config.php (prioridade) ou $_ENV como fallback
         $config = [
-            'host' => $_ENV['DB_HOST'] ?? 'localhost',
-            'port' => $_ENV['DB_PORT'] ?? '3306',
-            'dbname' => $_ENV['DB_NAME'] ?? 'cfc_db',
+            'host' => defined('DB_HOST') ? DB_HOST : ($_ENV['DB_HOST'] ?? 'localhost'),
+            'port' => defined('DB_PORT') ? DB_PORT : ($_ENV['DB_PORT'] ?? '3306'),
+            'dbname' => defined('DB_NAME') ? DB_NAME : ($_ENV['DB_NAME'] ?? 'cfc_db'),
             'charset' => 'utf8mb4',
-            'username' => $_ENV['DB_USER'] ?? 'root',
-            'password' => $_ENV['DB_PASS'] ?? ''
+            'username' => defined('DB_USER') ? DB_USER : ($_ENV['DB_USER'] ?? 'root'),
+            'password' => defined('DB_PASS') ? DB_PASS : ($_ENV['DB_PASS'] ?? '')
         ];
 
         try {
