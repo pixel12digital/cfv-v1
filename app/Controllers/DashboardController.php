@@ -455,6 +455,12 @@ class DashboardController extends Controller
             $statusGeral = 'Concluído';
         }
         
+        // Buscar resumo de aulas práticas para exibir no dashboard
+        $lessonSummary = $lessonModel->getStudentLessonSummary(
+            $studentId, 
+            $activeEnrollment['id'] ?? null
+        );
+        
         $data = [
             'pageTitle' => 'Meu Progresso',
             'student' => $student,
@@ -476,6 +482,8 @@ class DashboardController extends Controller
             'upcomingLessons' => $upcomingLessons,
             'inProgressLessons' => $inProgressLessons,
             'recentCompletedLessons' => $recentCompletedLessons,
+            // Resumo de aulas práticas (contador para o aluno)
+            'lessonSummary' => $lessonSummary,
             // PWA Install Banner - CSS e JS para prompt de instalação
             'additionalCSS' => ['css/pwa-install-banner.css'],
             'additionalJS' => ['js/pwa-install-banner.js']

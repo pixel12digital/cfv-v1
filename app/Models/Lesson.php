@@ -881,4 +881,147 @@ class Lesson extends Model
             throw $e;
         }
     }
+
+    /**
+     * Resumo do aluno para exibir ao instrutor antes de iniciar aula
+     * Usado na tela "Iniciar Aula" e "Detalhes da Aula"
+     */
+    public function getStudentSummaryForInstructor($instructorId, $studentId, $enrollmentId)
+    {
+        try {
+            // Aulas concluídas deste instrutor com este aluno nesta matrícula (só práticas)
+            $completed = $this->query(
+                "SELECT COUNT(*) as total 
+                 FROM {$this->table} 
+                 WHERE instructor_id = ? 
+                   AND student_id = ? 
+                   AND enrollment_id = ?
+                   AND status = 'concluida'
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
+                [$instructorId, $studentId, $enrollmentId]
+            )->fetch();
+            
+            // Última aula concluída deste instrutor com este aluno
+            $lastLesson = $this->query(
+                "SELECT scheduled_date, scheduled_time 
+                 FROM {$this->table} 
+                 WHERE instructor_id = ? 
+                   AND student_id = ? 
+                   AND enrollment_id = ?
+                   AND status = 'concluida'
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)
+                 ORDER BY scheduled_date DESC, scheduled_time DESC 
+                 LIMIT 1",
+                [$instructorId, $studentId, $enrollmentId]
+            )->fetch();
+            
+            // Próximas agendadas do aluno nesta matrícula (qualquer instrutor)
+            $upcoming = $this->query(
+                "SELECT COUNT(*) as total 
+                 FROM {$this->table} 
+                 WHERE student_id = ? 
+                   AND enrollment_id = ?
+                   AND status IN ('agendada', 'em_andamento')
+                   AND (scheduled_date > CURDATE() OR (scheduled_date = CURDATE() AND scheduled_time > CURTIME()))
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
+                [$studentId, $enrollmentId]
+            )->fetch();
+            
+            return [
+                'completed_count' => (int)($completed['total'] ?? 0),
+                'last_lesson_date' => $lastLesson ? $lastLesson['scheduled_date'] : null,
+                'last_lesson_time' => $lastLesson ? $lastLesson['scheduled_time'] : null,
+                'upcoming_count' => (int)($upcoming['total'] ?? 0)
+            ];
+        } catch (\PDOException $e) {
+            error_log("[Lesson::getStudentSummaryForInstructor] Erro: " . $e->getMessage());
+            return [
+                'completed_count' => 0,
+                'last_lesson_date' => null,
+                'last_lesson_time' => null,
+                'upcoming_count' => 0
+            ];
+        }
+    }
+
+    /**
+     * Resumo de aulas práticas para o aluno (dashboard)
+     */
+    public function getStudentLessonSummary($studentId, $enrollmentId = null)
+    {
+        try {
+            $params = [$studentId];
+            $enrollmentFilter = '';
+            
+            if ($enrollmentId) {
+                $enrollmentFilter = ' AND enrollment_id = ?';
+                $params[] = $enrollmentId;
+            }
+            
+            // Concluídas (só práticas)
+            $completed = $this->query(
+                "SELECT COUNT(*) as total 
+                 FROM {$this->table} 
+                 WHERE student_id = ? 
+                   {$enrollmentFilter}
+                   AND status = 'concluida'
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
+                $params
+            )->fetch();
+            
+            // Próximas agendadas
+            $paramsUpcoming = [$studentId];
+            $enrollmentFilterUpcoming = '';
+            if ($enrollmentId) {
+                $enrollmentFilterUpcoming = ' AND enrollment_id = ?';
+                $paramsUpcoming[] = $enrollmentId;
+            }
+            
+            $upcoming = $this->query(
+                "SELECT COUNT(*) as total 
+                 FROM {$this->table} 
+                 WHERE student_id = ? 
+                   {$enrollmentFilterUpcoming}
+                   AND status IN ('agendada', 'em_andamento')
+                   AND (scheduled_date > CURDATE() OR (scheduled_date = CURDATE() AND scheduled_time > CURTIME()))
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)",
+                $paramsUpcoming
+            )->fetch();
+            
+            // Última concluída
+            $paramsLast = [$studentId];
+            $enrollmentFilterLast = '';
+            if ($enrollmentId) {
+                $enrollmentFilterLast = ' AND enrollment_id = ?';
+                $paramsLast[] = $enrollmentId;
+            }
+            
+            $lastLesson = $this->query(
+                "SELECT scheduled_date, scheduled_time 
+                 FROM {$this->table} 
+                 WHERE student_id = ? 
+                   {$enrollmentFilterLast}
+                   AND status = 'concluida'
+                   AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)
+                 ORDER BY scheduled_date DESC, scheduled_time DESC 
+                 LIMIT 1",
+                $paramsLast
+            )->fetch();
+            
+            return [
+                'completed_count' => (int)($completed['total'] ?? 0),
+                'upcoming_count' => (int)($upcoming['total'] ?? 0),
+                'last_lesson_date' => $lastLesson ? $lastLesson['scheduled_date'] : null,
+                'last_lesson_time' => $lastLesson ? $lastLesson['scheduled_time'] : null
+            ];
+        } catch (\PDOException $e) {
+            error_log("[Lesson::getStudentLessonSummary] Erro: " . $e->getMessage());
+            return [
+                'completed_count' => 0,
+                'upcoming_count' => 0,
+                'last_lesson_date' => null,
+                'last_lesson_time' => null
+            ];
+        }
+    }
 }

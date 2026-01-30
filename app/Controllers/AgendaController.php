@@ -100,8 +100,28 @@ class AgendaController extends Controller
                     $startDate = null;
                     $endDate = null;
                 }
+            } elseif ($isInstrutor) {
+                // CORREÇÃO: Para INSTRUTOR, ajustar período conforme a aba selecionada
+                // Isso permite que "Histórico" mostre aulas passadas sem restrição de um único dia
+                if ($dateFromUrl) {
+                    // Instrutor selecionou data específica: filtrar por esse dia
+                    $startDate = $date;
+                    $endDate = $date;
+                } elseif ($tab === 'historico') {
+                    // Histórico: sem restrição de data inicial (ou últimos 12 meses), até hoje
+                    $startDate = date('Y-m-d', strtotime('-12 months'));
+                    $endDate = date('Y-m-d');
+                } elseif ($tab === 'proximas') {
+                    // Próximas: de hoje em diante (próximos 6 meses)
+                    $startDate = date('Y-m-d');
+                    $endDate = date('Y-m-d', strtotime('+6 months'));
+                } else {
+                    // Todas: período amplo (12 meses para trás e 6 para frente)
+                    $startDate = date('Y-m-d', strtotime('-12 months'));
+                    $endDate = date('Y-m-d', strtotime('+6 months'));
+                }
             } else {
-                // Para outros perfis: manter comportamento atual
+                // Para outros perfis (admin/secretaria): manter comportamento atual
                 if ($date) {
                     $startDate = $date;
                     $endDate = $date;
@@ -951,9 +971,17 @@ class AgendaController extends Controller
         
         // Se for GET, mostrar modal/formulário
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            // Buscar resumo do aluno para exibir contador
+            $studentSummary = $lessonModel->getStudentSummaryForInstructor(
+                $lesson['instructor_id'],
+                $lesson['student_id'],
+                $lesson['enrollment_id']
+            );
+            
             $data = [
                 'pageTitle' => 'Iniciar Aula',
-                'lesson' => $lesson
+                'lesson' => $lesson,
+                'studentSummary' => $studentSummary
             ];
             $this->view('agenda/iniciar', $data);
             return;

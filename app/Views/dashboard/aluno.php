@@ -37,6 +37,28 @@ $studentModel = new Student();
         </div>
     </div>
 
+    <!-- Resumo de Aulas Práticas (contador para o aluno) -->
+    <?php if (isset($lessonSummary) && ($lessonSummary['completed_count'] > 0 || $lessonSummary['upcoming_count'] > 0)): ?>
+    <div class="card" style="margin-bottom: var(--spacing-md); background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-left: 4px solid var(--color-success, #10b981);">
+        <div class="card-body" style="padding: var(--spacing-md);">
+            <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
+                <span style="font-size: 1.25rem;">📈</span>
+                <strong style="color: var(--color-text, #333);">Seu progresso em aulas práticas</strong>
+            </div>
+            <div style="font-size: 0.95rem; color: var(--color-text, #333);">
+                Concluídas: <strong><?= $lessonSummary['completed_count'] ?></strong>
+                &nbsp;•&nbsp;
+                Próximas agendadas: <strong><?= $lessonSummary['upcoming_count'] ?></strong>
+            </div>
+            <?php if ($lessonSummary['last_lesson_date']): ?>
+            <div style="font-size: 0.8rem; color: var(--color-text-muted, #666); margin-top: var(--spacing-xs);">
+                Última aula: <?= date('d/m/Y', strtotime($lessonSummary['last_lesson_date'])) ?>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Próxima Aula / Aula Atual -->
     <?php 
     $lessonStatus = $nextLesson['status'] ?? '';
