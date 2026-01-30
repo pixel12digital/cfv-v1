@@ -68,6 +68,13 @@ class RescheduleRequestsController extends Controller
             redirect(base_url('agenda'));
         }
 
+        // Não permitir reagendamento de aula teórica
+        $isTheory = ($lesson['type'] ?? '') === 'teoria' || !empty($lesson['theory_session_id']);
+        if ($isTheory) {
+            $_SESSION['error'] = 'Solicitação de reagendamento não está disponível para aulas teóricas.';
+            redirect(base_url('agenda/' . $lessonId));
+        }
+
         // Validar que a aula é futura e está agendada
         $lessonDateTime = new \DateTime($lesson['scheduled_date'] . ' ' . $lesson['scheduled_time']);
         $now = new \DateTime();

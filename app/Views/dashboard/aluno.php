@@ -101,13 +101,14 @@ $studentModel = new Student();
                         <?php
                         $isFuture = $lessonDate > $now;
                         $isScheduled = $lessonStatus === 'agendada';
-                        $canRequestReschedule = $isFuture && $isScheduled && !($hasPendingRequest ?? false);
+                        $isTheory = ($nextLesson['type'] ?? '') === 'teoria' || !empty($nextLesson['theory_session_id']);
+                        $canRequestReschedule = $isFuture && $isScheduled && !($hasPendingRequest ?? false) && !$isTheory;
                         ?>
                         <?php if ($canRequestReschedule): ?>
                         <button type="button" class="btn btn-sm btn-primary" onclick="showRescheduleModal(<?= $nextLesson['id'] ?>)">
                             Solicitar reagendamento
                         </button>
-                        <?php elseif ($hasPendingRequest ?? false): ?>
+                        <?php elseif (($hasPendingRequest ?? false) && !$isTheory): ?>
                         <span class="text-muted" style="font-size: var(--font-size-sm); align-self: center;">
                             Solicitação pendente
                         </span>

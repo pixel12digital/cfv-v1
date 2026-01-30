@@ -318,26 +318,57 @@
      * Mostrar instruções de instalação (quando prompt não disponível)
      */
     function showInstallInstructions() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isAndroid = /Android/i.test(navigator.userAgent);
-        const isChrome = /Chrome/.test(navigator.userAgent);
         
         let instructions = '';
+        let title = 'Como instalar o aplicativo';
         
-        if (isAndroid) {
+        if (isIOS) {
+            title = 'Instalar no iPhone/iPad';
             instructions = `
-                <p><strong>Para instalar no Android:</strong></p>
-                <ol>
-                    <li>Toque no menu (⋮) no canto superior direito</li>
-                    <li>Selecione "Instalar app" ou "Adicionar à tela inicial"</li>
-                </ol>
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.5" style="margin-bottom: 12px;">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 16px;">
+                    <strong>Passo 1:</strong> Toque no ícone de compartilhar 
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    na barra inferior do Safari
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 16px;">
+                    <strong>Passo 2:</strong> Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                    <strong>Passo 3:</strong> Toque em <strong>"Adicionar"</strong> no canto superior direito
+                </p>
+            `;
+        } else if (isAndroid) {
+            title = 'Instalar no Android';
+            instructions = `
+                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 12px;">
+                    <strong>Passo 1:</strong> Toque no menu <strong>⋮</strong> no canto superior direito
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                    <strong>Passo 2:</strong> Selecione <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong>
+                </p>
             `;
         } else {
+            title = 'Instalar no Computador';
             instructions = `
-                <p><strong>Para instalar no computador:</strong></p>
-                <ol>
-                    <li>Procure o ícone de instalação na barra de endereços</li>
-                    <li>Ou clique no menu (⋮) → "Instalar app"</li>
-                </ol>
+                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 12px;">
+                    <strong>Passo 1:</strong> Procure o ícone de instalação <strong>⊕</strong> na barra de endereços
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                    <strong>Passo 2:</strong> Ou clique no menu <strong>⋮</strong> → <strong>"Instalar app"</strong>
+                </p>
             `;
         }
         
@@ -345,10 +376,11 @@
         const modal = document.createElement('div');
         modal.className = 'pwa-install-modal';
         modal.innerHTML = `
-            <div class="pwa-install-modal__content">
-                <h4>Como instalar o aplicativo</h4>
+            <div class="pwa-install-modal__content" style="max-width: 340px; padding: 24px;">
+                <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999; line-height: 1;">&times;</button>
+                <h4 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600; color: #1a365d; text-align: center;">${title}</h4>
                 ${instructions}
-                <button class="pwa-install-banner__btn pwa-install-banner__btn--primary" onclick="this.parentElement.parentElement.remove()">
+                <button class="pwa-install-banner__btn pwa-install-banner__btn--primary" onclick="this.parentElement.parentElement.remove()" style="width: 100%; margin-top: 20px; padding: 14px; font-size: 16px;">
                     Entendi
                 </button>
             </div>

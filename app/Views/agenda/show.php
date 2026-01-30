@@ -307,16 +307,17 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
     </div>
     <?php endif; ?>
     
-    <!-- Ações para ALUNO (Solicitar Reagendamento) -->
+    <!-- Ações para ALUNO (Solicitar Reagendamento) - apenas para aula prática -->
     <?php if ($isAluno): ?>
     <?php
     $lessonDateTime = new \DateTime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}");
     $now = new \DateTime();
     $isFuture = $lessonDateTime > $now;
     $isScheduled = ($lesson['status'] ?? '') === 'agendada';
-    $canRequestReschedule = $isFuture && $isScheduled && !($hasPendingRequest ?? false);
+    $isTheory = ($lesson['type'] ?? '') === 'teoria' || !empty($lesson['theory_session_id']);
+    $canRequestReschedule = $isFuture && $isScheduled && !($hasPendingRequest ?? false) && !$isTheory;
     ?>
-    <?php if ($canRequestReschedule || ($hasPendingRequest ?? false)): ?>
+    <?php if ((($canRequestReschedule || ($hasPendingRequest ?? false)) && !$isTheory)): ?>
     <div class="card" style="margin-top: var(--spacing-md);">
         <div class="card-header">
             <h3>Ações</h3>
