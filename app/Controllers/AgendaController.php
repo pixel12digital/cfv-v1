@@ -539,6 +539,17 @@ class AgendaController extends Controller
         
         $from = $_GET['from'] ?? null;
         $isAluno = ($currentRole === Constants::ROLE_ALUNO);
+        $isInstrutor = ($currentRole === Constants::ROLE_INSTRUTOR);
+        
+        // Buscar resumo do aluno para exibir ao instrutor
+        $studentSummary = null;
+        if ($isInstrutor && $lesson['instructor_id'] && $lesson['student_id'] && $lesson['enrollment_id']) {
+            $studentSummary = $lessonModel->getStudentSummaryForInstructor(
+                $lesson['instructor_id'],
+                $lesson['student_id'],
+                $lesson['enrollment_id']
+            );
+        }
         
         $data = [
             'pageTitle' => 'Detalhes da Aula',
@@ -546,7 +557,8 @@ class AgendaController extends Controller
             'currentRole' => $currentRole,
             'from' => $from,
             'isAluno' => $isAluno,
-            'hasPendingRequest' => $hasPendingRequest
+            'hasPendingRequest' => $hasPendingRequest,
+            'studentSummary' => $studentSummary
         ];
         
         $this->view('agenda/show', $data);
