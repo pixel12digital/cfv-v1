@@ -1126,14 +1126,10 @@ class AgendaController extends Controller
     private function findConsecutiveBlock(array $lesson, $lessonModel): ?array
     {
         // Buscar todas as aulas do mesmo aluno no mesmo dia
-        $allLessons = $lessonModel->query(
-            "SELECT * FROM lessons 
-             WHERE student_id = ? 
-               AND scheduled_date = ?
-               AND status != 'cancelada'
-             ORDER BY scheduled_time ASC",
-            [$lesson['student_id'], $lesson['scheduled_date']]
-        )->fetchAll();
+        $allLessons = $lessonModel->findByStudentAndDate(
+            $lesson['student_id'],
+            $lesson['scheduled_date']
+        );
         
         if (count($allLessons) < 2) {
             return null;

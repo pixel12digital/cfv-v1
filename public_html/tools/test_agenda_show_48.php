@@ -118,15 +118,8 @@ echo "</div>";
 
 echo "<div class='section'><h2>4. findConsecutiveBlock</h2>";
 try {
-    $allLessons = $lessonModel->query(
-        "SELECT * FROM lessons 
-         WHERE student_id = ? 
-           AND scheduled_date = ?
-           AND status != 'cancelada'
-         ORDER BY scheduled_time ASC",
-        [$lesson['student_id'], $lesson['scheduled_date']]
-    )->fetchAll();
-    echo "<p class='ok'>✓ Query de aulas consecutivas OK (" . count($allLessons) . " aulas no dia)</p>";
+    $allLessons = $lessonModel->findByStudentAndDate($lesson['student_id'], $lesson['scheduled_date']);
+    echo "<p class='ok'>✓ findByStudentAndDate OK (" . count($allLessons) . " aulas no dia)</p>";
 } catch (\Throwable $e) {
     echo "<p class='err'>✗ ERRO:</p>";
     echo "<pre>" . htmlspecialchars($e->getMessage()) . "</pre>";

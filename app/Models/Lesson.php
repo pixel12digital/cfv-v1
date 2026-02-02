@@ -801,6 +801,22 @@ class Lesson extends Model
     }
 
     /**
+     * Busca aulas do mesmo aluno no mesmo dia (para bloco consecutivo)
+     */
+    public function findByStudentAndDate($studentId, $scheduledDate)
+    {
+        $stmt = $this->query(
+            "SELECT * FROM {$this->table} 
+             WHERE student_id = ? 
+               AND scheduled_date = ?
+               AND status != 'cancelada'
+             ORDER BY scheduled_time ASC",
+            [$studentId, $scheduledDate]
+        );
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Busca a próxima aula do aluno (agendada ou em andamento)
      * Prioridade: 1) em_andamento (aula atual), 2) agendada mais próxima
      * Trata caso onde tabela instructors não existe
