@@ -55,7 +55,7 @@ class Student extends Model
             "SELECT e.*, s.name as service_name 
              FROM enrollments e 
              INNER JOIN services s ON e.service_id = s.id 
-             WHERE e.student_id = ? 
+             WHERE e.student_id = ? AND e.status != 'cancelada'
              ORDER BY e.created_at DESC",
             [$studentId]
         );
