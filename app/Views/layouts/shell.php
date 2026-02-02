@@ -131,8 +131,16 @@
                 // Determinar label amigável para o papel atual
                 $currentRoleCode = strtoupper($_SESSION['active_role'] ?? $_SESSION['current_role'] ?? 'ALUNO');
                 $currentRoleLabel = $roleNameMap[$currentRoleCode] ?? $currentRoleCode;
+                // Mobile: bloquear alternância — mostrar só INSTRUTOR (sem dropdown)
+                $isMobile = function_exists('is_mobile_request') && is_mobile_request();
+                $hasInstrutor = !empty(array_filter($normalizedRoles, fn($r) => ($r['role'] ?? '') === 'INSTRUTOR'));
+                $showMobileInstrutorOnly = $isMobile && $hasMultipleRoles && $hasInstrutor;
                 ?>
-                <?php if ($hasMultipleRoles): ?>
+                <?php if ($showMobileInstrutorOnly): ?>
+                <div class="topbar-role-selector topbar-role-selector-mobile-lock">
+                    <span class="topbar-role-label-fixed">INSTRUTOR</span>
+                </div>
+                <?php elseif ($hasMultipleRoles && !$hideSelectorOnMobile): ?>
                 <div class="topbar-role-selector">
                     <button class="topbar-role-selector-btn" id="roleSelectorBtn">
                         <span class="role-label-desktop">

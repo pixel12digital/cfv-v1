@@ -222,3 +222,14 @@ if (!function_exists('csrf_verify')) {
         return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }
 }
+
+if (!function_exists('is_mobile_request')) {
+    /**
+     * Detecta se a requisição vem de dispositivo mobile (User-Agent).
+     * Usado para bloquear alternância de perfil no mobile (mostrar só INSTRUTOR).
+     */
+    function is_mobile_request(): bool {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        return (bool) preg_match('/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i', $ua);
+    }
+}

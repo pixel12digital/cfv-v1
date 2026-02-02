@@ -223,6 +223,19 @@
   position: relative;
 }
 
+/* Mobile lock: label fixo "INSTRUTOR" sem dropdown */
+.topbar-role-selector-mobile-lock .topbar-role-label-fixed {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 .topbar-role-selector-btn {
   display: flex;
   align-items: center;
