@@ -6,7 +6,16 @@
  * Simula AgendaController::show(48) para isolar a causa do erro 500
  */
 
-define('ROOT_PATH', dirname(__DIR__, 2));
+// Detectar ROOT_PATH: .env fica na raiz do projeto
+// Em painel/tools/ -> ROOT_PATH = painel (dirname(__DIR__))
+// Em public_html/tools/ -> ROOT_PATH = projeto (dirname(__DIR__, 2))
+$scriptDir = __DIR__;
+$candidate = dirname($scriptDir);
+$ROOT_PATH = $candidate;
+if (!file_exists($candidate . '/.env') && file_exists(dirname($candidate) . '/.env')) {
+    $ROOT_PATH = dirname($candidate);
+}
+define('ROOT_PATH', $ROOT_PATH);
 define('APP_PATH', ROOT_PATH . '/app');
 
 // Iniciar sessão (mesmo nome do painel)
