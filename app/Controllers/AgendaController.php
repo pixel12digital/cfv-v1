@@ -1009,13 +1009,18 @@ class AgendaController extends Controller
             redirect(base_url('agenda'));
         }
         
-        // Validar tipo de aula prática (obrigatório)
-        $practiceType = isset($_POST['practice_type']) ? trim($_POST['practice_type']) : '';
+        // Validar tipo(s) de aula prática (obrigatório, permite múltiplos)
+        $practiceTypes = isset($_POST['practice_type']) && is_array($_POST['practice_type'])
+            ? array_map('trim', $_POST['practice_type'])
+            : [];
+        $practiceTypes = array_filter($practiceTypes);
         $validPracticeTypes = ['rua', 'garagem', 'baliza'];
-        if (empty($practiceType) || !in_array($practiceType, $validPracticeTypes)) {
-            $_SESSION['error'] = 'Selecione o tipo de aula (Rua, Garagem ou Baliza).';
+        $invalid = array_diff($practiceTypes, $validPracticeTypes);
+        if (empty($practiceTypes) || !empty($invalid)) {
+            $_SESSION['error'] = 'Selecione pelo menos um tipo de aula (Rua, Garagem ou Baliza).';
             redirect(base_url('agenda/' . $id . '/iniciar'));
         }
+        $practiceType = implode(',', array_unique($practiceTypes));
         
         // Validar km inicial (obrigatório)
         $kmStart = isset($_POST['km_start']) ? trim($_POST['km_start']) : '';
@@ -1061,9 +1066,12 @@ class AgendaController extends Controller
         // Registrar no histórico
         $dateTime = date('d/m/Y H:i', strtotime("{$lesson['scheduled_date']} {$lesson['scheduled_time']}"));
         
-        // Mapear tipo para exibição
+        // Mapear tipo(s) para exibição
         $practiceTypeLabels = ['rua' => 'Rua', 'garagem' => 'Garagem', 'baliza' => 'Baliza'];
-        $practiceTypeLabel = $practiceTypeLabels[$practiceType] ?? $practiceType;
+        $labels = array_map(function ($t) use ($practiceTypeLabels) {
+            return $practiceTypeLabels[$t] ?? $t;
+        }, explode(',', $practiceType));
+        $practiceTypeLabel = implode(', ', $labels);
         
         $this->historyService->logAgendaEvent(
             $lesson['student_id'],

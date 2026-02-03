@@ -927,24 +927,27 @@ class Lesson extends Model
                 [$instructorId, $studentId, $enrollmentId]
             )->fetch();
             
-            // Contagem por tipo de aula prática
-            $byType = $this->query(
-                "SELECT practice_type, COUNT(*) as total 
+            // Contagem por tipo de aula prática (suporta múltiplos tipos por aula: rua,garagem,baliza)
+            $lessonsWithType = $this->query(
+                "SELECT practice_type 
                  FROM {$this->table} 
                  WHERE instructor_id = ? 
                    AND student_id = ? 
                    AND enrollment_id = ?
                    AND status = 'concluida'
                    AND (type = 'pratica' OR type IS NULL OR theory_session_id IS NULL)
-                   AND practice_type IS NOT NULL
-                 GROUP BY practice_type",
+                   AND practice_type IS NOT NULL AND practice_type != ''",
                 [$instructorId, $studentId, $enrollmentId]
             )->fetchAll();
             
             $typeCounts = ['rua' => 0, 'garagem' => 0, 'baliza' => 0];
-            foreach ($byType as $row) {
-                if (isset($typeCounts[$row['practice_type']])) {
-                    $typeCounts[$row['practice_type']] = (int)$row['total'];
+            $validTypes = array_keys($typeCounts);
+            foreach ($lessonsWithType as $row) {
+                $types = array_map('trim', explode(',', $row['practice_type']));
+                foreach ($types as $t) {
+                    if (in_array($t, $validTypes)) {
+                        $typeCounts[$t]++;
+                    }
                 }
             }
             

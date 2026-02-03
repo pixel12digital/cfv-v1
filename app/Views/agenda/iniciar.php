@@ -53,7 +53,10 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
         <div style="font-size: 0.95rem; color: var(--color-text, #333);">
             <strong><?= $count ?></strong> aula<?= $count !== 1 ? 's' : '' ?> concluída<?= $count !== 1 ? 's' : '' ?>
             <?php if ($lastDate): ?>
-                • Última: <strong><?= date('d/m', strtotime($lastDate)) ?></strong><?php if ($lastType): ?> (<?= $typeLabels[$lastType] ?? $lastType ?>)<?php endif; ?>
+                • Última: <strong><?= date('d/m', strtotime($lastDate)) ?></strong><?php if ($lastType): ?> (<?php 
+                    $lastTypes = array_map(function($t) use ($typeLabels) { return $typeLabels[trim($t)] ?? trim($t); }, explode(',', $lastType));
+                    echo htmlspecialchars(implode(', ', $lastTypes));
+                ?>)<?php endif; ?>
             <?php else: ?>
                 • Sem aulas anteriores registradas
             <?php endif; ?>
@@ -92,25 +95,25 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
                 </label>
                 <div class="practice-type-options" style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
-                        <input type="radio" name="practice_type" value="rua" required style="display: none;">
-                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" name="practice_type[]" value="rua" style="display: none;">
+                        <div class="practice-type-card" data-value="rua" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
                             <div style="font-weight: 600; font-size: 1rem;">Rua</div>
                         </div>
                     </label>
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
-                        <input type="radio" name="practice_type" value="garagem" required style="display: none;">
-                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" name="practice_type[]" value="garagem" style="display: none;">
+                        <div class="practice-type-card" data-value="garagem" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
                             <div style="font-weight: 600; font-size: 1rem;">Garagem</div>
                         </div>
                     </label>
                     <label class="practice-type-option" style="flex: 1; min-width: 100px;">
-                        <input type="radio" name="practice_type" value="baliza" required style="display: none;">
-                        <div class="practice-type-card" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" name="practice_type[]" value="baliza" style="display: none;">
+                        <div class="practice-type-card" data-value="baliza" style="padding: var(--spacing-md); border: 2px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 8px); text-align: center; cursor: pointer; transition: all 0.2s;">
                             <div style="font-weight: 600; font-size: 1rem;">Baliza</div>
                         </div>
                     </label>
                 </div>
-                <small class="form-hint">Selecione o tipo de aula prática</small>
+                <small class="form-hint">Selecione um ou mais tipos de aula prática (pode incluir Rua, Garagem e Baliza no mesmo bloco)</small>
             </div>
             
             <div class="form-group">
@@ -149,30 +152,38 @@ $isInstrutor = ($currentRole === 'INSTRUTOR');
 </div>
 
 <script>
-// Seleção de tipo de aula
-document.querySelectorAll('input[name="practice_type"]').forEach(function(radio) {
-    radio.addEventListener('change', function() {
-        // Remover seleção de todos
-        document.querySelectorAll('.practice-type-card').forEach(function(card) {
-            card.style.borderColor = 'var(--color-border, #e2e8f0)';
-            card.style.background = 'transparent';
-        });
-        // Marcar selecionado
-        if (this.checked) {
-            var card = this.nextElementSibling;
+// Seleção múltipla de tipo de aula (checkbox)
+document.querySelectorAll('.practice-type-option').forEach(function(option) {
+    var checkbox = option.querySelector('input[type="checkbox"]');
+    var card = option.querySelector('.practice-type-card');
+    if (!checkbox || !card) return;
+    
+    function updateCardStyle() {
+        if (checkbox.checked) {
             card.style.borderColor = 'var(--color-primary, #3b82f6)';
             card.style.background = 'var(--color-primary-light, #eff6ff)';
+        } else {
+            card.style.borderColor = 'var(--color-border, #e2e8f0)';
+            card.style.background = 'transparent';
         }
+    }
+    
+    option.addEventListener('click', function(e) {
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        updateCardStyle();
     });
+    
+    checkbox.addEventListener('change', updateCardStyle);
 });
 
 // Prevenir duplo submit
 document.getElementById('iniciarForm')?.addEventListener('submit', function(e) {
-    // Verificar se tipo foi selecionado
-    var tipoSelecionado = document.querySelector('input[name="practice_type"]:checked');
-    if (!tipoSelecionado) {
+    // Verificar se pelo menos um tipo foi selecionado
+    var tiposSelecionados = document.querySelectorAll('input[name="practice_type[]"]:checked');
+    if (!tiposSelecionados || tiposSelecionados.length === 0) {
         e.preventDefault();
-        alert('Selecione o tipo de aula (Rua, Garagem ou Baliza).');
+        alert('Selecione pelo menos um tipo de aula (Rua, Garagem ou Baliza).');
         return false;
     }
     

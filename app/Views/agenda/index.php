@@ -277,7 +277,8 @@ function toggleExtraFilters() {
                                     <div style="display: flex; gap: var(--spacing-xs); align-items: center; flex-wrap: wrap;">
                                         <?php if (!$isTheory && !empty($lesson['practice_type'])): 
                                             $practiceTypeLabels = ['rua' => 'Rua', 'garagem' => 'Garagem', 'baliza' => 'Baliza'];
-                                            $practiceLabel = $practiceTypeLabels[$lesson['practice_type']] ?? $lesson['practice_type'];
+                                            $practiceLabels = array_map(function($t) use ($practiceTypeLabels) { return $practiceTypeLabels[trim($t)] ?? trim($t); }, explode(',', $lesson['practice_type']));
+                                            $practiceLabel = implode(', ', $practiceLabels);
                                         ?>
                                         <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background: #e0e7ff; color: #3730a3;">
                                             <?= htmlspecialchars($practiceLabel) ?>
