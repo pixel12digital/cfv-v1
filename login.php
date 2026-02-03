@@ -1465,6 +1465,28 @@ $currentConfig = $userTypes[$displayType] ?? $userTypes['admin'];
                     .pwa-ios-close:hover {
                         color: #2c3e50;
                     }
+                    
+                    @media (prefers-color-scheme: dark) {
+                        .pwa-ios-instructions {
+                            background: #1e3a5f;
+                            border-color: #60a5fa;
+                        }
+                        .pwa-ios-content i.fa-mobile-alt {
+                            color: #93c5fd;
+                        }
+                        .pwa-ios-text strong {
+                            color: #f1f5f9;
+                        }
+                        .pwa-ios-text p {
+                            color: #94a3b8;
+                        }
+                        .pwa-ios-close {
+                            color: #94a3b8;
+                        }
+                        .pwa-ios-close:hover {
+                            color: #e2e8f0;
+                        }
+                    }
                 `;
                 document.head.appendChild(style);
             }

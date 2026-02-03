@@ -365,16 +365,22 @@
     }
 }
 
-/* Dark mode support */
+/* Dark mode support - iOS/Android */
 @media (prefers-color-scheme: dark) {
     .pwa-install-modal__content {
         background: #1e293b;
-        color: white;
+        color: #e2e8f0;
     }
 
     .pwa-install-modal__content h4,
-    .pwa-install-modal__content p {
-        color: white;
+    .pwa-install-modal__content p,
+    .pwa-install-modal__title,
+    .pwa-install-modal__step {
+        color: #e2e8f0;
+    }
+
+    .pwa-install-modal__close {
+        color: #94a3b8;
     }
 
     .pwa-install-modal__content ol {

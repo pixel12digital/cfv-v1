@@ -407,6 +407,45 @@
     line-height: 1.5;
 }
 
+/* Modal iOS - Dark mode (iOS/Android) */
+@media (prefers-color-scheme: dark) {
+    .pwa-ios-modal-content {
+        background: #1e293b;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .pwa-ios-modal-header {
+        border-bottom-color: #334155;
+    }
+    .pwa-ios-modal-header h4 {
+        color: #f1f5f9;
+    }
+    .pwa-ios-modal-close {
+        color: #94a3b8;
+    }
+    .pwa-ios-modal-close:hover {
+        color: #e2e8f0;
+    }
+    .pwa-ios-step-content p {
+        color: #e2e8f0;
+    }
+    .pwa-ios-step-content strong {
+        color: #60a5fa;
+    }
+    .pwa-ios-step-number {
+        background: #3b82f6;
+    }
+    .pwa-ios-note {
+        background: #1e3a8a;
+        border-left-color: #60a5fa;
+    }
+    .pwa-ios-note i {
+        color: #60a5fa;
+    }
+    .pwa-ios-note p {
+        color: #e2e8f0;
+    }
+}
+
 /* Toast messages */
 .pwa-toast {
     position: fixed;

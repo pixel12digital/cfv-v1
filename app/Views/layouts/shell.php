@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= csrf_token() ?>">
-    <meta name="theme-color" content="#023A8D">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#023A8D" id="theme-color-meta">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,6 +50,19 @@
             <link rel="stylesheet" href="<?= asset_url($css) ?>">
         <?php endforeach; ?>
     <?php endif; ?>
+    <!-- theme-color dinâmico para iOS/Android dark mode -->
+    <script>
+    (function() {
+        function updateThemeColor() {
+            var meta = document.getElementById('theme-color-meta');
+            if (!meta) return;
+            var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            meta.setAttribute('content', isDark ? '#1e293b' : '#023A8D');
+        }
+        updateThemeColor();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+    })();
+    </script>
 </head>
 <body>
     <div class="app-shell">

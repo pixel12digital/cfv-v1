@@ -334,7 +334,7 @@
                         <line x1="12" y1="2" x2="12" y2="15"></line>
                     </svg>
                 </div>
-                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 16px;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
                     <strong>Passo 1:</strong> Toque no ícone de compartilhar 
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
                         <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
@@ -343,30 +343,30 @@
                     </svg>
                     na barra inferior do Safari
                 </p>
-                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 16px;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
                     <strong>Passo 2:</strong> Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>
                 </p>
-                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6;">
                     <strong>Passo 3:</strong> Toque em <strong>"Adicionar"</strong> no canto superior direito
                 </p>
             `;
         } else if (isAndroid) {
             title = 'Instalar no Android';
             instructions = `
-                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 12px;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6; margin-bottom: 12px;">
                     <strong>Passo 1:</strong> Toque no menu <strong>⋮</strong> no canto superior direito
                 </p>
-                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6;">
                     <strong>Passo 2:</strong> Selecione <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong>
                 </p>
             `;
         } else {
             title = 'Instalar no Computador';
             instructions = `
-                <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 12px;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6; margin-bottom: 12px;">
                     <strong>Passo 1:</strong> Procure o ícone de instalação <strong>⊕</strong> na barra de endereços
                 </p>
-                <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                <p class="pwa-install-modal__step" style="font-size: 16px; line-height: 1.6;">
                     <strong>Passo 2:</strong> Ou clique no menu <strong>⋮</strong> → <strong>"Instalar app"</strong>
                 </p>
             `;
@@ -377,8 +377,8 @@
         modal.className = 'pwa-install-modal';
         modal.innerHTML = `
             <div class="pwa-install-modal__content" style="max-width: 340px; padding: 24px;">
-                <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999; line-height: 1;">&times;</button>
-                <h4 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600; color: #1a365d; text-align: center;">${title}</h4>
+                <button class="pwa-install-modal__close" onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+                <h4 class="pwa-install-modal__title" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600; text-align: center;">${title}</h4>
                 ${instructions}
                 <button class="pwa-install-banner__btn pwa-install-banner__btn--primary" onclick="this.parentElement.parentElement.remove()" style="width: 100%; margin-top: 20px; padding: 14px; font-size: 16px;">
                     Entendi

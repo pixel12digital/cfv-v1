@@ -131,9 +131,16 @@ if (isset($_GET['senha_alterada']) && $_GET['senha_alterada'] == '1') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#10b981" id="theme-color-meta">
     <title>Trocar Senha - <?php echo htmlspecialchars($user['nome']); ?></title>
+    <link rel="stylesheet" href="../assets/css/theme-tokens.css">
     <link rel="stylesheet" href="../assets/css/mobile-first.css">
+    <link rel="stylesheet" href="../assets/css/theme-overrides.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        (function(){var m=document.getElementById('theme-color-meta');if(!m)return;function u(){var d=window.matchMedia('(prefers-color-scheme: dark)').matches;m.setAttribute('content',d?'#1e293b':'#10b981');}u();window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',u);})();
+    </script>
 </head>
 <body>
     <!-- Header -->

@@ -83,9 +83,12 @@
   --sidebar-collapsed-width: 64px;
 }
 
-/* Dark mode support (futuro) */
+/* Dark mode support - iOS e Android */
 @media (prefers-color-scheme: dark) {
   :root {
+    --color-primary: #60a5fa;
+    --color-primary-dark: #3b82f6;
+    --color-primary-light: #93c5fd;
     --color-text: #f8f9fa;
     --color-text-muted: #adb5bd;
     --color-bg: #212529;

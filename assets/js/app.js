@@ -444,6 +444,32 @@
                         border-radius: 4px;
                         cursor: pointer;
                     }
+                    @media (prefers-color-scheme: dark) {
+                        .ios-install-modal-content {
+                            background: #1e293b;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                        }
+                        .ios-install-modal-header {
+                            border-bottom-color: #334155;
+                        }
+                        .ios-install-modal-header h3 {
+                            color: #93c5fd;
+                        }
+                        .ios-install-modal-close {
+                            color: #94a3b8;
+                        }
+                        .ios-install-modal-body,
+                        .ios-install-modal-body li {
+                            color: #e2e8f0;
+                        }
+                        .ios-install-modal-footer {
+                            border-top-color: #334155;
+                        }
+                        .ios-install-modal-btn {
+                            background: #3b82f6;
+                            color: white;
+                        }
+                    }
                 `;
                 document.head.appendChild(style);
             }
