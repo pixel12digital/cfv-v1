@@ -161,10 +161,12 @@ document.querySelectorAll('.practice-type-option').forEach(function(option) {
     function updateCardStyle() {
         if (checkbox.checked) {
             card.style.borderColor = 'var(--color-primary, #3b82f6)';
-            card.style.background = 'var(--color-primary-light, #eff6ff)';
+            card.style.background = 'var(--color-primary, #3b82f6)';
+            card.style.color = '#ffffff';
         } else {
             card.style.borderColor = 'var(--color-border, #e2e8f0)';
             card.style.background = 'transparent';
+            card.style.color = '';
         }
     }
     
