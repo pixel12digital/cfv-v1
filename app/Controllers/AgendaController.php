@@ -295,11 +295,15 @@ class AgendaController extends Controller
         if ($studentId) {
             $student = $studentModel->find($studentId);
             if ($student && $student['cfc_id'] == $this->cfcId) {
-                $enrollments = $enrollmentModel->findByStudent($studentId);
+                $allEnrollments = $enrollmentModel->findByStudent($studentId);
+                $enrollments = array_values(array_filter($allEnrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
                 if ($enrollmentId) {
                     $enrollment = $enrollmentModel->find($enrollmentId);
+                    if (!$enrollment || ($enrollment['status'] ?? '') === 'cancelada') {
+                        $enrollment = $enrollments[0] ?? null;
+                    }
                 } elseif (!empty($enrollments)) {
-                    $enrollment = $enrollments[0]; // Primeira matrícula ativa
+                    $enrollment = $enrollments[0];
                 }
             }
         }
@@ -601,7 +605,8 @@ class AgendaController extends Controller
         $vehicleModel = new Vehicle();
         
         $student = $studentModel->find($lesson['student_id']);
-        $enrollments = $enrollmentModel->findByStudent($lesson['student_id']);
+        $allEnrollments = $enrollmentModel->findByStudent($lesson['student_id']);
+        $enrollments = array_values(array_filter($allEnrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
         
         $data = [
             'pageTitle' => 'Remarcar Aula',

@@ -229,9 +229,10 @@ class ApiController extends Controller
             exit;
         }
         
-        // Buscar matrículas
+        // Buscar matrículas (excluir canceladas - alinhado com aba Matrículas do perfil)
         $enrollmentModel = new Enrollment();
         $enrollments = $enrollmentModel->findByStudent($studentId);
+        $enrollments = array_values(array_filter($enrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
         
         // Formatar resposta
         $result = array_map(function($enr) {
