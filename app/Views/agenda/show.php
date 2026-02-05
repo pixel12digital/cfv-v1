@@ -484,8 +484,20 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
             <form method="POST" action="<?= base_path("agenda/{$lesson['id']}/cancelar") ?>" id="cancelForm">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <div class="form-group">
-                    <label class="form-label">Motivo do cancelamento <small style="color: var(--color-text-muted, #666);">(opcional)</small></label>
-                    <textarea name="reason" class="form-input" rows="3" placeholder="Informe o motivo do cancelamento (opcional)..."></textarea>
+                    <label class="form-label">Motivo (seleção rápida)</label>
+                    <select id="cancelReasonSelect" class="form-input" aria-label="Selecionar motivo do cancelamento">
+                        <option value="">Selecione um motivo</option>
+                        <option value="Aluno faltou (não compareceu)">Aluno faltou (não compareceu)</option>
+                        <option value="Aluno pediu remarcação">Aluno pediu remarcação</option>
+                        <option value="Instrutor indisponível">Instrutor indisponível</option>
+                        <option value="Veículo indisponível / manutenção">Veículo indisponível / manutenção</option>
+                        <option value="Condições climáticas / logística">Condições climáticas / logística</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observações <small style="color: var(--color-text-muted, #666);">(opcional)</small></label>
+                    <textarea name="reason" id="cancelReasonTextarea" class="form-input" rows="3" placeholder="Detalhes adicionais ou motivo personalizado..."></textarea>
                     <small class="form-hint">Se não informar, será registrado como "Sem motivo informado".</small>
                 </div>
                 <div style="display: flex; gap: var(--spacing-sm); justify-content: flex-end; margin-top: var(--spacing-md);">
@@ -540,7 +552,26 @@ function showCancelModal() {
 
 function hideCancelModal() {
     document.getElementById('cancelModal').style.display = 'none';
+    const form = document.getElementById('cancelForm');
+    if (form) form.reset();
 }
+
+// Preencher textarea ao selecionar motivo rápido
+document.getElementById('cancelReasonSelect')?.addEventListener('change', function() {
+    const select = this;
+    const textarea = document.getElementById('cancelReasonTextarea');
+    if (!textarea) return;
+
+    const value = select.value;
+    if (value === 'outro') {
+        textarea.value = '';
+        textarea.focus();
+        return;
+    }
+    if (value && !textarea.value.trim()) {
+        textarea.value = value;
+    }
+});
 
 // Fechar modal ao clicar fora
 document.getElementById('cancelModal').addEventListener('click', function(e) {
