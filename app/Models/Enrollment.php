@@ -11,7 +11,7 @@ class Enrollment extends Model
         $sql = "SELECT e.*, s.name as service_name, s.category as service_category
                 FROM {$this->table} e
                 INNER JOIN services s ON e.service_id = s.id
-                WHERE e.student_id = ?";
+                WHERE e.student_id = ? AND (e.deleted_at IS NULL)";
         $params = [$studentId];
         
         if ($cfcId !== null) {
@@ -36,7 +36,7 @@ class Enrollment extends Model
              FROM {$this->table} e
              INNER JOIN services s ON e.service_id = s.id
              INNER JOIN students st ON e.student_id = st.id
-             WHERE e.id = ?",
+             WHERE e.id = ? AND (e.deleted_at IS NULL)",
             [$id]
         );
         return $stmt->fetch();

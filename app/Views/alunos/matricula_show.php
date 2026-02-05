@@ -719,7 +719,7 @@
                 <?php endif; ?>
                 
                 <?php 
-                // Botão Excluir Matrícula (apenas ADMIN)
+                // Botão Excluir Matrícula (apenas ADMIN) - cancela a matrícula
                 $currentRole = $_SESSION['current_role'] ?? '';
                 $isAdmin = ($currentRole === \App\Config\Constants::ROLE_ADMIN);
                 if ($isAdmin && $enrollment['status'] !== 'cancelada'):
@@ -736,6 +736,13 @@
                 >
                     🗑️ Excluir Matrícula
                 </button>
+                <?php elseif ($isAdmin && $enrollment['status'] === 'cancelada'): ?>
+                <form method="POST" action="<?= base_path("matriculas/{$enrollment['id']}/excluir-definitivamente") ?>" style="display: inline-block; margin-left: 0.5rem;" onsubmit="return confirm('Excluir definitivamente esta matrícula cancelada?\n\nServiço: <?= addslashes(htmlspecialchars($enrollment['service_name'] ?? 'Matrícula')) ?>\n\nEsta ação não pode ser desfeita. A matrícula não será mais exibida em nenhuma parte do sistema.');">
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <button type="submit" class="btn btn-danger" title="Excluir definitivamente (apenas Admin)">
+                        🗑️ Excluir Definitivamente
+                    </button>
+                </form>
                 <?php endif; ?>
                 
                 <a href="<?= base_path("alunos/{$enrollment['student_id']}?tab=matricula") ?>" class="btn btn-outline">

@@ -183,6 +183,14 @@
                                     <a href="<?= base_path("matriculas/{$enr['id']}") ?>" class="btn btn-sm btn-outline">
                                         Ver Detalhes
                                     </a>
+                                    <?php if (($isAdmin ?? false) && ($enr['status'] ?? '') === 'cancelada'): ?>
+                                    <form method="POST" action="<?= base_path("matriculas/{$enr['id']}/excluir-definitivamente") ?>" style="display: inline-block; margin-left: 4px;" onsubmit="return confirm('Excluir definitivamente esta matrícula cancelada?\n\nServiço: <?= addslashes(htmlspecialchars($enr['service_name'] ?? 'Matrícula')) ?>\n\nEsta ação não pode ser desfeita. A matrícula não será mais exibida em nenhuma parte do sistema.');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Excluir definitivamente (apenas Admin)">
+                                            🗑️ Excluir
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
                                 </td>
                                 <?php endif; ?>
                             </tr>

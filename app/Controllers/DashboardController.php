@@ -750,7 +750,7 @@ class DashboardController extends Controller
                     THEN (e.final_price - COALESCE(e.entry_amount, 0)) ELSE 0 END) as total_a_receber
              FROM enrollments e
              INNER JOIN students s ON e.student_id = s.id
-             WHERE s.cfc_id = ?"
+             WHERE s.cfc_id = ? AND (e.deleted_at IS NULL)"
         );
         $stmt->execute([$cfcId]);
         $financialSummary = $stmt->fetch();
@@ -768,7 +768,8 @@ class DashboardController extends Controller
                AND e.final_price > COALESCE(e.entry_amount, 0)
                AND (e.gateway_last_status IS NULL OR e.gateway_last_status != 'paid')
                AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)
-               AND COALESCE(NULLIF(e.first_due_date, '0000-00-00'), NULLIF(e.down_payment_due_date, '0000-00-00'), DATE(e.created_at)) < CURDATE()"
+               AND COALESCE(NULLIF(e.first_due_date, '0000-00-00'), NULLIF(e.down_payment_due_date, '0000-00-00'), DATE(e.created_at)) < CURDATE()
+               AND (e.deleted_at IS NULL)"
         );
         $stmt->execute([$cfcId]);
         $qtdPendenciasAtraso = (int)($stmt->fetch()['qtd'] ?? 0);

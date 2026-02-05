@@ -129,6 +129,7 @@ class FinanceiroController extends Controller
             'dueSoonStudents' => $dueSoonStudents,
             'recentStudents' => $recentStudents,
             'isAluno' => $currentRole === Constants::ROLE_ALUNO,
+            'isAdmin' => $currentRole === Constants::ROLE_ADMIN,
             'pendingEnrollments' => $pendingEnrollments ?? [],
             'pendingTotal' => $pendingTotal ?? 0,
             'pendingPage' => $pendingPage,
@@ -182,6 +183,7 @@ class FinanceiroController extends Controller
                 WHERE s.cfc_id = ? 
                 AND e.financial_status IN ('bloqueado', 'pendente')
                 AND e.status != 'cancelada'
+                AND (e.deleted_at IS NULL)
                 GROUP BY s.id, s.name, s.cpf, s.full_name
                 HAVING total_debt > 0
                 ORDER BY oldest_due_date ASC, total_debt DESC
@@ -210,6 +212,7 @@ class FinanceiroController extends Controller
                 INNER JOIN enrollments e ON e.student_id = s.id
                 WHERE s.cfc_id = ?
                 AND e.status != 'cancelada'
+                AND (e.deleted_at IS NULL)
                 AND (
                     (e.first_due_date >= ? AND e.first_due_date <= ? AND e.first_due_date != '0000-00-00')
                     OR (e.down_payment_due_date >= ? AND e.down_payment_due_date <= ? AND e.down_payment_due_date != '0000-00-00')
@@ -348,6 +351,7 @@ class FinanceiroController extends Controller
                 INNER JOIN services sv ON sv.id = e.service_id
                 WHERE e.cfc_id = ?
                 AND e.status != 'cancelada'
+                AND (e.deleted_at IS NULL)
                 {$whereClause}";
         
         $params = [$this->cfcId];
@@ -393,6 +397,7 @@ class FinanceiroController extends Controller
                      INNER JOIN services sv ON sv.id = e.service_id
                      WHERE e.cfc_id = ?
                      AND e.status != 'cancelada'
+                     AND (e.deleted_at IS NULL)
                      {$whereClause}";
         
         $countParams = [$this->cfcId];
@@ -418,6 +423,7 @@ class FinanceiroController extends Controller
                            INNER JOIN services sv ON sv.id = e.service_id
                            WHERE e.cfc_id = ?
                            AND e.status != 'cancelada'
+                           AND (e.deleted_at IS NULL)
                            {$whereClause}
                            AND e.gateway_charge_id IS NOT NULL
                            AND e.gateway_charge_id != ''";

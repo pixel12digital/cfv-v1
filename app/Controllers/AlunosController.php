@@ -1787,6 +1787,80 @@ class AlunosController extends Controller
     }
 
     /**
+     * Exclui definitivamente uma matrícula cancelada (soft delete com deleted_at)
+     * Apenas ADMIN. Somente matrículas com status "cancelada".
+     * Matrícula não será mais exibida em nenhuma parte do sistema.
+     */
+    public function excluirDefinitivamente($id)
+    {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if ($currentRole !== Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Apenas administradores podem excluir matrículas definitivamente.';
+            redirect(base_url('alunos'));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect(base_url('alunos'));
+        }
+
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('alunos'));
+        }
+
+        $enrollmentModel = new Enrollment();
+        $enrollment = $enrollmentModel->findWithDetails($id);
+
+        if (!$enrollment || $enrollment['cfc_id'] != $this->cfcId) {
+            $_SESSION['error'] = 'Matrícula não encontrada.';
+            redirect(base_url('alunos'));
+        }
+
+        if ($enrollment['status'] !== 'cancelada') {
+            $_SESSION['error'] = 'Só é possível excluir definitivamente matrículas com status "Cancelada". Cancele a matrícula primeiro.';
+            redirect(base_url("matriculas/{$id}"));
+        }
+
+        if (!empty($enrollment['deleted_at'])) {
+            $_SESSION['error'] = 'Esta matrícula já foi excluída definitivamente.';
+            redirect(base_url('alunos'));
+        }
+
+        $dataBefore = $enrollment;
+        $studentId = $enrollment['student_id'];
+        $userId = $_SESSION['user_id'] ?? null;
+
+        $db = \App\Config\Database::getInstance()->getConnection();
+        $db->beginTransaction();
+
+        try {
+            $stmt = $db->prepare("UPDATE enrollments SET deleted_at = NOW(), deleted_by_user_id = ? WHERE id = ?");
+            $stmt->execute([$userId, $id]);
+
+            $auditService = new AuditService();
+            $auditService->logDelete('enrollments', $id, array_merge($dataBefore, [
+                'deleted_at' => date('Y-m-d H:i:s'),
+                'deleted_by_user_id' => $userId
+            ]));
+
+            $db->commit();
+            $_SESSION['success'] = 'Matrícula excluída definitivamente. Não será mais exibida no sistema.';
+
+            $referer = $_SERVER['HTTP_REFERER'] ?? '';
+            if (strpos($referer, '/financeiro') !== false) {
+                redirect(base_url("financeiro?student_id={$studentId}"));
+            } else {
+                redirect(base_url("alunos/{$studentId}?tab=matricula"));
+            }
+        } catch (\Exception $e) {
+            $db->rollBack();
+            error_log("Erro ao excluir matrícula definitivamente: " . $e->getMessage());
+            $_SESSION['error'] = 'Erro ao excluir matrícula: ' . $e->getMessage();
+            redirect(base_url("alunos/{$studentId}?tab=matricula"));
+        }
+    }
+
+    /**
      * Normaliza telefone para wa.me: só dígitos, DDI 55.
      * Retorna [numeroParaWa, valido].
      * Válido = 12 ou 13 dígitos (55 + DDD + número).
