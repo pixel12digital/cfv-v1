@@ -733,14 +733,20 @@ class DashboardController extends Controller
         $unreadNotificationsCount = $notificationModel->countUnread($userId);
         
         // 5. Resumo financeiro
-        // Total recebido: soma de entry_amount de todas as matrículas não canceladas
-        // Total a receber: soma de (final_price - entry_amount) onde final_price > entry_amount
-        // Alunos com saldo devedor: contagem de alunos únicos com saldo > 0
+        // Total recebido: soma de entry_amount (ou final_price se pago) de matrículas não canceladas
+        // Total a receber: soma pendentes (em atraso + a vencer), EXCLUINDO gateway=paid e outstanding=0
+        // Alunos com pendências em atraso: contagem de alunos com valores VENCIDOS (due date < hoje)
         
         $stmt = $db->prepare(
             "SELECT 
-                SUM(CASE WHEN e.status != 'cancelada' THEN COALESCE(e.entry_amount, 0) ELSE 0 END) as total_recebido,
-                SUM(CASE WHEN e.status != 'cancelada' AND e.final_price > COALESCE(e.entry_amount, 0) 
+                SUM(CASE WHEN e.status != 'cancelada' 
+                    THEN CASE WHEN (e.gateway_last_status = 'paid' OR (e.outstanding_amount IS NOT NULL AND e.outstanding_amount = 0))
+                        THEN e.final_price ELSE COALESCE(e.entry_amount, 0) END
+                    ELSE 0 END) as total_recebido,
+                SUM(CASE WHEN e.status != 'cancelada' 
+                    AND e.final_price > COALESCE(e.entry_amount, 0)
+                    AND (e.gateway_last_status IS NULL OR e.gateway_last_status != 'paid')
+                    AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)
                     THEN (e.final_price - COALESCE(e.entry_amount, 0)) ELSE 0 END) as total_a_receber
              FROM enrollments e
              INNER JOIN students s ON e.student_id = s.id
@@ -752,20 +758,20 @@ class DashboardController extends Controller
         $totalRecebido = (float)($financialSummary['total_recebido'] ?? 0);
         $totalAReceber = (float)($financialSummary['total_a_receber'] ?? 0);
         
-        // Contar alunos com saldo devedor > 0 (excluir quem já pagou: gateway=paid ou outstanding=0)
+        // Alunos com pendências financeiras EM ATRASO (due date < hoje, excluir pagos)
         $stmt = $db->prepare(
-            "SELECT COUNT(DISTINCT e.student_id) as qtd_devedores
+            "SELECT COUNT(DISTINCT e.student_id) as qtd
              FROM enrollments e
              INNER JOIN students s ON e.student_id = s.id
              WHERE s.cfc_id = ?
                AND e.status != 'cancelada'
                AND e.final_price > COALESCE(e.entry_amount, 0)
                AND (e.gateway_last_status IS NULL OR e.gateway_last_status != 'paid')
-               AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)"
+               AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)
+               AND COALESCE(NULLIF(e.first_due_date, '0000-00-00'), NULLIF(e.down_payment_due_date, '0000-00-00'), DATE(e.created_at)) < CURDATE()"
         );
         $stmt->execute([$cfcId]);
-        $debtorsResult = $stmt->fetch();
-        $qtdDevedores = (int)($debtorsResult['qtd_devedores'] ?? 0);
+        $qtdPendenciasAtraso = (int)($stmt->fetch()['qtd'] ?? 0);
         
         // 6. Alertas: verificar se há aulas com reagendamento pendente para hoje/amanhã
         $hasUrgentReschedule = false;
@@ -793,7 +799,7 @@ class DashboardController extends Controller
             'unreadNotificationsCount' => $unreadNotificationsCount,
             'totalRecebido' => $totalRecebido,
             'totalAReceber' => $totalAReceber,
-            'qtdDevedores' => $qtdDevedores,
+            'qtdPendenciasAtraso' => $qtdPendenciasAtraso,
             'hasUrgentReschedule' => $hasUrgentReschedule
         ];
         

@@ -331,12 +331,12 @@ $currentRole = $_SESSION['current_role'] ?? '';
                         </div>
                     </a>
                     
-                    <a href="<?= base_path('financeiro?filter=pending') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-danger-bg, #f8d7da); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-danger, #dc3545); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas com saldo devedor">
+                    <a href="<?= base_path('financeiro?filter=pending') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-danger-bg, #f8d7da); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-danger, #dc3545); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas com pendências em atraso">
                         <div style="font-size: var(--font-size-sm); color: var(--color-text-muted, #666); margin-bottom: var(--spacing-xs);">
-                            Alunos com Saldo Devedor
+                            Alunos com Pendências financeiras em atraso
                         </div>
                         <div style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-danger, #dc3545);">
-                            <?= $qtdDevedores ?>
+                            <?= $qtdPendenciasAtraso ?? 0 ?>
                         </div>
                     </a>
                 </div>
