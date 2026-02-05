@@ -752,14 +752,16 @@ class DashboardController extends Controller
         $totalRecebido = (float)($financialSummary['total_recebido'] ?? 0);
         $totalAReceber = (float)($financialSummary['total_a_receber'] ?? 0);
         
-        // Contar alunos com saldo devedor > 0
+        // Contar alunos com saldo devedor > 0 (excluir quem já pagou: gateway=paid ou outstanding=0)
         $stmt = $db->prepare(
             "SELECT COUNT(DISTINCT e.student_id) as qtd_devedores
              FROM enrollments e
              INNER JOIN students s ON e.student_id = s.id
              WHERE s.cfc_id = ?
                AND e.status != 'cancelada'
-               AND e.final_price > COALESCE(e.entry_amount, 0)"
+               AND e.final_price > COALESCE(e.entry_amount, 0)
+               AND (e.gateway_last_status IS NULL OR e.gateway_last_status != 'paid')
+               AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)"
         );
         $stmt->execute([$cfcId]);
         $debtorsResult = $stmt->fetch();

@@ -513,8 +513,9 @@ class AlunosController extends Controller
         // Tratamento especial para Cartão: se pagamento foi confirmado no popup
         $cartaoPaidConfirmed = !empty($_POST['cartao_paid_confirmed']) && $_POST['cartao_paid_confirmed'] === '1';
         if ($paymentMethod === 'cartao' && $cartaoPaidConfirmed) {
-            // Cartão pago localmente: zerar saldo devedor e marcar como em_dia
+            // Cartão pago localmente: zerar saldo devedor, entry_amount=final_price e marcar como em_dia
             $outstandingAmount = 0;
+            $entryAmount = $finalPrice; // Garantir consistência: final_price - entry_amount = 0
             $financialStatus = 'em_dia';
         } else {
             // Recalcular financial_status baseado em outstanding_amount (coerência)

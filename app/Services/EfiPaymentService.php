@@ -2519,6 +2519,10 @@ class EfiPaymentService
         if ($isCanceledOrExpired || $isPaid) {
             // Cobrança cancelada/expirada ou paga: zerar saldo devedor
             $updateData['outstanding_amount'] = 0;
+            // Atualizar entry_amount para evitar inconsistência (lista usa final_price - entry_amount)
+            if ($isPaid) {
+                $updateData['entry_amount'] = (float)($enrollment['final_price'] ?? 0);
+            }
             
             if ($isCanceledOrExpired) {
                 // Atualizar billing_status para 'error' se cancelada/expirada

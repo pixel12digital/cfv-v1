@@ -53,28 +53,9 @@ class FinanceiroController extends Controller
                 $student = $studentModel->find($studentId);
                 if ($student && $student['cfc_id'] == $this->cfcId) {
                     $enrollments = $enrollmentModel->findByStudent($studentId);
-                    
-                    // Calcular totais (usando entry_amount para total pago e outstanding_amount para saldo)
-                    // IMPORTANTE: Excluir matrículas canceladas do cálculo
-                    foreach ($enrollments as $enr) {
-                        // Pular matrículas canceladas
-                        if ($enr['status'] === 'cancelada') {
-                            continue;
-                        }
-                        
-                        $finalPrice = (float)$enr['final_price'];
-                        $entryAmount = (float)($enr['entry_amount'] ?? 0);
-                        
-                        // Usar outstanding_amount se disponível, senão calcular
-                        if (isset($enr['outstanding_amount']) && $enr['outstanding_amount'] !== null) {
-                            $outstanding = (float)$enr['outstanding_amount'];
-                        } else {
-                            $outstanding = max(0, $finalPrice - $entryAmount);
-                        }
-                        
-                        $totalPaid += $entryAmount;
-                        $totalDebt += $outstanding;
-                    }
+                    $totals = $this->calculateEnrollmentTotals($enrollments);
+                    $totalPaid = $totals['totalPaid'];
+                    $totalDebt = $totals['totalDebt'];
                     
                     // Calcular parcelas virtuais para o aluno
                     $installmentsService = new InstallmentsViewService();
@@ -105,27 +86,9 @@ class FinanceiroController extends Controller
                     // Registrar consulta recente
                     $this->recordRecentQuery($studentId);
                     
-                    // Calcular totais (usando entry_amount para total pago e outstanding_amount para saldo)
-                    // IMPORTANTE: Excluir matrículas canceladas do cálculo
-                    foreach ($enrollments as $enr) {
-                        // Pular matrículas canceladas
-                        if ($enr['status'] === 'cancelada') {
-                            continue;
-                        }
-                        
-                        $finalPrice = (float)$enr['final_price'];
-                        $entryAmount = (float)($enr['entry_amount'] ?? 0);
-                        
-                        // Usar outstanding_amount se disponível, senão calcular
-                        if (isset($enr['outstanding_amount']) && $enr['outstanding_amount'] !== null) {
-                            $outstanding = (float)$enr['outstanding_amount'];
-                        } else {
-                            $outstanding = max(0, $finalPrice - $entryAmount);
-                        }
-                        
-                        $totalPaid += $entryAmount;
-                        $totalDebt += $outstanding;
-                    }
+                    $totals = $this->calculateEnrollmentTotals($enrollments);
+                    $totalPaid = $totals['totalPaid'];
+                    $totalDebt = $totals['totalDebt'];
                 }
             } elseif ($search) {
                 // Buscar alunos OU filtrar pendentes
@@ -177,6 +140,29 @@ class FinanceiroController extends Controller
         ];
         
         $this->view('financeiro/index', $data);
+    }
+
+    /**
+     * Calcula total pago e saldo devedor considerando gateway=paid ou outstanding=0 como pago
+     * @return array{totalPaid: float, totalDebt: float}
+     */
+    private function calculateEnrollmentTotals(array $enrollments): array
+    {
+        $totalPaid = 0.0;
+        $totalDebt = 0.0;
+        foreach ($enrollments as $enr) {
+            if (($enr['status'] ?? '') === 'cancelada') continue;
+            $finalPrice = (float)$enr['final_price'];
+            $entryAmount = (float)($enr['entry_amount'] ?? 0);
+            $gatewayStatus = strtolower($enr['gateway_last_status'] ?? '');
+            $outstandingStored = isset($enr['outstanding_amount']) && $enr['outstanding_amount'] !== null
+                ? (float)$enr['outstanding_amount'] : null;
+            $isPaid = ($gatewayStatus === 'paid') || ($outstandingStored !== null && $outstandingStored == 0);
+            $outstanding = $isPaid ? 0 : max(0, $finalPrice - $entryAmount);
+            $totalPaid += $isPaid ? $finalPrice : $entryAmount;
+            $totalDebt += $outstanding;
+        }
+        return ['totalPaid' => $totalPaid, 'totalDebt' => $totalDebt];
     }
 
     /**
@@ -325,17 +311,26 @@ class FinanceiroController extends Controller
         $offset = ($page - 1) * $perPage;
         
         // Construir WHERE clause conforme filtro
-        // CRITÉRIO UNIFICADO: Usar final_price e entry_amount (mesmo do Dashboard) para evitar
-        // inconsistência quando outstanding_amount está desatualizado no banco
+        // Considerar PAGO quando: final_price <= entry_amount OU gateway_last_status='paid' OU outstanding_amount=0
+        // Isso evita mostrar como pendente quem já pagou (gateway confirmou ou outstanding zerado)
+        $hasGatewayStatus = $this->columnExists('enrollments', 'gateway_last_status');
+        $paidCondition = "(e.final_price <= COALESCE(e.entry_amount, 0))";
+        if ($hasGatewayStatus) {
+            $paidCondition .= " OR (e.gateway_last_status = 'paid') OR (e.outstanding_amount IS NOT NULL AND e.outstanding_amount = 0)";
+        }
+        
         if ($filter === 'paid') {
-            // Matrículas pagas: saldo real (final_price - entry_amount) <= 0
-            $whereClause = "AND e.status != 'cancelada' AND (e.final_price <= COALESCE(e.entry_amount, 0))";
+            $whereClause = "AND e.status != 'cancelada' AND ({$paidCondition})";
         } elseif ($filter === 'all') {
-            // Todas as matrículas (sem filtro de saldo, mas excluir canceladas)
             $whereClause = "AND e.status != 'cancelada'";
         } else {
-            // Padrão: matrículas com saldo devedor (pending) - mesmo critério do Dashboard
-            $whereClause = "AND e.status != 'cancelada' AND (e.final_price > COALESCE(e.entry_amount, 0))";
+            // Pendentes: final_price > entry_amount E NÃO (gateway=paid OU outstanding=0)
+            $pendingCondition = "e.final_price > COALESCE(e.entry_amount, 0)";
+            if ($hasGatewayStatus) {
+                $pendingCondition .= " AND (e.gateway_last_status IS NULL OR e.gateway_last_status != 'paid') 
+                    AND (e.outstanding_amount IS NULL OR e.outstanding_amount > 0)";
+            }
+            $whereClause = "AND e.status != 'cancelada' AND ({$pendingCondition})";
         }
         
         // Verificar se colunas do gateway existem (migration 030)
