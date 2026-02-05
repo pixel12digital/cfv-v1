@@ -313,23 +313,23 @@ $currentRole = $_SESSION['current_role'] ?? '';
             </div>
             <div class="card-body">
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-md);">
-                    <div style="padding: var(--spacing-md); background: var(--color-success-bg, #d4edda); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-success, #28a745);">
+                    <a href="<?= base_path('financeiro?filter=paid') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-success-bg, #d4edda); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-success, #28a745); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas pagas">
                         <div style="font-size: var(--font-size-sm); color: var(--color-text-muted, #666); margin-bottom: var(--spacing-xs);">
                             Total Recebido
                         </div>
                         <div style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-success, #28a745);">
                             R$ <?= number_format($totalRecebido, 2, ',', '.') ?>
                         </div>
-                    </div>
+                    </a>
                     
-                    <div style="padding: var(--spacing-md); background: var(--color-warning-bg, #fff3cd); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-warning, #ffc107);">
+                    <a href="<?= base_path('financeiro?filter=pending') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-warning-bg, #fff3cd); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-warning, #ffc107); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas pendentes (valor a receber)">
                         <div style="font-size: var(--font-size-sm); color: var(--color-text-muted, #666); margin-bottom: var(--spacing-xs);">
                             Total a Receber
                         </div>
                         <div style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-warning, #ffc107);">
                             R$ <?= number_format($totalAReceber, 2, ',', '.') ?>
                         </div>
-                    </div>
+                    </a>
                     
                     <a href="<?= base_path('financeiro?filter=pending') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-danger-bg, #f8d7da); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-danger, #dc3545); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas com saldo devedor">
                         <div style="font-size: var(--font-size-sm); color: var(--color-text-muted, #666); margin-bottom: var(--spacing-xs);">
