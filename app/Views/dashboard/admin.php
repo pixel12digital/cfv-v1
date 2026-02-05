@@ -45,7 +45,7 @@ $currentRole = $_SESSION['current_role'] ?? '';
                 <span>Notificações</span>
             </a>
             
-            <a href="<?= base_path('financeiro') ?>" class="btn btn-outline" style="display: flex; flex-direction: column; align-items: center; gap: var(--spacing-xs); padding: var(--spacing-md);">
+            <a href="<?= base_path('financeiro?filter=pending') ?>" class="btn btn-outline" style="display: flex; flex-direction: column; align-items: center; gap: var(--spacing-xs); padding: var(--spacing-md);">
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -331,18 +331,18 @@ $currentRole = $_SESSION['current_role'] ?? '';
                         </div>
                     </div>
                     
-                    <div style="padding: var(--spacing-md); background: var(--color-danger-bg, #f8d7da); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-danger, #dc3545);">
+                    <a href="<?= base_path('financeiro?filter=pending') ?>" style="text-decoration: none; color: inherit; display: block; padding: var(--spacing-md); background: var(--color-danger-bg, #f8d7da); border-radius: var(--border-radius, 4px); border-left: 3px solid var(--color-danger, #dc3545); cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" title="Ver matrículas com saldo devedor">
                         <div style="font-size: var(--font-size-sm); color: var(--color-text-muted, #666); margin-bottom: var(--spacing-xs);">
                             Alunos com Saldo Devedor
                         </div>
                         <div style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); color: var(--color-danger, #dc3545);">
                             <?= $qtdDevedores ?>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 
                 <div style="margin-top: var(--spacing-md);">
-                    <a href="<?= base_path('financeiro') ?>" class="btn btn-outline" style="width: 100%;">
+                    <a href="<?= base_path('financeiro?filter=pending') ?>" class="btn btn-outline" style="width: 100%;">
                         Ver detalhes financeiros
                     </a>
                 </div>

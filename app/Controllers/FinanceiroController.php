@@ -324,44 +324,30 @@ class FinanceiroController extends Controller
     {
         $offset = ($page - 1) * $perPage;
         
-        // Verificar se coluna outstanding_amount existe
-        $hasOutstandingAmount = $this->columnExists('enrollments', 'outstanding_amount');
-        
         // Construir WHERE clause conforme filtro
+        // CRITÉRIO UNIFICADO: Usar final_price e entry_amount (mesmo do Dashboard) para evitar
+        // inconsistência quando outstanding_amount está desatualizado no banco
         if ($filter === 'paid') {
-            // Matrículas pagas: outstanding_amount = 0 ou (final_price - entry_amount) = 0
-            // IMPORTANTE: Excluir matrículas canceladas (status = 'cancelada')
-            if ($hasOutstandingAmount) {
-                $whereClause = "AND e.status != 'cancelada' AND (e.outstanding_amount = 0 OR (e.outstanding_amount IS NULL AND e.final_price <= COALESCE(e.entry_amount, 0)))";
-            } else {
-                $whereClause = "AND e.status != 'cancelada' AND (e.final_price <= COALESCE(e.entry_amount, 0))";
-            }
+            // Matrículas pagas: saldo real (final_price - entry_amount) <= 0
+            $whereClause = "AND e.status != 'cancelada' AND (e.final_price <= COALESCE(e.entry_amount, 0))";
         } elseif ($filter === 'all') {
-            // Todas as matrículas (sem filtro de saldo, mas excluir canceladas da listagem de saldo devedor)
+            // Todas as matrículas (sem filtro de saldo, mas excluir canceladas)
             $whereClause = "AND e.status != 'cancelada'";
         } else {
-            // Padrão: matrículas com saldo devedor (pending)
-            // IMPORTANTE: Excluir matrículas canceladas e com cobrança cancelada
-            if ($hasOutstandingAmount) {
-                $whereClause = "AND e.status != 'cancelada' AND (e.outstanding_amount > 0 OR (e.outstanding_amount IS NULL AND e.final_price > COALESCE(e.entry_amount, 0)))";
-            } else {
-                $whereClause = "AND e.status != 'cancelada' AND (e.final_price > COALESCE(e.entry_amount, 0))";
-            }
+            // Padrão: matrículas com saldo devedor (pending) - mesmo critério do Dashboard
+            $whereClause = "AND e.status != 'cancelada' AND (e.final_price > COALESCE(e.entry_amount, 0))";
         }
         
         // Verificar se colunas do gateway existem (migration 030)
         $hasGatewayColumns = $this->columnExists('enrollments', 'gateway_charge_id');
         
+        // Saldo devedor calculado em tempo real (final_price - entry_amount) para consistência com Dashboard
         $sql = "SELECT e.*, 
                        COALESCE(s.full_name, s.name) as student_name, 
                        s.full_name as student_full_name, 
                        s.cpf as student_cpf,
                        sv.name as service_name,
-                       CASE 
-                           WHEN " . ($hasOutstandingAmount ? "e.outstanding_amount" : "(e.final_price - COALESCE(e.entry_amount, 0))") . " > 0 
-                           THEN " . ($hasOutstandingAmount ? "e.outstanding_amount" : "(e.final_price - COALESCE(e.entry_amount, 0))") . "
-                           ELSE 0 
-                       END as calculated_outstanding
+                       GREATEST(0, e.final_price - COALESCE(e.entry_amount, 0)) as calculated_outstanding
                 FROM enrollments e
                 INNER JOIN students s ON s.id = e.student_id
                 INNER JOIN services sv ON sv.id = e.service_id
@@ -405,10 +391,11 @@ class FinanceiroController extends Controller
         $stmt->execute($params);
         $items = $stmt->fetchAll();
         
-        // Contar total (mesma query sem LIMIT)
+        // Contar total (mesma query sem LIMIT, com services para consistência)
         $countSql = "SELECT COUNT(*) as total
                      FROM enrollments e
                      INNER JOIN students s ON s.id = e.student_id
+                     INNER JOIN services sv ON sv.id = e.service_id
                      WHERE e.cfc_id = ?
                      AND e.status != 'cancelada'
                      {$whereClause}";
@@ -433,6 +420,7 @@ class FinanceiroController extends Controller
             $syncableSql = "SELECT COUNT(*) as total
                            FROM enrollments e
                            INNER JOIN students s ON s.id = e.student_id
+                           INNER JOIN services sv ON sv.id = e.service_id
                            WHERE e.cfc_id = ?
                            AND e.status != 'cancelada'
                            {$whereClause}
