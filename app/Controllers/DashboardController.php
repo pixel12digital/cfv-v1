@@ -612,10 +612,35 @@ class DashboardController extends Controller
             // Agrupar aulas consecutivas do mesmo aluno
             $groupedLessons = $this->groupConsecutiveLessons($todayLessons);
             
-            // Verificar se próxima aula tem consecutiva
+            // Verificar se próxima aula faz parte de um bloco (consecutivas no mesmo dia)
+            // Usar aulas do MESMO DIA da próxima aula (se for outro dia, buscar esse dia)
             $consecutiveLessons = [];
             if ($nextLesson) {
-                $consecutiveLessons = $this->findConsecutiveLessons($nextLesson, $todayLessons);
+                $nextDate = $nextLesson['scheduled_date'];
+                if ($nextDate === $today) {
+                    $lessonsOnNextLessonDate = $todayLessons;
+                } else {
+                    try {
+                        $stmtDay = $db->prepare(
+                            "SELECT l.*,
+                                    COALESCE(s.full_name, s.name) as student_name,
+                                    v.plate as vehicle_plate
+                             FROM lessons l
+                             INNER JOIN students s ON l.student_id = s.id
+                             LEFT JOIN vehicles v ON l.vehicle_id = v.id
+                             WHERE l.instructor_id = ?
+                               AND l.cfc_id = ?
+                               AND l.scheduled_date = ?
+                               AND l.status != 'cancelada'
+                             ORDER BY l.scheduled_time ASC"
+                        );
+                        $stmtDay->execute([$instructorId, $cfcId, $nextDate]);
+                        $lessonsOnNextLessonDate = $stmtDay->fetchAll();
+                    } catch (\PDOException $e) {
+                        $lessonsOnNextLessonDate = [];
+                    }
+                }
+                $consecutiveLessons = $this->findConsecutiveLessons($nextLesson, $lessonsOnNextLessonDate);
             }
             
             error_log('[DashboardController::dashboardInstrutor] Preparando dados para view');

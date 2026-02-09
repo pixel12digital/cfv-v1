@@ -233,7 +233,7 @@ $currentRole = $_SESSION['current_role'] ?? '';
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <p class="text-muted">Você não tem aulas agendadas para hoje.</p>
+                <p class="text-muted">Você não tem aulas agendadas para hoje (<?= (new \DateTime())->format('d/m/Y') ?>).</p>
             <?php endif; ?>
         </div>
     </div>
