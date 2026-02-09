@@ -32,17 +32,18 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas</label>
+                <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas *</label>
                 <input 
                     type="number" 
                     id="aulas_contratadas" 
                     name="aulas_contratadas" 
                     class="form-input" 
-                    min="0" 
+                    min="1" 
                     step="1" 
-                    placeholder="Ex: 6 (opcional)"
+                    placeholder="Ex: 6"
+                    required
                 >
-                <small class="form-hint">Opcional. Define o limite de aulas que o aluno pode agendar nesta matrícula. Deixe em branco para sem limite.</small>
+                <small class="form-hint">Obrigatório para agendamento. Define quantas aulas práticas o aluno pode agendar nesta matrícula. Sem este valor, agendamento não será permitido.</small>
             </div>
 
             <div class="form-group">

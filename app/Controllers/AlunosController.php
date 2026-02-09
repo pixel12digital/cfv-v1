@@ -626,7 +626,13 @@ class AlunosController extends Controller
             }
         }
 
-        $aulasContratadas = !empty($_POST['aulas_contratadas']) ? max(0, (int)$_POST['aulas_contratadas']) : null;
+        $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
+            ? max(1, (int)$_POST['aulas_contratadas'])
+            : null;
+        if ($aulasContratadas === null) {
+            $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas. Este campo é obrigatório para permitir agendamentos.';
+            redirect(base_url("alunos/{$id}/matricular"));
+        }
 
         $enrollmentData = [
             'cfc_id' => $this->cfcId,
@@ -1081,8 +1087,12 @@ class AlunosController extends Controller
         $studentId = $enrollment['student_id'];
 
         $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
-            ? max(0, (int)$_POST['aulas_contratadas'])
+            ? max(1, (int)$_POST['aulas_contratadas'])
             : null;
+        if ($aulasContratadas === null) {
+            $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas. Sem este valor, agendamentos não serão permitidos.';
+            redirect(base_url("matriculas/{$id}"));
+        }
 
         $data = [
             'discount_value' => $discountValue,

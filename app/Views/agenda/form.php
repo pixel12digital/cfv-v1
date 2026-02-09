@@ -103,6 +103,9 @@ $pageTitle = $isEdit ? 'Remarcar Aula' : 'Nova Aula';
                         <div id="enrollment_counter" class="alert alert-info" style="margin-top: var(--spacing-sm); display: none;">
                             <strong>Aulas:</strong> <span id="counter_text"></span>
                         </div>
+                        <div id="enrollment_no_aulas_warning" class="alert alert-warning" style="margin-top: var(--spacing-sm); display: none;">
+                            <strong>⚠️ Esta matrícula não tem aulas práticas contratadas.</strong> Edite a matrícula e defina a quantidade antes de agendar.
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -240,12 +243,19 @@ if (form) {
     form.addEventListener('submit', function(e) {
         <?php if (!$isEdit): ?>
         const data = getEnrollmentData();
-        if (data && data.faltantes !== null) {
-            const total = getTotalLessonsInBlocks();
-            if (total > data.faltantes) {
+        if (data) {
+            if (data.contratadas === null || data.contratadas <= 0) {
                 e.preventDefault();
-                alert('Total de aulas neste agendamento (' + total + ') excede o permitido pela matrícula (' + data.faltantes + ' faltantes).');
+                alert('Esta matrícula não tem aulas práticas contratadas. Edite a matrícula e defina a quantidade antes de agendar.');
                 return;
+            }
+            if (data.faltantes !== null) {
+                const total = getTotalLessonsInBlocks();
+                if (total > data.faltantes) {
+                    e.preventDefault();
+                    alert('Total de aulas neste agendamento (' + total + ') excede o permitido pela matrícula (' + data.faltantes + ' faltantes).');
+                    return;
+                }
             }
         }
         <?php endif; ?>
@@ -274,12 +284,20 @@ function getEnrollmentData() {
 function updateEnrollmentCounter() {
     const counter = document.getElementById('enrollment_counter');
     const text = document.getElementById('counter_text');
+    const warning = document.getElementById('enrollment_no_aulas_warning');
     if (!counter || !text) return;
     const data = getEnrollmentData();
-    if (!data || data.contratadas === null) {
+    if (!data) {
         counter.style.display = 'none';
+        if (warning) warning.style.display = 'none';
         return;
     }
+    if (data.contratadas === null || data.contratadas <= 0) {
+        counter.style.display = 'none';
+        if (warning) warning.style.display = 'block';
+        return;
+    }
+    if (warning) warning.style.display = 'none';
     counter.style.display = 'block';
     const totalNesteEnvio = getTotalLessonsInBlocks();
     const faltantesApos = data.faltantes - totalNesteEnvio;

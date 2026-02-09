@@ -389,7 +389,12 @@ class AgendaController extends Controller
         }
         
         if (!EnrollmentPolicy::canSchedule($enrollment)) {
-            $_SESSION['error'] = 'Não é possível agendar aulas para esta matrícula. Aluno com situação financeira bloqueada.';
+            $aulasContratadas = $enrollment['aulas_contratadas'] ?? null;
+            if ($aulasContratadas === null || (int)$aulasContratadas <= 0) {
+                $_SESSION['error'] = 'Não é possível agendar aulas para esta matrícula. Defina a quantidade de "Aulas práticas contratadas" na edição da matrícula.';
+            } else {
+                $_SESSION['error'] = 'Não é possível agendar aulas para esta matrícula. Aluno com situação financeira bloqueada.';
+            }
             redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
         }
 

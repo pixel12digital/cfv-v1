@@ -64,18 +64,19 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas</label>
+                <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas *</label>
                 <input 
                     type="number" 
                     id="aulas_contratadas" 
                     name="aulas_contratadas" 
                     class="form-input" 
-                    min="0" 
+                    min="1" 
                     step="1" 
                     value="<?= !empty($enrollment['aulas_contratadas']) ? (int)$enrollment['aulas_contratadas'] : '' ?>"
-                    placeholder="Ex: 6 (opcional)"
+                    placeholder="Ex: 6"
+                    required
                 >
-                <small class="form-hint">Opcional. Limite de aulas que o aluno pode agendar. Deixe em branco para sem limite.</small>
+                <small class="form-hint">Obrigatório para agendamento. Define quantas aulas práticas o aluno pode agendar. Sem este valor, agendamento não será permitido.</small>
             </div>
 
             <div class="form-group">
