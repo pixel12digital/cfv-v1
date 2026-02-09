@@ -193,6 +193,18 @@ Em telas de detalhe (aluno, matrícula, aula), botões proibidos para SECRETARIA
 
 ---
 
+### 3.6.1 Padrão de mensagens e logs de bloqueio
+
+| Onde | Mensagem exibida | Log |
+|------|------------------|-----|
+| Flash/redirect (admin) | "Você não tem permissão." | `error_log('[BLOQUEIO] contexto: ...')` |
+| API JSON 403 | `error: "Você não tem permissão."` | `error_log('[BLOQUEIO] contexto: ...')` |
+| $_SESSION['error'] | "Você não tem permissão." | `error_log('[BLOQUEIO] contexto: ...')` |
+
+Formato do log: `[BLOQUEIO] contexto: tipo=X, user_id=Y` (ou `page=Z` quando aplicável).
+
+---
+
 ### 3.7 Financeiro — Regras SECRETARIA (implementado)
 
 | O que SECRETARIA pode | O que SECRETARIA NÃO pode |

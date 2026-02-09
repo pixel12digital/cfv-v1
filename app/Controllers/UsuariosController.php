@@ -28,7 +28,8 @@ class UsuariosController extends Controller
         // ADMIN e SECRETARIA podem acessar (SECRETARIA com restrições granulares nos métodos)
         $role = $_SESSION['current_role'] ?? '';
         if (!in_array($role, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
-            $_SESSION['error'] = 'Você não tem permissão para acessar este módulo.';
+            error_log('[BLOQUEIO] UsuariosController index: role=' . $role . ', user_id=' . ($_SESSION['user_id'] ?? ''));
+            $_SESSION['error'] = 'Você não tem permissão.';
             redirect(base_url('dashboard'));
         }
     }
@@ -1151,7 +1152,8 @@ class UsuariosController extends Controller
 
         // Apenas ADMIN pode excluir usuários
         if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
-            $_SESSION['error'] = 'Apenas administradores podem excluir usuários.';
+            error_log('[BLOQUEIO] UsuariosController excluir: role=' . ($_SESSION['current_role'] ?? '') . ', user_id=' . ($_SESSION['user_id'] ?? ''));
+            $_SESSION['error'] = 'Você não tem permissão.';
             redirect(base_url('usuarios'));
         }
 

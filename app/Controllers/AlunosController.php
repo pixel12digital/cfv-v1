@@ -1682,7 +1682,8 @@ class AlunosController extends Controller
         // Apenas ADMIN pode excluir (verificar role diretamente)
         $currentRole = $_SESSION['current_role'] ?? '';
         if ($currentRole !== Constants::ROLE_ADMIN) {
-            $_SESSION['error'] = 'Apenas administradores podem excluir matrículas.';
+            error_log('[BLOQUEIO] excluirMatricula negado: role=' . $currentRole . ', user_id=' . ($_SESSION['user_id'] ?? ''));
+            $_SESSION['error'] = 'Você não tem permissão.';
             redirect(base_url("matriculas/{$id}"));
         }
 
@@ -1813,7 +1814,8 @@ class AlunosController extends Controller
     {
         $currentRole = $_SESSION['current_role'] ?? '';
         if ($currentRole !== Constants::ROLE_ADMIN) {
-            $_SESSION['error'] = 'Apenas administradores podem excluir matrículas definitivamente.';
+            error_log('[BLOQUEIO] excluirDefinitivamente negado: role=' . $currentRole . ', user_id=' . ($_SESSION['user_id'] ?? ''));
+            $_SESSION['error'] = 'Você não tem permissão.';
             redirect(base_url('alunos'));
         }
 

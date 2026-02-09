@@ -24,7 +24,8 @@ class InstrutoresController extends Controller
 
         // Apenas ADMIN pode gerenciar instrutores (SECRETARIA não)
         if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
-            $_SESSION['error'] = 'Acesso restrito ao administrador.';
+            error_log('[BLOQUEIO] InstrutoresController negado: role=' . ($_SESSION['current_role'] ?? '') . ', user_id=' . ($_SESSION['user_id'] ?? ''));
+            $_SESSION['error'] = 'Você não tem permissão.';
             redirect(base_url('dashboard'));
         }
     }

@@ -40,9 +40,9 @@ error_log('[USUARIOS API] Usuário logado: ' . $currentUser['email'] . ' (Tipo: 
 
 // Verificar se é admin ou secretaria
 if (!canManageUsers()) {
-    error_log('[USUARIOS API] Usuário não tem permissão para gerenciar usuários: ' . $currentUser['tipo']);
+    error_log('[BLOQUEIO] Usuarios API: tipo=' . ($currentUser['tipo'] ?? '') . ', user_id=' . ($currentUser['id'] ?? ''));
     http_response_code(403);
-    echo json_encode(['error' => 'Acesso negado - Apenas administradores e atendentes podem gerenciar usuários', 'code' => 'NOT_AUTHORIZED']);
+    echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
     exit;
 }
 
@@ -169,8 +169,9 @@ try {
 
                 // SECRETARIA não pode redefinir senha de usuário admin
                 if ($currentUser['tipo'] === 'secretaria' && ($usuario['tipo'] ?? '') === 'admin') {
+                    error_log('[BLOQUEIO] Usuarios reset_password negado (secretaria→admin): user_id=' . ($currentUser['id'] ?? ''));
                     http_response_code(403);
-                    echo json_encode(['error' => 'Apenas administradores podem redefinir senha de usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                    echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
                     exit;
                 }
                 
@@ -355,8 +356,9 @@ try {
 
             // SECRETARIA não pode criar usuário admin
             if ($currentUser['tipo'] === 'secretaria' && ($data['tipo'] ?? '') === 'admin') {
+                error_log('[BLOQUEIO] Usuarios POST (criar admin) negado: user_id=' . ($currentUser['id'] ?? ''));
                 http_response_code(403);
-                echo json_encode(['error' => 'Apenas administradores podem criar usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
                 exit;
             }
             
@@ -467,14 +469,15 @@ try {
 
             // SECRETARIA não pode editar usuário admin
             if ($currentUser['tipo'] === 'secretaria' && ($existingUser['tipo'] ?? '') === 'admin') {
+                error_log('[BLOQUEIO] Usuarios PUT (editar admin) negado: user_id=' . ($currentUser['id'] ?? ''));
                 http_response_code(403);
-                echo json_encode(['error' => 'Apenas administradores podem editar usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
                 exit;
             }
-            // SECRETARIA não pode alterar tipo para admin
             if ($currentUser['tipo'] === 'secretaria' && ($data['tipo'] ?? '') === 'admin') {
+                error_log('[BLOQUEIO] Usuarios PUT (atribuir admin) negado: user_id=' . ($currentUser['id'] ?? ''));
                 http_response_code(403);
-                echo json_encode(['error' => 'Apenas administradores podem atribuir o perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
                 exit;
             }
             
@@ -540,8 +543,9 @@ try {
         case 'DELETE':
             // Apenas ADMIN pode excluir usuários
             if ($currentUser['tipo'] !== 'admin') {
+                error_log('[BLOQUEIO] Usuarios DELETE negado: tipo=' . ($currentUser['tipo'] ?? '') . ', user_id=' . ($currentUser['id'] ?? ''));
                 http_response_code(403);
-                echo json_encode(['error' => 'Apenas administradores podem excluir usuários', 'code' => 'NOT_AUTHORIZED']);
+                echo json_encode(['error' => 'Você não tem permissão.', 'code' => 'NOT_AUTHORIZED']);
                 exit;
             }
             // Excluir usuário

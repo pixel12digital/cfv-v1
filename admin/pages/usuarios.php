@@ -1,7 +1,8 @@
 <?php
 // Verificar permissões - apenas admin e secretaria podem gerenciar usuários
 if (!canManageUsers()) {
-    echo '<div class="alert alert-danger">Você não tem permissão para acessar esta página. Apenas administradores e atendentes podem gerenciar usuários.</div>';
+    error_log('[BLOQUEIO] usuarios.php: tipo=' . ($user['tipo'] ?? '') . ', user_id=' . ($user['id'] ?? ''));
+    echo '<div class="alert alert-danger">Você não tem permissão.</div>';
     return;
 }
 $isSecretaria = (isset($user) && ($user['tipo'] ?? '') === 'secretaria');
@@ -1128,7 +1129,7 @@ function deleteUser(userId) {
                         break;
                     case 'NOT_ADMIN':
                     case 'NOT_AUTHORIZED':
-                        errorMessage = 'Acesso negado. Apenas administradores podem excluir usuários.';
+                        errorMessage = 'Você não tem permissão.';
                         break;
                     case 'USER_NOT_FOUND':
                         errorMessage = 'Usuário não encontrado.';
@@ -1153,7 +1154,7 @@ function deleteUser(userId) {
                 errorMessage = 'Sessão expirada. Faça login novamente.';
                 setTimeout(() => window.location.href = 'index.php', 2000);
             } else if (error.message.includes('HTTP Error: 403')) {
-                errorMessage = 'Acesso negado. Você não tem permissão para esta ação.';
+                errorMessage = 'Você não tem permissão.';
             } else if (error.message.includes('HTTP Error: 404')) {
                 errorMessage = 'Usuário não encontrado.';
             } else if (error.message.includes('HTTP Error: 500')) {

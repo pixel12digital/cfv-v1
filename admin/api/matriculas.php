@@ -152,8 +152,9 @@ try {
     // Verificar permissão
     $currentUser = getCurrentUser();
     if (!$currentUser || !in_array($currentUser['tipo'], ['admin', 'secretaria'])) {
+        error_log('[BLOQUEIO] Matriculas API: tipo=' . ($currentUser['tipo'] ?? 'não autenticado') . ', user_id=' . ($currentUser['id'] ?? ''));
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Acesso negado']);
+        echo json_encode(['success' => false, 'error' => 'Você não tem permissão.']);
         exit;
     }
     
@@ -640,8 +641,9 @@ function handlePut($db) {
 function handleDelete($db) {
     $currentUser = getCurrentUser();
     if (($currentUser['tipo'] ?? '') !== 'admin') {
+        error_log('[BLOQUEIO] Matrícula DELETE negado: tipo=' . ($currentUser['tipo'] ?? '') . ', user_id=' . ($currentUser['id'] ?? ''));
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Apenas administradores podem excluir matrículas']);
+        echo json_encode(['success' => false, 'error' => 'Você não tem permissão.']);
         return;
     }
 

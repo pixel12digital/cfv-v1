@@ -12,7 +12,8 @@ if (!defined('FINANCEIRO_ENABLED') || !FINANCEIRO_ENABLED) {
 
 // Relatórios financeiros/gerenciais: apenas ADMIN (SECRETARIA não tem acesso)
 if (!$isAdmin) {
-    $_SESSION['flash_message'] = 'Relatórios financeiros são restritos ao administrador.';
+    error_log('[BLOQUEIO] Acesso negado a financeiro-relatorios: tipo=' . ($user['tipo'] ?? '') . ', user_id=' . ($user['id'] ?? ''));
+    $_SESSION['flash_message'] = 'Você não tem permissão.';
     $_SESSION['flash_type'] = 'warning';
     header('Location: index.php');
     exit;

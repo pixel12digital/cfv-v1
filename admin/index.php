@@ -139,9 +139,9 @@ if ($userType === 'instrutor') {
     
     // Verificar se a página está bloqueada
     if (in_array($page, $rotasBloqueadas)) {
-        // Redirecionar para dashboard do instrutor com mensagem
+        error_log('[BLOQUEIO] Instrutor tentou acessar rota bloqueada: page=' . $page . ', user_id=' . ($userId ?? ''));
         $basePath = defined('BASE_PATH') ? BASE_PATH : '';
-        $_SESSION['flash_message'] = 'Você não tem permissão para acessar esta área.';
+        $_SESSION['flash_message'] = 'Você não tem permissão.';
         $_SESSION['flash_type'] = 'warning';
         header('Location: ' . $basePath . '/instrutor/dashboard.php');
         exit();
@@ -149,8 +149,9 @@ if ($userType === 'instrutor') {
     
     // Bloquear também ações específicas de alunos
     if ($page === 'alunos' && isset($_GET['action']) && in_array($_GET['action'], ['view', 'edit', 'create'])) {
+        error_log('[BLOQUEIO] Instrutor tentou ação alunos bloqueada: action=' . ($_GET['action'] ?? '') . ', user_id=' . ($userId ?? ''));
         $basePath = defined('BASE_PATH') ? BASE_PATH : '';
-        $_SESSION['flash_message'] = 'Você não tem permissão para acessar esta área.';
+        $_SESSION['flash_message'] = 'Você não tem permissão.';
         $_SESSION['flash_type'] = 'warning';
         header('Location: ' . $basePath . '/instrutor/dashboard.php');
         exit();
@@ -162,7 +163,8 @@ if ($userType === 'instrutor') {
 if ($userType === 'secretaria') {
     $rotasBloqueadasSecretaria = ['instrutores', 'veiculos', 'configuracoes-salas', 'servicos', 'financeiro-relatorios'];
     if (in_array($page, $rotasBloqueadasSecretaria)) {
-        $_SESSION['flash_message'] = 'Acesso restrito ao administrador.';
+        error_log('[BLOQUEIO] Secretaria tentou acessar rota bloqueada: page=' . $page . ', user_id=' . ($userId ?? ''));
+        $_SESSION['flash_message'] = 'Você não tem permissão.';
         $_SESSION['flash_type'] = 'warning';
         header('Location: index.php');
         exit();

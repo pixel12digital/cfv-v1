@@ -28,8 +28,9 @@ if (!isLoggedIn()) {
 $currentUser = getCurrentUser();
 // Relatórios financeiros/gerenciais: apenas ADMIN (SECRETARIA não tem acesso)
 if (($currentUser['tipo'] ?? '') !== 'admin') {
+    error_log('[BLOQUEIO] Financeiro-relatorios API negado: tipo=' . ($currentUser['tipo'] ?? '') . ', user_id=' . ($currentUser['id'] ?? ''));
     http_response_code(403);
-    echo json_encode(['error' => 'Relatórios financeiros são restritos ao administrador']);
+    echo json_encode(['error' => 'Você não tem permissão.']);
     exit;
 }
 
