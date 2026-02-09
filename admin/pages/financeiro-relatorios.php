@@ -10,10 +10,12 @@ if (!defined('FINANCEIRO_ENABLED') || !FINANCEIRO_ENABLED) {
     return;
 }
 
-// Verificar permissões (as variáveis já estão disponíveis do admin/index.php)
-if (!$isAdmin && $user['tipo'] !== 'secretaria') {
-    echo '<div class="alert alert-danger">Você não tem permissão para acessar esta página.</div>';
-    return;
+// Relatórios financeiros/gerenciais: apenas ADMIN (SECRETARIA não tem acesso)
+if (!$isAdmin) {
+    $_SESSION['flash_message'] = 'Relatórios financeiros são restritos ao administrador.';
+    $_SESSION['flash_type'] = 'warning';
+    header('Location: index.php');
+    exit;
 }
 
 // Obter período padrão (últimos 30 dias)

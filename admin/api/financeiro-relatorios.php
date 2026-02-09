@@ -26,9 +26,10 @@ if (!isLoggedIn()) {
 }
 
 $currentUser = getCurrentUser();
-if (!in_array($currentUser['tipo'], ['admin', 'secretaria'])) {
+// Relatórios financeiros/gerenciais: apenas ADMIN (SECRETARIA não tem acesso)
+if (($currentUser['tipo'] ?? '') !== 'admin') {
     http_response_code(403);
-    echo json_encode(['error' => 'Sem permissão']);
+    echo json_encode(['error' => 'Relatórios financeiros são restritos ao administrador']);
     exit;
 }
 

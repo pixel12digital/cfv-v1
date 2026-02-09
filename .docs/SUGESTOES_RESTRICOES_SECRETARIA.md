@@ -157,10 +157,25 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 | **Form matrícula (desconto, acréscimo, entrada, etc.)** | `matricula_show.php` | ✅ Readonly/desabilitado para SECRETARIA quando `billing_status` = generated/canceled |
 | **Usuários (admin legado)** | `admin/api/usuarios.php` | ✅ POST: SECRETARIA não cria admin; PUT: não edita nem atribui admin; DELETE: só ADMIN; reset_password: SECRETARIA não redefini admin |
 | **Usuários (admin/pages/usuarios.php)** | `admin/pages/usuarios.php` | ✅ Botão Excluir oculto para SECRETARIA; Editar/Senha ocultos para usuários admin; opção Admin oculta no form |
+| **Relatórios financeiros/gerenciais** | `admin/pages/financeiro-relatorios.php`, `admin/api/financeiro-relatorios.php` | ✅ Apenas ADMIN; SECRETARIA não vê menu nem acessa URL; API bloqueada |
 
 ---
 
-### 3.5 Financeiro — Regras SECRETARIA (implementado)
+### 3.5 Relatórios — Regras SECRETARIA (implementado)
+
+| Relatório | Visível para SECRETARIA | Motivo |
+|-----------|-------------------------|--------|
+| Frequência Teórica | ✅ Sim | Operacional (acompanhamento de turmas) |
+| Conclusão Prática | ✅ Sim (em dev) | Operacional |
+| Provas (Taxa Aprovação) | ✅ Sim (em dev) | Operacional |
+| **Relatórios Financeiros** (receitas, despesas, saldo) | ❌ Não | Sensível — apenas ADMIN |
+| **Inadimplência** | ❌ Não | Sensível — apenas ADMIN |
+
+**Proteções:** `rotasBloqueadasSecretaria` inclui `financeiro-relatorios`; página e API checam `$isAdmin`; menu e flyout ocultam itens para SECRETARIA.
+
+---
+
+### 3.6 Financeiro — Regras SECRETARIA (implementado)
 
 | O que SECRETARIA pode | O que SECRETARIA NÃO pode |
 |-----------------------|---------------------------|
@@ -168,7 +183,7 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 | Gerar cobrança (PIX/Boleto) | Excluir matrícula |
 | Sincronizar cobranças | Excluir matrícula definitivamente |
 | Consultar financeiro | Alterar desconto, acréscimo, entrada, parcelas quando cobrança já gerada |
-| Alterar valores antes de gerar cobrança | |
+| Alterar valores antes de gerar cobrança | Consultar relatórios financeiros e inadimplência |
 
 **Permissões:** compatibilidade `enrollments` (seed 002) ou `matriculas` (seed 001).
 
@@ -178,8 +193,9 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 
 - [x] **Rotas / Controllers (backend):** Instrutores, Veículos, Serviços — bloqueados para SECRETARIA
 - [x] **Menu legado (admin/index.php):** Instrutores, Veículos, Salas — apenas ADMIN
-- [x] **Bloqueio URL admin:** `rotasBloqueadasSecretaria` para instrutores, veiculos, configuracoes-salas, servicos
+- [x] **Bloqueio URL admin:** `rotasBloqueadasSecretaria` para instrutores, veiculos, configuracoes-salas, servicos, financeiro-relatorios
 - [x] **Financeiro:** SECRETARIA não edita valores após cobrança gerada
+- [x] **Relatórios:** Relatórios Financeiros e Inadimplência apenas ADMIN
 - [x] **Permissões:** Alinhamento `matriculas`/`enrollments` em `atualizarMatricula`
 - [ ] **Seeds (opcional):** Remover `servicos` de `role_permissoes` para SECRETARIA
 

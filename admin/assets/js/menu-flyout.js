@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             items: [
                 { icon: 'fas fa-file-invoice', text: 'Faturas', href: 'index.php?page=financeiro-faturas' },
                 { icon: 'fas fa-receipt', text: 'Pagamentos', href: 'index.php?page=financeiro-despesas' },
-                { icon: 'fas fa-chart-line', text: 'Relatórios Financeiros', href: 'index.php?page=financeiro-relatorios' },
+                { icon: 'fas fa-chart-line', text: 'Relatórios Financeiros', href: 'index.php?page=financeiro-relatorios', adminOnly: true },
                 { icon: 'fas fa-cog', text: 'Configurações Financeiras', href: '#', onclick: 'alert("Página em desenvolvimento"); return false;' }
             ]
         },
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 { icon: 'fas fa-chart-bar', text: 'Frequência Teórica', href: 'pages/relatorio-frequencia.php' },
                 { icon: 'fas fa-check-circle', text: 'Conclusão Prática', href: '#', onclick: 'alert("Relatório em desenvolvimento"); return false;' },
                 { icon: 'fas fa-clipboard-check', text: 'Provas (Taxa de Aprovação)', href: '#', onclick: 'alert("Relatório em desenvolvimento"); return false;' },
-                { icon: 'fas fa-exclamation-triangle', text: 'Inadimplência', href: 'index.php?page=financeiro-relatorios&tipo=inadimplencia' }
+                { icon: 'fas fa-exclamation-triangle', text: 'Inadimplência', href: 'index.php?page=financeiro-relatorios&tipo=inadimplencia', adminOnly: true }
             ]
         },
         'configuracoes': {
@@ -101,10 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Criar elemento flyout
                 const flyout = document.createElement('div');
                 flyout.className = 'nav-flyout';
+                const isAdmin = typeof window.ADMIN_IS_ADMIN !== 'undefined' && window.ADMIN_IS_ADMIN;
+                const visibleItems = config.items.filter(item => !item.adminOnly || isAdmin);
                 flyout.innerHTML = `
                     <div class="flyout-title">${config.title}</div>
-                    ${config.items.map(item => `
-                        <a href="${item.href}" class="flyout-item" ${item.onclick ? `onclick="${item.onclick}"` : ''}>
+                    ${visibleItems.map(item => `
+                        <a href="${item.href || '#'}" class="flyout-item" ${item.onclick ? `onclick="${item.onclick}"` : ''}>
                             ${item.icon ? `<i class="${item.icon}"></i> ` : ''}${item.text}
                         </a>
                     `).join('')}

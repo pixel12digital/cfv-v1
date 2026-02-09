@@ -160,7 +160,7 @@ if ($userType === 'instrutor') {
 // BLOQUEIO DE ROTAS PARA SECRETARIA (apenas ADMIN)
 // Secretaria não pode acessar: instrutores, veículos, salas, serviços
 if ($userType === 'secretaria') {
-    $rotasBloqueadasSecretaria = ['instrutores', 'veiculos', 'configuracoes-salas', 'servicos'];
+    $rotasBloqueadasSecretaria = ['instrutores', 'veiculos', 'configuracoes-salas', 'servicos', 'financeiro-relatorios'];
     if (in_array($page, $rotasBloqueadasSecretaria)) {
         $_SESSION['flash_message'] = 'Acesso restrito ao administrador.';
         $_SESSION['flash_type'] = 'warning';
@@ -1755,10 +1755,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                             <i class="fas fa-receipt"></i>
                             <span>Pagamentos</span>
                         </a>
+                        <?php if ($isAdmin): ?>
                         <a href="index.php?page=financeiro-relatorios" class="nav-sublink <?php echo $page === 'financeiro-relatorios' ? 'active' : ''; ?>">
                             <i class="fas fa-chart-line"></i>
                             <span>Relatórios Financeiros</span>
                         </a>
+                        <?php endif; ?>
                         <!-- TODO: Criar página financeiro-configuracoes.php -->
                         <a href="#" class="nav-sublink" onclick="alert('Página em desenvolvimento'); return false;" style="opacity: 0.6; cursor: not-allowed;">
                             <i class="fas fa-cog"></i>
@@ -1798,10 +1800,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                             <span>Provas (Taxa de Aprovação)</span>
                             <small style="color: #999; font-size: 0.7em;">(Em breve)</small>
                         </a>
+                        <?php if ($isAdmin): ?>
                         <a href="index.php?page=financeiro-relatorios&tipo=inadimplencia" class="nav-sublink <?php echo ($page === 'financeiro-relatorios' && ($_GET['tipo'] ?? '') === 'inadimplencia') ? 'active' : ''; ?>">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>Inadimplência</span>
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -2089,10 +2093,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                     <i class="fas fa-receipt"></i>
                                     <span>Pagamentos</span>
                                 </a>
+                                <?php if ($isAdmin): ?>
                                 <a href="index.php?page=financeiro-relatorios" class="mobile-nav-sublink <?php echo $page === 'financeiro-relatorios' ? 'active' : ''; ?>">
                                     <i class="fas fa-chart-line"></i>
                                     <span>Relatórios Financeiros</span>
                                 </a>
+                                <?php endif; ?>
                                 <!-- TODO: Criar página financeiro-configuracoes.php -->
                                 <a href="#" class="mobile-nav-sublink" onclick="alert('Página em desenvolvimento'); return false;" style="opacity: 0.6; cursor: not-allowed;">
                                     <i class="fas fa-cog"></i>
@@ -2128,10 +2134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                     <span>Provas (Taxa de Aprovação)</span>
                                     <small style="color: #999; font-size: 0.7em;">(Em breve)</small>
                                 </a>
+                                <?php if ($isAdmin): ?>
                                 <a href="index.php?page=financeiro-relatorios&tipo=inadimplencia" class="mobile-nav-sublink <?php echo ($page === 'financeiro-relatorios' && ($_GET['tipo'] ?? '') === 'inadimplencia') ? 'active' : ''; ?>">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <span>Inadimplência</span>
                                 </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -2925,6 +2933,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
     <!-- Font Awesome já carregado no head -->
     
     <!-- JavaScript Principal do Admin -->
+    <script>window.ADMIN_IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;</script>
     <script src="assets/js/config.js"></script>
     <script src="assets/js/admin.js"></script>
     <script src="assets/js/menu-flyout.js"></script>
