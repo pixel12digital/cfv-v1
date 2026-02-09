@@ -361,17 +361,41 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
             <div class="card-body">
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
                     <?php if ($lesson['status'] === 'agendada'): ?>
-                        <!-- Iniciar Aula -->
+                        <?php
+                        $blockToStart = null;
+                        if (!empty($consecutiveBlock['lessons'])) {
+                            $agendadasNoBloco = array_filter($consecutiveBlock['lessons'], fn($l) => ($l['status'] ?? '') === 'agendada');
+                            $blockToStart = count($agendadasNoBloco) > 1 ? $agendadasNoBloco : null;
+                        }
+                        ?>
+                        <?php if ($blockToStart): ?>
+                        <a href="<?= base_path("agenda/iniciar-bloco?ids=" . urlencode(implode(',', array_column($blockToStart, 'id')))) ?>" class="btn btn-warning" style="width: 100%; text-align: center; display: block;">
+                            Iniciar Bloco (<?= count($blockToStart) ?> aulas)
+                        </a>
+                        <?php else: ?>
                         <a href="<?= base_path("agenda/{$lesson['id']}/iniciar") ?>" class="btn btn-warning" style="width: 100%; text-align: center; display: block;">
                             Iniciar Aula
                         </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                     
                     <?php if ($lesson['status'] === 'em_andamento'): ?>
-                        <!-- Concluir Aula -->
+                        <?php
+                        $blockToFinish = null;
+                        if (!empty($consecutiveBlock['lessons'])) {
+                            $pendentesNoBloco = array_filter($consecutiveBlock['lessons'], fn($l) => in_array($l['status'] ?? '', ['agendada', 'em_andamento']));
+                            $blockToFinish = count($pendentesNoBloco) > 1 ? $pendentesNoBloco : null;
+                        }
+                        ?>
+                        <?php if ($blockToFinish): ?>
+                        <a href="<?= base_path("agenda/finalizar-bloco?ids=" . urlencode(implode(',', array_column($blockToFinish, 'id')))) ?>" class="btn btn-success" style="width: 100%; text-align: center; display: block;">
+                            Finalizar Bloco (<?= count($blockToFinish) ?> aulas)
+                        </a>
+                        <?php else: ?>
                         <a href="<?= base_path("agenda/{$lesson['id']}/concluir") ?>" class="btn btn-success" style="width: 100%; text-align: center; display: block;">
                             Concluir Aula
                         </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                     
                     <?php if (in_array($lesson['status'], ['agendada', 'em_andamento'])): ?>
