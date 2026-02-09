@@ -157,6 +157,18 @@ if ($userType === 'instrutor') {
     }
 }
 
+// BLOQUEIO DE ROTAS PARA SECRETARIA (apenas ADMIN)
+// Secretaria não pode acessar: instrutores, veículos, salas, serviços
+if ($userType === 'secretaria') {
+    $rotasBloqueadasSecretaria = ['instrutores', 'veiculos', 'configuracoes-salas', 'servicos'];
+    if (in_array($page, $rotasBloqueadasSecretaria)) {
+        $_SESSION['flash_message'] = 'Acesso restrito ao administrador.';
+        $_SESSION['flash_type'] = 'warning';
+        header('Location: index.php');
+        exit();
+    }
+}
+
 // Verificação ANTECIPADA para turma-chamada (ANTES de qualquer output HTML)
 // Isso evita o erro "headers already sent" quando a página requer turma_id
 if ($page === 'turma-chamada' && !isset($_GET['turma_id'])) {
@@ -1668,6 +1680,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                             <span>Agenda Geral</span>
                             <div class="nav-badge"><?php echo $stats['total_aulas']; ?></div>
                         </a>
+                        <?php if ($isAdmin): ?>
                         <a href="index.php?page=instrutores" class="nav-sublink <?php echo $page === 'instrutores' ? 'active' : ''; ?>">
                             <i class="fas fa-chalkboard-teacher"></i>
                             <span>Instrutores</span>
@@ -1682,6 +1695,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                             <i class="fas fa-door-open"></i>
                             <span>Salas</span>
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -2008,6 +2022,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                     <span>Agenda Geral</span>
                                     <span class="mobile-nav-badge"><?php echo $stats['total_aulas']; ?></span>
                                 </a>
+                                <?php if ($isAdmin): ?>
                                 <a href="index.php?page=instrutores" class="mobile-nav-sublink <?php echo $page === 'instrutores' ? 'active' : ''; ?>">
                                     <i class="fas fa-chalkboard-teacher"></i>
                                     <span>Instrutores</span>
@@ -2022,6 +2037,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                     <i class="fas fa-door-open"></i>
                                     <span>Salas</span>
                                 </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endif; ?>

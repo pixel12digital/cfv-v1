@@ -14,9 +14,10 @@ class ServicosController extends Controller
     public function __construct()
     {
         $this->cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
-        
-        if (!PermissionService::check('servicos', 'view')) {
-            $_SESSION['error'] = 'Você não tem permissão para acessar este módulo.';
+
+        // Apenas ADMIN pode gerenciar serviços (SECRETARIA não)
+        if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Acesso restrito ao administrador.';
             redirect(base_url('dashboard'));
         }
     }

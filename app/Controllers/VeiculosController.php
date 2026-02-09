@@ -15,6 +15,12 @@ class VeiculosController extends Controller
     {
         $this->cfcId = $_SESSION['cfc_id'] ?? Constants::CFC_ID_DEFAULT;
         $this->auditService = new AuditService();
+
+        // Apenas ADMIN pode gerenciar veículos (SECRETARIA não)
+        if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Acesso restrito ao administrador.';
+            redirect(base_url('dashboard'));
+        }
     }
 
     public function index()

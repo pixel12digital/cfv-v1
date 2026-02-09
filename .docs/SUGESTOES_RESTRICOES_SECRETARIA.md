@@ -1,0 +1,185 @@
+# Sugestões de Restrições para SECRETARIA (Mínimo Impacto)
+
+**Objetivo:** Definir o que a SECRETARIA pode e não pode acessar, garantindo que:
+- Menus mostrem apenas o que ela pode usar
+- Acesso direto por URL também respeite as restrições (não é só esconder botão)
+
+**Data:** 2025-02-09  
+**Status:** Sugestões — sem implementação
+
+---
+
+## 1. Resumo Executivo
+
+| Categoria | O que restringir | Impacto | Prioridade |
+|-----------|------------------|---------|------------|
+| **Menus** | Já parcialmente feito em `shell.php` | Baixo | — |
+| **Rotas (URL)** | Instrutores, Veículos, Serviços, Usuários | Médio | Alta |
+| **Ações/Botões** | Excluir matrícula (já feito) | — | — |
+| **admin/index.php** | Instrutores, Veículos, Salas, Serviços (dentro de Acadêmico) | Baixo | Média |
+
+---
+
+## 2. Situação Atual por Módulo
+
+### 2.1 O que SECRETARIA já NÃO vê (menu shell.php)
+
+- Instrutores
+- Veículos
+- Serviços
+- Usuários
+- Disciplinas
+- Cursos Teóricos
+- CFC (Configurações)
+- Configurações gerais
+
+### 2.2 O que SECRETARIA vê e PODE usar (operacional)
+
+- Dashboard
+- Alunos (CRUD, matrículas)
+- Agenda
+- Turmas Teóricas
+- Financeiro
+- Comunicados
+
+### 2.3 Proteção por URL (backend)
+
+| Rota / Módulo | Proteção atual | Sugestão |
+|---------------|----------------|----------|
+| `/usuarios/*` | `PermissionService` + `ADMIN` bypass | ✅ Manter — `role_permissoes` não dá `usuarios` para SECRETARIA |
+| `/configuracoes/*` | `ConfiguracoesController::__construct` bloqueia não-ADMIN | ✅ OK |
+| `/instrutores/*` | **Nenhuma** | ⚠️ Bloquear SECRETARIA |
+| `/veiculos/*` | **Nenhuma** | ⚠️ Bloquear SECRETARIA |
+| `/servicos/*` | `PermissionService::check('servicos','view')` | ⚠️ Verificar — se `view` ≠ `listar`, pode já estar bloqueado; senão, bloquear |
+| `/matriculas/{id}/excluir` | `AlunosController` — apenas ADMIN | ✅ OK |
+| `/matriculas/{id}/excluir-definitivamente` | `AlunosController` — apenas ADMIN | ✅ OK |
+| `/notificacoes/excluir-historico` | `NotificationsController` — apenas ADMIN | ✅ OK |
+
+---
+
+## 3. Sugestões com Mínimo Impacto
+
+### 3.1 Rotas — adicionar RoleMiddleware (ADMIN only)
+
+**Onde:** `app/routes/web.php`
+
+**Sugestão:** Usar `RoleMiddleware` nas rotas que devem ser exclusivas de ADMIN:
+
+```php
+// Exemplo (não implementar ainda):
+use App\Middlewares\RoleMiddleware;
+
+// Instrutores (apenas ADMIN)
+$router->get('/instrutores', [InstrutoresController::class, 'index'], [AuthMiddleware::class, new RoleMiddleware('ADMIN')]);
+// ... demais rotas de instrutores
+
+// Veículos (apenas ADMIN)
+$router->get('/veiculos', [VeiculosController::class, 'index'], [AuthMiddleware::class, new RoleMiddleware('ADMIN')]);
+// ... demais rotas de veículos
+
+// Serviços (apenas ADMIN) — se ainda não estiver bloqueado
+$router->get('/servicos', [ServicosController::class, 'index'], [AuthMiddleware::class, new RoleMiddleware('ADMIN')]);
+// ...
+```
+
+**Alternativa (menos invasiva):** Em cada controller, no `__construct` ou no início do método:
+
+```php
+if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
+    $_SESSION['error'] = 'Acesso restrito ao administrador.';
+    redirect(base_url('dashboard'));
+}
+```
+
+**Arquivos a ajustar:**
+- `InstrutoresController.php` — adicionar checagem no construtor
+- `VeiculosController.php` — adicionar checagem no construtor
+- `ServicosController.php` — garantir checagem (já usa PermissionService; validar se `view`/`listar` está correto para SECRETARIA)
+
+---
+
+### 3.2 admin/index.php — menu legado
+
+**Contexto:** O painel legado (`admin/index.php`) usa `$isAdmin || $user['tipo'] === 'secretaria'` para vários itens. O submenu **Acadêmico** inclui:
+
+- Turmas Teóricas ✅ (manter para SECRETARIA)
+- Aulas Práticas ✅
+- Agenda Geral ✅
+- **Instrutores** ⚠️ (SECRETARIA vê hoje)
+- **Veículos** ⚠️ (SECRETARIA vê hoje)
+- **Salas** ⚠️ (SECRETARIA vê hoje)
+
+**Sugestão:** Trocar para exibir apenas para ADMIN:
+
+```php
+// Em vez de: $isAdmin || $user['tipo'] === 'secretaria'
+// Usar para Instrutores, Veículos, Salas: apenas $isAdmin
+```
+
+**Linhas aproximadas em `admin/index.php`:**
+- 1672–1679: link Instrutores
+- 1676–1680: link Veículos
+- 1681–1685: link Salas (configuracoes-salas)
+
+**Impacto:** SECRETARIA deixa de ver esses itens no submenu Acadêmico, mas continua com Turmas Teóricas, Aulas Práticas e Agenda Geral.
+
+---
+
+### 3.3 Banco de dados — role_permissoes
+
+**Situação:** `001_seed_initial_data.sql` define SECRETARIA com:
+
+```sql
+WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro', 'servicos')
+```
+
+**Sugestão:** Remover `servicos` da SECRETARIA para alinhar com o que o plano estratégico prevê (Admin Master gerencia serviços/configurações):
+
+```sql
+-- Em vez de incluir 'servicos', usar apenas:
+WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
+```
+
+**Impacto:** Permissões de serviços passam a ser exclusivas de ADMIN. Preferência: fazer isso **em conjunto** com a proteção de rotas/controllers para evitar inconsistências.
+
+---
+
+### 3.4 Ações específicas — já implementadas
+
+| Ação | Onde | Status |
+|------|------|--------|
+| Excluir matrícula | `AlunosController::excluirMatricula` | ✅ Bloqueado para não-ADMIN |
+| Excluir matrícula definitivamente | `AlunosController::excluirDefinitivamente` | ✅ Bloqueado para não-ADMIN |
+| Botão "Excluir Matrícula" na view | `matricula_show.php` | ✅ Oculto para não-ADMIN |
+| Financeiro: link matrícula cancelada | `financeiro/index.php` | ✅ Oculto para não-ADMIN |
+| Notificações: excluir histórico | `NotificationsController` | ✅ Bloqueado para não-ADMIN |
+
+Nenhuma alteração necessária nessas ações.
+
+---
+
+## 4. Fluxo de implementação sugerido (ordem de prioridade)
+
+1. **Rotas / Controllers (backend):**
+   - Adicionar checagem no construtor em `InstrutoresController`
+   - Adicionar checagem no construtor em `VeiculosController`
+   - Garantir que `ServicosController` bloqueie SECRETARIA (via PermissionService ou checagem explícita)
+
+2. **Menu legado (admin/index.php):**
+   - Tornar Instrutores, Veículos e Salas visíveis apenas para ADMIN dentro do submenu Acadêmico
+
+3. ** Seeds (se aplicável):**
+   - Remover `servicos` de `role_permissoes` para SECRETARIA (executar migration/seed atualizado)
+
+4. **Validação:**
+   - Testar acesso direto por URL a `/instrutores`, `/veiculos`, `/servicos`, `/usuarios` e `/configuracoes/*` com usuário SECRETARIA — todos devem resultar em redirecionamento ou 403.
+
+---
+
+## 5. Referências
+
+- `admin/pages/_PLANO-SISTEMA-CFC.md` — Admin Master vs Admin Secretaria
+- `docs/ANALISE_SISTEMA_USUARIOS_PERMISSOES.md` — Perfis e permissões
+- `app/Views/layouts/shell.php` — `getMenuItems()` para ADMIN vs SECRETARIA
+- `app/Middlewares/RoleMiddleware.php` — Middleware existente para restrição por role
+- `app/Config/Constants.php` — `ROLE_ADMIN`, `ROLE_SECRETARIA`
