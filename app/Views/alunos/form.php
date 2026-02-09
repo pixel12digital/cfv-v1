@@ -226,9 +226,8 @@
                             maxlength="9"
                             pattern="[0-9]{9}"
                             inputmode="numeric"
-                            title="Número PE exigido pelo DETRAN-PE para CFCs em Pernambuco (9 dígitos)"
+                            title="9 dígitos"
                         >
-                        <small class="form-hint">Exigido pelo DETRAN-PE para CFCs em Pernambuco. Apenas números, 9 dígitos.</small>
                     </div>
                 </div>
             </div>

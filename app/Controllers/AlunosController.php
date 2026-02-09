@@ -1506,8 +1506,13 @@ class AlunosController extends Controller
         }
 
         $numeroPe = preg_replace('/[^0-9]/', '', $post['numero_pe'] ?? '');
-        if (!empty($numeroPe) && (strlen($numeroPe) !== 9 || !ctype_digit($numeroPe))) {
-            $errors[] = 'PE (DETRAN-PE) deve conter exatamente 9 dígitos.';
+        if (!empty($numeroPe)) {
+            $len = strlen($numeroPe);
+            if ($len !== 9) {
+                $errors[] = $len < 9
+                    ? "O número PE deve ter exatamente 9 dígitos. Você informou {$len} dígito(s)."
+                    : "O número PE deve ter exatamente 9 dígitos. Você informou {$len} dígitos (sobram " . ($len - 9) . ").";
+            }
         }
 
         return $errors;
