@@ -214,6 +214,22 @@
                             value="<?= htmlspecialchars($student['rg_issue_date'] ?? '') ?>"
                         >
                     </div>
+                    <div class="form-group form-col-2">
+                        <label class="form-label" for="numero_pe">PE (DETRAN-PE)</label>
+                        <input 
+                            type="text" 
+                            id="numero_pe" 
+                            name="numero_pe" 
+                            class="form-input" 
+                            value="<?= htmlspecialchars($student['numero_pe'] ?? '') ?>"
+                            placeholder="9 dígitos"
+                            maxlength="9"
+                            pattern="[0-9]{9}"
+                            inputmode="numeric"
+                            title="Número PE exigido pelo DETRAN-PE para CFCs em Pernambuco (9 dígitos)"
+                        >
+                        <small class="form-hint">Exigido pelo DETRAN-PE para CFCs em Pernambuco. Apenas números, 9 dígitos.</small>
+                    </div>
                 </div>
             </div>
 

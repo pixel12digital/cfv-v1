@@ -160,6 +160,12 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php if (!empty($student['numero_pe'])): ?>
+                <div class="info-item">
+                    <label>PE (DETRAN-PE)</label>
+                    <div><?= htmlspecialchars($student['numero_pe']) ?></div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -515,6 +521,10 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
                 <div class="info-item">
                     <label>Data de Emissão do RG</label>
                     <div><?= !empty($student['rg_issue_date']) ? date('d/m/Y', strtotime($student['rg_issue_date'])) : '-' ?></div>
+                </div>
+                <div class="info-item">
+                    <label>PE (DETRAN-PE)</label>
+                    <div><?= htmlspecialchars($student['numero_pe'] ?? '-') ?></div>
                 </div>
             </div>
         </div>
