@@ -4,6 +4,7 @@ if (!canManageUsers()) {
     echo '<div class="alert alert-danger">Você não tem permissão para acessar esta página. Apenas administradores e atendentes podem gerenciar usuários.</div>';
     return;
 }
+$isSecretaria = (isset($user) && ($user['tipo'] ?? '') === 'secretaria');
 
 // Verificar se as variáveis estão definidas
 $action = $_GET['action'] ?? 'list';
@@ -489,6 +490,7 @@ if ($action === 'list') {
                                 <!-- Linha 3: Botões de Ação -->
                                 <div class="user-card-footer">
                                     <div class="user-card-actions">
+                                        <?php if (!$isSecretaria || ($usuario['tipo'] ?? '') !== 'admin'): ?>
                                         <button class="btn btn-sm btn-edit btn-editar-usuario" 
                                                 data-user-id="<?php echo $usuario['id']; ?>"
                                                 title="Editar dados do usuário">
@@ -504,12 +506,15 @@ if ($action === 'list') {
                                             <i class="fas fa-key"></i>
                                             <span class="btn-text">Senha</span>
                                         </button>
+                                        <?php endif; ?>
+                                        <?php if (!$isSecretaria): ?>
                                         <button class="btn btn-sm btn-delete btn-excluir-usuario" 
                                                 data-user-id="<?php echo $usuario['id']; ?>"
                                                 title="Excluir usuário">
                                             <i class="fas fa-trash"></i>
                                             <span class="btn-text">Excluir</span>
                                         </button>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -559,7 +564,9 @@ if ($action === 'list') {
                     <label for="userType" class="form-label">Tipo de Usuário</label>
                     <select id="userType" name="tipo" class="form-control" required>
                         <option value="">Selecione...</option>
+                        <?php if (!$isSecretaria): ?>
                         <option value="admin">Administrador</option>
+                        <?php endif; ?>
                         <option value="secretaria">Atendente CFC</option>
                         <option value="instrutor">Instrutor</option>
                         <option value="aluno">Aluno</option>
@@ -1120,6 +1127,7 @@ function deleteUser(userId) {
                         setTimeout(() => window.location.href = 'index.php', 2000);
                         break;
                     case 'NOT_ADMIN':
+                    case 'NOT_AUTHORIZED':
                         errorMessage = 'Acesso negado. Apenas administradores podem excluir usuários.';
                         break;
                     case 'USER_NOT_FOUND':

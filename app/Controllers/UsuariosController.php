@@ -25,8 +25,9 @@ class UsuariosController extends Controller
         $this->auditService = new AuditService();
         $this->emailService = new EmailService();
         
-        // Apenas ADMIN pode gerenciar usuários
-        if (!PermissionService::check('usuarios', 'view') && $_SESSION['current_role'] !== 'ADMIN') {
+        // ADMIN e SECRETARIA podem acessar (SECRETARIA com restrições granulares nos métodos)
+        $role = $_SESSION['current_role'] ?? '';
+        if (!in_array($role, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para acessar este módulo.';
             redirect(base_url('dashboard'));
         }
@@ -90,7 +91,8 @@ class UsuariosController extends Controller
      */
     public function novo()
     {
-        if (!PermissionService::check('usuarios', 'create') && $_SESSION['current_role'] !== 'ADMIN') {
+        $role = $_SESSION['current_role'] ?? '';
+        if (!in_array($role, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para criar usuários.';
             redirect(base_url('usuarios'));
         }
@@ -136,10 +138,12 @@ class UsuariosController extends Controller
         // Log para diagnóstico
         error_log("[USUARIOS_NOVO] Instrutores encontrados sem acesso: " . count($instructors));
         
+        $currentRole = $_SESSION['current_role'] ?? '';
         $data = [
             'pageTitle' => 'Criar Acesso',
             'students' => $students,
-            'instructors' => $instructors
+            'instructors' => $instructors,
+            'isSecretaria' => $currentRole === Constants::ROLE_SECRETARIA
         ];
         
         $this->view('usuarios/form', $data);
@@ -150,7 +154,8 @@ class UsuariosController extends Controller
      */
     public function criar()
     {
-        if (!PermissionService::check('usuarios', 'create') && $_SESSION['current_role'] !== 'ADMIN') {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para criar usuários.';
             redirect(base_url('usuarios'));
         }
@@ -162,6 +167,12 @@ class UsuariosController extends Controller
 
         $email = trim($_POST['email'] ?? '');
         $role = $_POST['role'] ?? '';
+
+        // SECRETARIA não pode criar usuário ADMIN
+        if ($currentRole === Constants::ROLE_SECRETARIA && $role === Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Apenas administradores podem criar usuários com perfil Administrador.';
+            redirect(base_url('usuarios/novo'));
+        }
         $linkType = $_POST['link_type'] ?? 'none'; // 'student', 'instructor', 'none'
         $linkId = !empty($_POST['link_id']) ? (int)$_POST['link_id'] : null;
         $sendEmail = isset($_POST['send_email']);
@@ -294,8 +305,8 @@ class UsuariosController extends Controller
             unset($_SESSION['just_generated_temp_password']);
             error_log("[USUARIOS_EDITAR] Flag just_generated_temp_password encontrada. Pulando verificação de permissão.");
         } else {
-            if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
-                error_log("[USUARIOS_EDITAR] Erro: Sem permissão para editar. Role: " . ($_SESSION['current_role'] ?? 'N/A'));
+            $currentRole = $_SESSION['current_role'] ?? '';
+            if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
                 $_SESSION['error'] = 'Você não tem permissão para editar usuários.';
                 redirect(base_url('usuarios'));
             }
@@ -311,6 +322,17 @@ class UsuariosController extends Controller
 
         // Buscar roles do usuário
         $roles = User::getUserRoles($id);
+
+        // SECRETARIA não pode editar usuário ADMIN
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if ($currentRole === Constants::ROLE_SECRETARIA) {
+            foreach ($roles as $r) {
+                if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                    $_SESSION['error'] = 'Apenas administradores podem editar usuários com perfil Administrador.';
+                    redirect(base_url('usuarios'));
+                }
+            }
+        }
         $user['roles'] = $roles;
         
         // Garantir que há pelo menos um role para o formulário
@@ -361,7 +383,8 @@ class UsuariosController extends Controller
             'hasActiveToken' => $hasActiveToken,
             'activeToken' => $activeToken,
             'tempPasswordGenerated' => $tempPasswordGenerated,
-            'activationLinkGenerated' => $_SESSION['activation_link_generated'] ?? null
+            'activationLinkGenerated' => $_SESSION['activation_link_generated'] ?? null,
+            'isSecretaria' => ($currentRole ?? '') === Constants::ROLE_SECRETARIA
         ];
 
         // Limpar sessões após passar para a view (será limpo após renderizar)
@@ -386,11 +409,8 @@ class UsuariosController extends Controller
      */
     public function atualizar($id)
     {
-        // Log para debug
-        error_log("[USUARIOS_ATUALIZAR] Método chamado para ID: {$id}");
-        error_log("[USUARIOS_ATUALIZAR] POST data: " . print_r($_POST, true));
-        
-        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para editar usuários.';
             redirect(base_url('usuarios'));
         }
@@ -408,8 +428,23 @@ class UsuariosController extends Controller
             redirect(base_url('usuarios'));
         }
 
+        // SECRETARIA não pode editar usuário ADMIN
+        $userRoles = User::getUserRoles($id);
+        foreach ($userRoles as $r) {
+            if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                $_SESSION['error'] = 'Apenas administradores podem editar usuários com perfil Administrador.';
+                redirect(base_url('usuarios'));
+            }
+        }
+
         $email = trim($_POST['email'] ?? '');
         $role = $_POST['role'] ?? '';
+
+        // SECRETARIA não pode alterar papel para ADMIN
+        if ($currentRole === Constants::ROLE_SECRETARIA && $role === Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Apenas administradores podem atribuir o perfil Administrador.';
+            redirect(base_url("usuarios/{$id}/editar"));
+        }
         $status = $_POST['status'] ?? 'ativo';
         
         error_log("[USUARIOS_ATUALIZAR] Dados extraídos - Email: {$email}, Role: {$role}, Status: {$status}");
@@ -562,7 +597,8 @@ class UsuariosController extends Controller
      */
     public function criarAcessoAluno()
     {
-        if (!PermissionService::check('usuarios', 'create') && $_SESSION['current_role'] !== 'ADMIN') {
+        $role = $_SESSION['current_role'] ?? '';
+        if (!in_array($role, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para criar acessos.';
             redirect(base_url('usuarios'));
         }
@@ -642,7 +678,8 @@ class UsuariosController extends Controller
      */
     public function criarAcessoInstrutor()
     {
-        if (!PermissionService::check('usuarios', 'create') && $_SESSION['current_role'] !== 'ADMIN') {
+        $role = $_SESSION['current_role'] ?? '';
+        if (!in_array($role, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para criar acessos.';
             redirect(base_url('usuarios'));
         }
@@ -709,16 +746,13 @@ class UsuariosController extends Controller
      */
     public function gerarSenhaTemporaria($id)
     {
-        error_log("[GERAR_SENHA_TEMP] Iniciando geração de senha temporária para usuário ID: {$id}");
-        
-        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
-            error_log("[GERAR_SENHA_TEMP] Erro: Sem permissão. Role atual: " . ($_SESSION['current_role'] ?? 'N/A'));
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para esta ação.';
             redirect(base_url('usuarios'));
         }
 
         if (!csrf_verify($_POST['csrf_token'] ?? '')) {
-            error_log("[GERAR_SENHA_TEMP] Erro: Token CSRF inválido");
             $_SESSION['error'] = 'Token CSRF inválido.';
             redirect(base_url("usuarios/{$id}/editar"));
         }
@@ -727,9 +761,17 @@ class UsuariosController extends Controller
         $user = $userModel->find($id);
 
         if (!$user || $user['cfc_id'] != $this->cfcId) {
-            error_log("[GERAR_SENHA_TEMP] Erro: Usuário não encontrado. ID: {$id}, CFC: {$this->cfcId}");
             $_SESSION['error'] = 'Usuário não encontrado.';
             redirect(base_url('usuarios'));
+        }
+
+        // SECRETARIA não pode gerar senha para usuário ADMIN
+        $userRoles = User::getUserRoles($id);
+        foreach ($userRoles as $r) {
+            if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                $_SESSION['error'] = 'Apenas administradores podem gerar senha para usuários com perfil Administrador.';
+                redirect(base_url('usuarios'));
+            }
         }
 
         // Gerar senha temporária segura
@@ -775,7 +817,8 @@ class UsuariosController extends Controller
      */
     public function gerarLinkAtivacao($id)
     {
-        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para esta ação.';
             redirect(base_url('usuarios'));
         }
@@ -791,6 +834,15 @@ class UsuariosController extends Controller
         if (!$user || $user['cfc_id'] != $this->cfcId) {
             $_SESSION['error'] = 'Usuário não encontrado.';
             redirect(base_url('usuarios'));
+        }
+
+        // SECRETARIA não pode gerar link para usuário ADMIN
+        $userRoles = User::getUserRoles($id);
+        foreach ($userRoles as $r) {
+            if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                $_SESSION['error'] = 'Apenas administradores podem gerar link de ativação para usuários com perfil Administrador.';
+                redirect(base_url('usuarios'));
+            }
         }
 
         // Gerar token único
@@ -832,7 +884,8 @@ class UsuariosController extends Controller
      */
     public function enviarLinkEmail($id)
     {
-        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             $_SESSION['error'] = 'Você não tem permissão para esta ação.';
             redirect(base_url('usuarios'));
         }
@@ -848,6 +901,15 @@ class UsuariosController extends Controller
         if (!$user || $user['cfc_id'] != $this->cfcId) {
             $_SESSION['error'] = 'Usuário não encontrado.';
             redirect(base_url('usuarios'));
+        }
+
+        // SECRETARIA não pode enviar link para usuário ADMIN
+        $userRoles = User::getUserRoles($id);
+        foreach ($userRoles as $r) {
+            if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                $_SESSION['error'] = 'Apenas administradores podem enviar link de ativação para usuários com perfil Administrador.';
+                redirect(base_url('usuarios'));
+            }
         }
 
         // Garantir token ativo: reutiliza sessão ou gera novo (invalida anteriores)
@@ -938,10 +1000,21 @@ class UsuariosController extends Controller
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        if (!PermissionService::check('usuarios', 'update') && $_SESSION['current_role'] !== 'ADMIN') {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if (!in_array($currentRole, [Constants::ROLE_ADMIN, Constants::ROLE_SECRETARIA])) {
             http_response_code(403);
             echo json_encode(['ok' => false, 'message' => 'Sem permissão para esta ação'], JSON_UNESCAPED_UNICODE);
             return;
+        }
+
+        // SECRETARIA não pode obter link para usuário ADMIN
+        $userRoles = User::getUserRoles($id);
+        foreach ($userRoles as $r) {
+            if (($r['role'] ?? '') === Constants::ROLE_ADMIN) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'message' => 'Apenas administradores podem acessar este recurso'], JSON_UNESCAPED_UNICODE);
+                return;
+            }
         }
 
         $input = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -1076,8 +1149,9 @@ class UsuariosController extends Controller
             redirect(base_url('usuarios'));
         }
 
-        if (!PermissionService::check('usuarios', 'delete') && $_SESSION['current_role'] !== 'ADMIN') {
-            $_SESSION['error'] = 'Você não tem permissão para excluir usuários.';
+        // Apenas ADMIN pode excluir usuários
+        if (($_SESSION['current_role'] ?? '') !== Constants::ROLE_ADMIN) {
+            $_SESSION['error'] = 'Apenas administradores podem excluir usuários.';
             redirect(base_url('usuarios'));
         }
 

@@ -111,8 +111,11 @@ $pageTitle = $isEdit ? 'Editar Usuário' : 'Criar Acesso';
                     if (!empty($user['roles']) && is_array($user['roles']) && isset($user['roles'][0]['role'])) {
                         $currentRole = $user['roles'][0]['role'];
                     }
+                    $isSecretaria = $isSecretaria ?? false;
                     ?>
+                    <?php if (!$isSecretaria): ?>
                     <option value="ADMIN" <?= $currentRole === 'ADMIN' ? 'selected' : '' ?>>Administrador</option>
+                    <?php endif; ?>
                     <option value="SECRETARIA" <?= $currentRole === 'SECRETARIA' ? 'selected' : '' ?>>Secretaria</option>
                     <option value="INSTRUTOR" <?= $currentRole === 'INSTRUTOR' ? 'selected' : '' ?>>Instrutor</option>
                     <option value="ALUNO" <?= $currentRole === 'ALUNO' ? 'selected' : '' ?>>Aluno</option>

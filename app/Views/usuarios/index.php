@@ -4,7 +4,7 @@
             <h1>Gerenciamento de Usuários</h1>
             <p class="text-muted">Central de Acessos - Controle de identidades e credenciais</p>
         </div>
-        <?php if (\App\Services\PermissionService::check('usuarios', 'create') || $_SESSION['current_role'] === 'ADMIN'): ?>
+        <?php if (in_array($_SESSION['current_role'] ?? '', ['ADMIN', 'SECRETARIA'])): ?>
         <a href="<?= base_path('usuarios/novo') ?>" class="btn btn-primary">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -106,7 +106,7 @@
     <div class="card">
         <div class="card-body text-center" style="padding: 60px 20px;">
             <p class="text-muted">Nenhum usuário cadastrado ainda.</p>
-            <?php if (\App\Services\PermissionService::check('usuarios', 'create') || $_SESSION['current_role'] === 'ADMIN'): ?>
+            <?php if (in_array($_SESSION['current_role'] ?? '', ['ADMIN', 'SECRETARIA'])): ?>
             <a href="<?= base_path('usuarios/novo') ?>" class="btn btn-primary mt-3">
                 Criar primeiro acesso
             </a>
@@ -160,14 +160,17 @@
                         </td>
                         <td>
                             <div class="table-actions">
-                                <?php if (\App\Services\PermissionService::check('usuarios', 'update') || $_SESSION['current_role'] === 'ADMIN'): ?>
+                                <?php 
+                                $canEditUser = ($_SESSION['current_role'] ?? '') === 'ADMIN' 
+                                    || (($_SESSION['current_role'] ?? '') === 'SECRETARIA' && !in_array('ADMIN', $user['roles_array'] ?? []));
+                                if ($canEditUser): ?>
                                 <a href="<?= base_path("usuarios/{$user['id']}/editar") ?>" class="btn-icon" title="Editar">
                                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </a>
                                 <?php endif; ?>
-                                <?php if ((\App\Services\PermissionService::check('usuarios', 'delete') || $_SESSION['current_role'] === 'ADMIN') && $user['id'] != ($_SESSION['user_id'] ?? 0)): ?>
+                                <?php if (($_SESSION['current_role'] ?? '') === 'ADMIN' && $user['id'] != ($_SESSION['user_id'] ?? 0)): ?>
                                 <form method="POST" action="<?= base_path("usuarios/{$user['id']}/excluir") ?>" style="display: inline-flex; margin: 0; padding: 0;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.');">
                                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <button type="submit" class="btn-icon btn-icon-danger" title="Excluir">

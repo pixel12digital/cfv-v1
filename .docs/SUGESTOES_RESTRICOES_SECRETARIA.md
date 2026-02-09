@@ -155,6 +155,8 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 | Notificações: excluir histórico | `NotificationsController` | ✅ Bloqueado para não-ADMIN |
 | **Editar valores após cobrança gerada** | `AlunosController::atualizarMatricula` | ✅ Bloqueado para SECRETARIA (apenas ADMIN) |
 | **Form matrícula (desconto, acréscimo, entrada, etc.)** | `matricula_show.php` | ✅ Readonly/desabilitado para SECRETARIA quando `billing_status` = generated/canceled |
+| **Usuários (admin legado)** | `admin/api/usuarios.php` | ✅ POST: SECRETARIA não cria admin; PUT: não edita nem atribui admin; DELETE: só ADMIN; reset_password: SECRETARIA não redefini admin |
+| **Usuários (admin/pages/usuarios.php)** | `admin/pages/usuarios.php` | ✅ Botão Excluir oculto para SECRETARIA; Editar/Senha ocultos para usuários admin; opção Admin oculta no form |
 
 ---
 

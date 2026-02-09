@@ -166,6 +166,13 @@ try {
                     echo json_encode(['error' => 'Usuário não encontrado', 'code' => 'USER_NOT_FOUND']);
                     exit;
                 }
+
+                // SECRETARIA não pode redefinir senha de usuário admin
+                if ($currentUser['tipo'] === 'secretaria' && ($usuario['tipo'] ?? '') === 'admin') {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Apenas administradores podem redefinir senha de usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                    exit;
+                }
                 
                 error_log('[USUARIOS API] Usuário encontrado para redefinição: ' . $usuario['email']);
                 
@@ -345,6 +352,13 @@ try {
                 echo json_encode(['error' => 'Nome, email e tipo são obrigatórios', 'code' => 'MISSING_FIELDS']);
                 exit;
             }
+
+            // SECRETARIA não pode criar usuário admin
+            if ($currentUser['tipo'] === 'secretaria' && ($data['tipo'] ?? '') === 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Apenas administradores podem criar usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                exit;
+            }
             
             // Verificar se email já existe
             $existingUser = $db->fetch("SELECT id FROM usuarios WHERE email = ?", [$data['email']]);
@@ -450,6 +464,19 @@ try {
                 echo json_encode(['error' => 'Usuário não encontrado', 'code' => 'USER_NOT_FOUND']);
                 exit;
             }
+
+            // SECRETARIA não pode editar usuário admin
+            if ($currentUser['tipo'] === 'secretaria' && ($existingUser['tipo'] ?? '') === 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Apenas administradores podem editar usuários com perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                exit;
+            }
+            // SECRETARIA não pode alterar tipo para admin
+            if ($currentUser['tipo'] === 'secretaria' && ($data['tipo'] ?? '') === 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Apenas administradores podem atribuir o perfil Administrador', 'code' => 'NOT_AUTHORIZED']);
+                exit;
+            }
             
             $tipoAnterior = $existingUser['tipo'] ?? null;
             
@@ -511,6 +538,12 @@ try {
             break;
             
         case 'DELETE':
+            // Apenas ADMIN pode excluir usuários
+            if ($currentUser['tipo'] !== 'admin') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Apenas administradores podem excluir usuários', 'code' => 'NOT_AUTHORIZED']);
+                exit;
+            }
             // Excluir usuário
             if (isset($_GET['id'])) {
                 $id = (int)$_GET['id'];
