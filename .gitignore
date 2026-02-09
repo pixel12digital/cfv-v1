@@ -12,6 +12,13 @@ backups/*
 
 # Uploads
 uploads/*
+storage/uploads/
+
+# Testes e debug (não versionar em produção)
+test_*.php
+tools/test_*.php
+phpinfo_temp.php
+clear_cache.php
 
 # Arquivos temporários
 *.tmp
