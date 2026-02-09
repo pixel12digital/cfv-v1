@@ -607,6 +607,20 @@ class Lesson extends Model
     /**
      * Verifica conflito de horário para instrutor
      */
+    /**
+     * Conta aulas práticas agendadas/não canceladas de uma matrícula
+     */
+    public function countScheduledByEnrollment($enrollmentId)
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) as count FROM {$this->table}
+             WHERE enrollment_id = ? AND type = 'pratica' AND status != 'cancelada'",
+            [$enrollmentId]
+        );
+        $row = $stmt->fetch();
+        return (int)($row['count'] ?? 0);
+    }
+
     public function hasInstructorConflict($instructorId, $scheduledDate, $scheduledTime, $durationMinutes, $excludeLessonId = null, $cfcId = null)
     {
         $startTime = $scheduledTime;

@@ -626,6 +626,8 @@ class AlunosController extends Controller
             }
         }
 
+        $aulasContratadas = !empty($_POST['aulas_contratadas']) ? max(0, (int)$_POST['aulas_contratadas']) : null;
+
         $enrollmentData = [
             'cfc_id' => $this->cfcId,
             'student_id' => $id,
@@ -637,6 +639,7 @@ class AlunosController extends Controller
             'payment_method' => $paymentMethod,
             'financial_status' => $financialStatus, // Calculado baseado em outstanding_amount
             'status' => 'ativa',
+            'aulas_contratadas' => $aulasContratadas,
             'created_by_user_id' => $_SESSION['user_id'] ?? null,
             'renach' => $renach,
             'detran_protocolo' => $detranProtocolo,
@@ -1077,6 +1080,10 @@ class AlunosController extends Controller
         $dataBefore = $enrollment;
         $studentId = $enrollment['student_id'];
 
+        $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
+            ? max(0, (int)$_POST['aulas_contratadas'])
+            : null;
+
         $data = [
             'discount_value' => $discountValue,
             'extra_value' => $extraValue,
@@ -1084,6 +1091,7 @@ class AlunosController extends Controller
             'payment_method' => $paymentMethod,
             'financial_status' => $financialStatus,
             'status' => $status,
+            'aulas_contratadas' => $aulasContratadas,
             'renach' => $renach,
             'detran_protocolo' => $detranProtocolo,
             'numero_processo' => $numeroProcesso,

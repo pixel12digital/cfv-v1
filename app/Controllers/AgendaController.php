@@ -297,6 +297,13 @@ class AgendaController extends Controller
             if ($student && $student['cfc_id'] == $this->cfcId) {
                 $allEnrollments = $enrollmentModel->findByStudent($studentId);
                 $enrollments = array_values(array_filter($allEnrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
+                $lessonModel = new Lesson();
+                foreach ($enrollments as &$e) {
+                    $e['aulas_contratadas'] = isset($e['aulas_contratadas']) && $e['aulas_contratadas'] !== null ? (int)$e['aulas_contratadas'] : null;
+                    $e['aulas_agendadas'] = $lessonModel->countScheduledByEnrollment($e['id']);
+                    $e['aulas_faltantes'] = $e['aulas_contratadas'] !== null ? max(0, $e['aulas_contratadas'] - $e['aulas_agendadas']) : null;
+                }
+                unset($e);
                 if ($enrollmentId) {
                     $enrollment = $enrollmentModel->find($enrollmentId);
                     if (!$enrollment || ($enrollment['status'] ?? '') === 'cancelada') {
@@ -337,19 +344,40 @@ class AgendaController extends Controller
         
         $studentId = $_POST['student_id'] ?? null;
         $enrollmentId = $_POST['enrollment_id'] ?? null;
-        $instructorId = $_POST['instructor_id'] ?? null;
-        $vehicleId = $_POST['vehicle_id'] ?? null;
-        $scheduledDate = $_POST['scheduled_date'] ?? null;
-        $scheduledTime = $_POST['scheduled_time'] ?? null;
-        $lessonCount = (int)($_POST['lesson_count'] ?? 1); // Quantidade de aulas (1 ou 2)
-        $durationMinutes = Constants::DURACAO_AULA_PADRAO; // Sempre 50 minutos por aula
         $notes = $_POST['notes'] ?? null;
-        
-        // Validações básicas
-        if (!$studentId || !$enrollmentId || !$instructorId || !$vehicleId || !$scheduledDate || !$scheduledTime) {
+        $durationMinutes = Constants::DURACAO_AULA_PADRAO;
+
+        // Suportar blocos múltiplos ou bloco único (legado)
+        $blocksRaw = $_POST['blocks'] ?? null;
+        if (is_array($blocksRaw) && !empty($blocksRaw)) {
+            $blocks = [];
+            foreach ($blocksRaw as $idx => $b) {
+                if (!empty($b['instructor_id']) && !empty($b['vehicle_id']) && !empty($b['scheduled_date']) && !empty($b['scheduled_time'])) {
+                    $blocks[] = [
+                        'instructor_id' => $b['instructor_id'],
+                        'vehicle_id' => $b['vehicle_id'],
+                        'scheduled_date' => $b['scheduled_date'],
+                        'scheduled_time' => $b['scheduled_time'],
+                        'lesson_count' => max(1, min(6, (int)($b['lesson_count'] ?? 1)))
+                    ];
+                }
+            }
+        } else {
+            $blocks = [[
+                'instructor_id' => $_POST['instructor_id'] ?? null,
+                'vehicle_id' => $_POST['vehicle_id'] ?? null,
+                'scheduled_date' => $_POST['scheduled_date'] ?? null,
+                'scheduled_time' => $_POST['scheduled_time'] ?? null,
+                'lesson_count' => max(1, min(6, (int)($_POST['lesson_count'] ?? 1)))
+            ]];
+        }
+
+        if (!$studentId || !$enrollmentId || empty($blocks)) {
             $_SESSION['error'] = 'Preencha todos os campos obrigatórios.';
             redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
         }
+
+        $totalLessonCount = array_sum(array_column($blocks, 'lesson_count'));
         
         // Validar matrícula e bloqueio financeiro
         $enrollmentModel = new Enrollment();
@@ -364,141 +392,121 @@ class AgendaController extends Controller
             $_SESSION['error'] = 'Não é possível agendar aulas para esta matrícula. Aluno com situação financeira bloqueada.';
             redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
         }
-        
-        // Validar disponibilidade do instrutor
-        $instructorModel = new Instructor();
-        $instructor = $instructorModel->find($instructorId);
-        
-        if (!$instructor || $instructor['cfc_id'] != $this->cfcId) {
-            $_SESSION['error'] = 'Instrutor não encontrado.';
-            redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
-        }
-        
-        // Verificar se credencial está vencida
-        if ($instructorModel->isCredentialExpired($instructor)) {
-            $_SESSION['error'] = 'Não é possível agendar: a credencial do instrutor está vencida.';
-            redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
-        }
-        
-        // Verificar disponibilidade de horário (OPCIONAL - se não configurada, permite qualquer horário)
-        $availabilityModel = new InstructorAvailability();
-        $dayOfWeek = (int)date('w', strtotime($scheduledDate)); // 0=Domingo, 1=Segunda, etc
-        $availability = $availabilityModel->findByInstructorAndDay($instructorId, $dayOfWeek);
-        
-        // Calcular duração total (considerando quantidade de aulas)
-        $totalDuration = $lessonCount * $durationMinutes;
-        
-        // Se há disponibilidade configurada, validar o horário considerando a duração total
-        if ($availability && $availability['is_available']) {
-            $scheduledTimeObj = new \DateTime($scheduledTime);
-            $endTimeObj = clone $scheduledTimeObj;
-            $endTimeObj->modify("+{$totalDuration} minutes"); // Duração total das aulas
-            
-            $startTime = new \DateTime($availability['start_time']);
-            $endTime = new \DateTime($availability['end_time']);
-            
-            if ($scheduledTimeObj < $startTime || $endTimeObj > $endTime) {
-                $_SESSION['error'] = "O instrutor não está disponível neste horário. Horário disponível: {$availability['start_time']} às {$availability['end_time']}.";
-                redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
-            }
-        }
-        // Se não há disponibilidade configurada, permite agendamento (não bloqueia)
-        
-        // Validar conflitos (ANTES de criar as aulas)
-        // Validar cada aula individualmente para garantir que não há conflito em nenhum intervalo
+
         $lessonModel = new Lesson();
-        $currentTime = $scheduledTime;
-        
-        for ($i = 0; $i < $lessonCount; $i++) {
-            // Validar conflito para esta aula específica
-            if ($lessonModel->hasInstructorConflict($instructorId, $scheduledDate, $currentTime, $durationMinutes, null, $this->cfcId)) {
-                $lessonNumber = $i + 1;
-                $_SESSION['error'] = "Conflito de horário: o instrutor já possui uma aula agendada no horário da aula {$lessonNumber} ({$currentTime}).";
+
+        // Validar limite de aulas contratadas (se definido na matrícula)
+        $aulasContratadas = isset($enrollment['aulas_contratadas']) && $enrollment['aulas_contratadas'] !== null
+            ? (int)$enrollment['aulas_contratadas']
+            : null;
+        if ($aulasContratadas !== null) {
+            $aulasAgendadas = $lessonModel->countScheduledByEnrollment($enrollmentId);
+            $aulasFaltantes = max(0, $aulasContratadas - $aulasAgendadas);
+            if ($totalLessonCount > $aulasFaltantes) {
+                $_SESSION['error'] = "A matrícula permite agendar no máximo {$aulasFaltantes} aula(s) restante(s). Contratadas: {$aulasContratadas}, já agendadas: {$aulasAgendadas}.";
                 redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
-            }
-            
-            if ($lessonModel->hasVehicleConflict($vehicleId, $scheduledDate, $currentTime, $durationMinutes, null, $this->cfcId)) {
-                $lessonNumber = $i + 1;
-                $_SESSION['error'] = "Conflito de horário: o veículo já possui uma aula agendada no horário da aula {$lessonNumber} ({$currentTime}).";
-                redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
-            }
-            
-            // Calcular horário da próxima aula (se houver)
-            if ($i < $lessonCount - 1) {
-                $timeObj = new \DateTime("{$scheduledDate} {$currentTime}");
-                $timeObj->modify("+{$durationMinutes} minutes");
-                $currentTime = $timeObj->format('H:i:s');
             }
         }
-        
-        // Criar aulas (1 ou 2 consecutivas)
+
+        $instructorModel = new Instructor();
         $studentModel = new Student();
         $student = $studentModel->find($studentId);
-        $instructorModel = new Instructor();
-        $instructor = $instructorModel->find($instructorId);
-        
-        $createdLessons = [];
-        $currentTime = $scheduledTime;
-        
-        for ($i = 0; $i < $lessonCount; $i++) {
-            $data = [
-                'cfc_id' => $this->cfcId,
-                'student_id' => $studentId,
-                'enrollment_id' => $enrollmentId,
-                'instructor_id' => $instructorId,
-                'vehicle_id' => $vehicleId,
-                'type' => 'pratica',
-                'status' => Constants::AULA_AGENDADA,
-                'scheduled_date' => $scheduledDate,
-                'scheduled_time' => $currentTime,
-                'duration_minutes' => $durationMinutes,
-                'notes' => $notes ?: null,
-                'created_by' => $_SESSION['user_id'] ?? null
-            ];
-            
-            $lessonId = $lessonModel->create($data);
-            $createdLessons[] = $lessonId;
-            
-            // Calcular horário da próxima aula (se houver)
-            if ($i < $lessonCount - 1) {
-                $timeObj = new \DateTime("{$scheduledDate} {$currentTime}");
-                $timeObj->modify("+{$durationMinutes} minutes");
-                $currentTime = $timeObj->format('H:i:s');
+        $availabilityModel = new InstructorAvailability();
+        $allCreatedLessons = [];
+        $lastInstructorName = '';
+
+        foreach ($blocks as $blockIdx => $block) {
+            $instructorId = $block['instructor_id'];
+            $vehicleId = $block['vehicle_id'];
+            $scheduledDate = $block['scheduled_date'];
+            $scheduledTime = $block['scheduled_time'];
+            $lessonCount = $block['lesson_count'];
+
+            $instructor = $instructorModel->find($instructorId);
+            if (!$instructor || $instructor['cfc_id'] != $this->cfcId) {
+                $_SESSION['error'] = 'Instrutor não encontrado no bloco ' . ($blockIdx + 1) . '.';
+                redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+            }
+            if ($instructorModel->isCredentialExpired($instructor)) {
+                $_SESSION['error'] = 'Não é possível agendar: a credencial do instrutor está vencida (bloco ' . ($blockIdx + 1) . ').';
+                redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+            }
+
+            $dayOfWeek = (int)date('w', strtotime($scheduledDate));
+            $availability = $availabilityModel->findByInstructorAndDay($instructorId, $dayOfWeek);
+            $totalDuration = $lessonCount * $durationMinutes;
+            if ($availability && $availability['is_available']) {
+                $scheduledTimeObj = new \DateTime($scheduledTime);
+                $endTimeObj = clone $scheduledTimeObj;
+                $endTimeObj->modify("+{$totalDuration} minutes");
+                $startTime = new \DateTime($availability['start_time']);
+                $endTime = new \DateTime($availability['end_time']);
+                if ($scheduledTimeObj < $startTime || $endTimeObj > $endTime) {
+                    $_SESSION['error'] = "Bloco " . ($blockIdx + 1) . ": instrutor não disponível neste horário. Disponível: {$availability['start_time']} às {$availability['end_time']}.";
+                    redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+                }
+            }
+
+            $currentTime = $scheduledTime;
+            for ($i = 0; $i < $lessonCount; $i++) {
+                if ($lessonModel->hasInstructorConflict($instructorId, $scheduledDate, $currentTime, $durationMinutes, null, $this->cfcId)) {
+                    $_SESSION['error'] = "Conflito: instrutor já possui aula no bloco " . ($blockIdx + 1) . ", horário {$currentTime}.";
+                    redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+                }
+                if ($lessonModel->hasVehicleConflict($vehicleId, $scheduledDate, $currentTime, $durationMinutes, null, $this->cfcId)) {
+                    $_SESSION['error'] = "Conflito: veículo já possui aula no bloco " . ($blockIdx + 1) . ", horário {$currentTime}.";
+                    redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+                }
+                if ($i < $lessonCount - 1) {
+                    $timeObj = new \DateTime("{$scheduledDate} {$currentTime}");
+                    $timeObj->modify("+{$durationMinutes} minutes");
+                    $currentTime = $timeObj->format('H:i:s');
+                }
+            }
+
+            $currentTime = $scheduledTime;
+            for ($i = 0; $i < $lessonCount; $i++) {
+                $data = [
+                    'cfc_id' => $this->cfcId,
+                    'student_id' => $studentId,
+                    'enrollment_id' => $enrollmentId,
+                    'instructor_id' => $instructorId,
+                    'vehicle_id' => $vehicleId,
+                    'type' => 'pratica',
+                    'status' => Constants::AULA_AGENDADA,
+                    'scheduled_date' => $scheduledDate,
+                    'scheduled_time' => $currentTime,
+                    'duration_minutes' => $durationMinutes,
+                    'notes' => $notes ?: null,
+                    'created_by' => $_SESSION['user_id'] ?? null
+                ];
+                $lessonId = $lessonModel->create($data);
+                $allCreatedLessons[] = $lessonId;
+                $this->auditService->logCreate('agenda', $lessonId, $data);
+                if ($i < $lessonCount - 1) {
+                    $timeObj = new \DateTime("{$scheduledDate} {$currentTime}");
+                    $timeObj->modify("+{$durationMinutes} minutes");
+                    $currentTime = $timeObj->format('H:i:s');
+                }
+            }
+            $lastInstructorName = $instructor['name'];
+
+            $dateTime = date('d/m/Y H:i', strtotime("{$scheduledDate} {$scheduledTime}"));
+            if ($lessonCount === 1) {
+                $this->historyService->logAgendaEvent($studentId, "Aula prática agendada para {$dateTime} — Instrutor: {$lastInstructorName}");
+            } else {
+                $totalMinutes = $lessonCount * $durationMinutes;
+                $startDateTime = new \DateTime("{$scheduledDate} {$scheduledTime}");
+                $endDateTime = clone $startDateTime;
+                $endDateTime->modify("+{$totalMinutes} minutes");
+                $this->historyService->logAgendaEvent($studentId,
+                    "{$lessonCount} aulas práticas consecutivas agendadas — {$dateTime} até " . $endDateTime->format('d/m/Y H:i') . " — Instrutor: {$lastInstructorName}");
             }
         }
-        
-        // Registrar no histórico
-        $dateTime = date('d/m/Y H:i', strtotime("{$scheduledDate} {$scheduledTime}"));
-        if ($lessonCount === 2) {
-            // Calcular horário final corretamente: 2 aulas = 100 minutos
-            $startDateTime = new \DateTime("{$scheduledDate} {$scheduledTime}");
-            $endDateTime = clone $startDateTime;
-            $endDateTime->modify("+100 minutes"); // 2 aulas × 50 minutos
-            $endTime = $endDateTime->format('H:i');
-            $endDate = $endDateTime->format('d/m/Y');
-            
-            $this->historyService->logAgendaEvent(
-                $studentId,
-                "2 aulas práticas consecutivas agendadas — {$dateTime} até {$endDate} {$endTime} — Instrutor: {$instructor['name']}"
-            );
-        } else {
-            $this->historyService->logAgendaEvent(
-                $studentId,
-                "Aula prática agendada para {$dateTime} — Instrutor: {$instructor['name']}"
-            );
-        }
-        
-        // Auditoria
-        foreach ($createdLessons as $lessonId) {
-            $this->auditService->logCreate('agenda', $lessonId, $data);
-        }
-        
-        // Mensagem de sucesso
-        if ($lessonCount === 2) {
-            $_SESSION['success'] = '2 aulas consecutivas agendadas com sucesso!';
-        } else {
-            $_SESSION['success'] = 'Aula agendada com sucesso!';
-        }
+
+        $_SESSION['success'] = $totalLessonCount === 1
+            ? 'Aula agendada com sucesso!'
+            : "{$totalLessonCount} aulas agendadas com sucesso!";
         
         // PRG Pattern: Redirect imediato após POST
         redirect(base_url('agenda'));

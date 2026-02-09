@@ -231,16 +231,27 @@ class ApiController extends Controller
         
         // Buscar matrículas (excluir canceladas - alinhado com aba Matrículas do perfil)
         $enrollmentModel = new Enrollment();
+        $lessonModel = new \App\Models\Lesson();
         $enrollments = $enrollmentModel->findByStudent($studentId);
         $enrollments = array_values(array_filter($enrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
         
-        // Formatar resposta
-        $result = array_map(function($enr) {
+        // Formatar resposta (incluir contador de aulas para agendamento)
+        $result = array_map(function($enr) use ($lessonModel) {
+            $aulasContratadas = isset($enr['aulas_contratadas']) && $enr['aulas_contratadas'] !== null
+                ? (int)$enr['aulas_contratadas']
+                : null;
+            $aulasAgendadas = $lessonModel->countScheduledByEnrollment($enr['id']);
+            $aulasFaltantes = $aulasContratadas !== null
+                ? max(0, $aulasContratadas - $aulasAgendadas)
+                : null;
             return [
                 'id' => (int)$enr['id'],
                 'service_name' => $enr['service_name'] ?? 'Matrícula',
                 'financial_status' => $enr['financial_status'],
-                'status' => $enr['status']
+                'status' => $enr['status'],
+                'aulas_contratadas' => $aulasContratadas,
+                'aulas_agendadas' => $aulasAgendadas,
+                'aulas_faltantes' => $aulasFaltantes
             ];
         }, $enrollments);
         
