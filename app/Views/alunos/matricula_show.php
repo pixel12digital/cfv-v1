@@ -41,8 +41,14 @@
 })();
 </script>
 
+<?php $canEditValues = $canEditMatriculaValues ?? true; ?>
 <div class="card">
     <div class="card-body">
+        <?php if (!$canEditValues): ?>
+        <div class="alert alert-info" style="margin-bottom: var(--spacing-md);">
+            A edição de valores após cobrança gerada é restrita ao administrador. Você pode marcar pagamentos e gerar cobranças normalmente.
+        </div>
+        <?php endif; ?>
         <form method="POST" action="<?= base_path("matriculas/{$enrollment['id']}/atualizar") ?>" id="enrollmentForm">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
@@ -80,6 +86,7 @@
                     step="0.01"
                     min="0"
                     onchange="calculateFinal()"
+                    <?= !$canEditValues ? 'readonly style="background-color: var(--color-bg-light);"' : '' ?>
                 >
             </div>
 
@@ -94,6 +101,7 @@
                     step="0.01"
                     min="0"
                     onchange="calculateFinal()"
+                    <?= !$canEditValues ? 'readonly style="background-color: var(--color-bg-light);"' : '' ?>
                 >
             </div>
 
@@ -126,13 +134,14 @@
                         value="<?= !empty($enrollment['entry_amount']) ? number_format($enrollment['entry_amount'], 2, '.', '') : '' ?>"
                         placeholder="0.00"
                         onchange="calculateOutstanding()"
+                        <?= !$canEditValues ? 'readonly style="background-color: var(--color-bg-light);"' : '' ?>
                     >
                     <small class="text-muted">Deixe em branco se não houver entrada</small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="entry_payment_method">Forma de Pagamento da Entrada</label>
-                    <select id="entry_payment_method" name="entry_payment_method" class="form-select" onchange="toggleEntryPixAccount()">
+                    <select id="entry_payment_method" name="entry_payment_method" class="form-select" onchange="toggleEntryPixAccount()" <?= !$canEditValues ? 'disabled' : '' ?>>
                         <option value="">Selecione (se houver entrada)</option>
                         <option value="dinheiro" <?= ($enrollment['entry_payment_method'] ?? '') === 'dinheiro' ? 'selected' : '' ?>>Dinheiro</option>
                         <option value="pix" <?= ($enrollment['entry_payment_method'] ?? '') === 'pix' ? 'selected' : '' ?>>PIX</option>
@@ -145,7 +154,7 @@
                 <div id="entryPixAccountSelector" style="display: <?= ($enrollment['entry_payment_method'] ?? '') === 'pix' ? 'block' : 'none' ?>;">
                     <div class="form-group">
                         <label class="form-label" for="entry_pix_account_id">Conta PIX da Entrada</label>
-                        <select id="entry_pix_account_id" name="entry_pix_account_id" class="form-select">
+                        <select id="entry_pix_account_id" name="entry_pix_account_id" class="form-select" <?= !$canEditValues ? 'disabled' : '' ?>>
                             <option value="">Selecione uma conta PIX</option>
                             <?php if (!empty($pixAccounts)): ?>
                                 <?php foreach ($pixAccounts as $account): ?>
@@ -174,6 +183,7 @@
                         name="entry_payment_date" 
                         class="form-input"
                         value="<?= !empty($enrollment['entry_payment_date']) ? $enrollment['entry_payment_date'] : date('Y-m-d') ?>"
+                        <?= !$canEditValues ? 'readonly style="background-color: var(--color-bg-light);"' : '' ?>
                     >
                     <small class="text-muted">Data em que a entrada foi/será recebida</small>
                 </div>
@@ -197,12 +207,12 @@
             <?php
             // Verificar se pode editar condições de pagamento (não pode se já gerou cobrança)
             $billingStatus = $enrollment['billing_status'] ?? 'draft';
-            $canEditPaymentPlan = ($billingStatus === 'draft' || $billingStatus === 'ready' || $billingStatus === 'error');
+            $canEditPaymentPlan = ($billingStatus === 'draft' || $billingStatus === 'ready' || $billingStatus === 'error') && $canEditValues;
             ?>
 
             <div class="form-group">
                 <label class="form-label" for="payment_method">Forma de Pagamento *</label>
-                <select id="payment_method" name="payment_method" class="form-select" required onchange="togglePixAccountSelector()">
+                <select id="payment_method" name="payment_method" class="form-select" required onchange="togglePixAccountSelector()" <?= !$canEditValues ? 'disabled' : '' ?>>
                     <option value="pix" <?= $enrollment['payment_method'] === 'pix' ? 'selected' : '' ?>>PIX</option>
                     <option value="boleto" <?= $enrollment['payment_method'] === 'boleto' ? 'selected' : '' ?>>Boleto</option>
                     <option value="cartao" <?= $enrollment['payment_method'] === 'cartao' ? 'selected' : '' ?>>Cartão</option>
@@ -214,7 +224,7 @@
             <div id="pixAccountSelector" style="display: <?= $enrollment['payment_method'] === 'pix' ? 'block' : 'none' ?>; margin-top: var(--spacing-md);">
                 <div class="form-group">
                     <label class="form-label" for="pix_account_id">Conta PIX</label>
-                    <select id="pix_account_id" name="pix_account_id" class="form-select">
+                    <select id="pix_account_id" name="pix_account_id" class="form-select" <?= !$canEditValues ? 'disabled' : '' ?>>
                         <option value="">Selecione uma conta PIX (opcional)</option>
                         <?php if (!empty($pixAccounts)): ?>
                             <?php foreach ($pixAccounts as $account): ?>
@@ -572,7 +582,7 @@
 
             <div class="form-group">
                 <label class="form-label" for="financial_status">Status Financeiro *</label>
-                <select id="financial_status" name="financial_status" class="form-select" required>
+                <select id="financial_status" name="financial_status" class="form-select" required <?= !$canEditValues ? 'disabled' : '' ?>>
                     <option value="em_dia" <?= $enrollment['financial_status'] === 'em_dia' ? 'selected' : '' ?>>Em Dia</option>
                     <option value="pendente" <?= $enrollment['financial_status'] === 'pendente' ? 'selected' : '' ?>>Pendente</option>
                     <option value="bloqueado" <?= $enrollment['financial_status'] === 'bloqueado' ? 'selected' : '' ?>>Bloqueado</option>
@@ -581,7 +591,7 @@
 
             <div class="form-group">
                 <label class="form-label" for="status">Status da Matrícula *</label>
-                <select id="status" name="status" class="form-select" required>
+                <select id="status" name="status" class="form-select" required <?= !$canEditValues ? 'disabled' : '' ?>>
                     <option value="ativa" <?= $enrollment['status'] === 'ativa' ? 'selected' : '' ?>>Ativa</option>
                     <option value="concluida" <?= $enrollment['status'] === 'concluida' ? 'selected' : '' ?>>Concluída</option>
                     <option value="cancelada" <?= $enrollment['status'] === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
@@ -650,9 +660,11 @@
             </div>
 
             <div class="form-actions">
+                <?php if ($canEditValues): ?>
                 <button type="submit" class="btn btn-primary">
                     Atualizar Matrícula
                 </button>
+                <?php endif; ?>
                 <?php 
                 // Calcular saldo devedor
                 $outstandingAmount = floatval($enrollment['outstanding_amount'] ?? $enrollment['final_price'] ?? 0);

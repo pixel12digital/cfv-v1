@@ -819,9 +819,16 @@ class AlunosController extends Controller
         $enrollmentPhoneRaw = !empty($enrollment['phone_primary']) ? $enrollment['phone_primary'] : ($enrollment['phone'] ?? null);
         list($studentPhoneForWa, $hasValidPhone) = $this->normalizePhoneForWa($enrollmentPhoneRaw);
 
+        // SECRETARIA só pode editar valores quando cobrança ainda não foi gerada
+        $currentRole = $_SESSION['current_role'] ?? '';
+        $billingStatus = $enrollment['billing_status'] ?? 'draft';
+        $canEditMatriculaValues = ($currentRole === Constants::ROLE_ADMIN)
+            || ($currentRole === Constants::ROLE_SECRETARIA && in_array($billingStatus, ['draft', 'ready', 'error']));
+
         $data = [
             'pageTitle' => 'Matrícula #' . $id,
             'enrollment' => $enrollment,
+            'canEditMatriculaValues' => $canEditMatriculaValues,
             'cfc' => $cfc,
             'pixAccount' => $pixAccount,
             'pixAccountSnapshot' => $pixAccountSnapshot,
@@ -837,7 +844,8 @@ class AlunosController extends Controller
 
     public function atualizarMatricula($id)
     {
-        if (!PermissionService::check('enrollments', 'update')) {
+        // Compatibilidade: enrollments (seed 002) ou matriculas (seed 001)
+        if (!PermissionService::check('enrollments', 'update') && !PermissionService::check('matriculas', 'editar')) {
             $_SESSION['error'] = 'Você não tem permissão para editar matrículas.';
             redirect(base_url("matriculas/{$id}"));
         }
@@ -853,6 +861,16 @@ class AlunosController extends Controller
         if (!$enrollment || $enrollment['cfc_id'] != $this->cfcId) {
             $_SESSION['error'] = 'Matrícula não encontrada.';
             redirect(base_url('alunos'));
+        }
+
+        // SECRETARIA não pode editar valores após cobrança gerada (controle financeiro)
+        $currentRole = $_SESSION['current_role'] ?? '';
+        if ($currentRole === Constants::ROLE_SECRETARIA) {
+            $billingStatus = $enrollment['billing_status'] ?? 'draft';
+            if (!in_array($billingStatus, ['draft', 'ready', 'error'])) {
+                $_SESSION['error'] = 'A edição de valores após cobrança gerada é restrita ao administrador.';
+                redirect(base_url("matriculas/{$id}"));
+            }
         }
 
         $basePrice = floatval($enrollment['base_price']);

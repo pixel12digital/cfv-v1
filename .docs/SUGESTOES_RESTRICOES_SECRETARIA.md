@@ -5,7 +5,7 @@
 - Acesso direto por URL também respeite as restrições (não é só esconder botão)
 
 **Data:** 2025-02-09  
-**Status:** Sugestões — sem implementação
+**Status:** Implementado (parcial) + Sugestões restantes
 
 ---
 
@@ -153,26 +153,35 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 | Botão "Excluir Matrícula" na view | `matricula_show.php` | ✅ Oculto para não-ADMIN |
 | Financeiro: link matrícula cancelada | `financeiro/index.php` | ✅ Oculto para não-ADMIN |
 | Notificações: excluir histórico | `NotificationsController` | ✅ Bloqueado para não-ADMIN |
-
-Nenhuma alteração necessária nessas ações.
+| **Editar valores após cobrança gerada** | `AlunosController::atualizarMatricula` | ✅ Bloqueado para SECRETARIA (apenas ADMIN) |
+| **Form matrícula (desconto, acréscimo, entrada, etc.)** | `matricula_show.php` | ✅ Readonly/desabilitado para SECRETARIA quando `billing_status` = generated/canceled |
 
 ---
 
-## 4. Fluxo de implementação sugerido (ordem de prioridade)
+### 3.5 Financeiro — Regras SECRETARIA (implementado)
 
-1. **Rotas / Controllers (backend):**
-   - Adicionar checagem no construtor em `InstrutoresController`
-   - Adicionar checagem no construtor em `VeiculosController`
-   - Garantir que `ServicosController` bloqueie SECRETARIA (via PermissionService ou checagem explícita)
+| O que SECRETARIA pode | O que SECRETARIA NÃO pode |
+|-----------------------|---------------------------|
+| Lançar pagamento (marcar como pago) | Editar valores após cobrança gerada |
+| Gerar cobrança (PIX/Boleto) | Excluir matrícula |
+| Sincronizar cobranças | Excluir matrícula definitivamente |
+| Consultar financeiro | Alterar desconto, acréscimo, entrada, parcelas quando cobrança já gerada |
+| Alterar valores antes de gerar cobrança | |
 
-2. **Menu legado (admin/index.php):**
-   - Tornar Instrutores, Veículos e Salas visíveis apenas para ADMIN dentro do submenu Acadêmico
+**Permissões:** compatibilidade `enrollments` (seed 002) ou `matriculas` (seed 001).
 
-3. ** Seeds (se aplicável):**
-   - Remover `servicos` de `role_permissoes` para SECRETARIA (executar migration/seed atualizado)
+---
 
-4. **Validação:**
-   - Testar acesso direto por URL a `/instrutores`, `/veiculos`, `/servicos`, `/usuarios` e `/configuracoes/*` com usuário SECRETARIA — todos devem resultar em redirecionamento ou 403.
+## 4. Fluxo de implementação — status
+
+- [x] **Rotas / Controllers (backend):** Instrutores, Veículos, Serviços — bloqueados para SECRETARIA
+- [x] **Menu legado (admin/index.php):** Instrutores, Veículos, Salas — apenas ADMIN
+- [x] **Bloqueio URL admin:** `rotasBloqueadasSecretaria` para instrutores, veiculos, configuracoes-salas, servicos
+- [x] **Financeiro:** SECRETARIA não edita valores após cobrança gerada
+- [x] **Permissões:** Alinhamento `matriculas`/`enrollments` em `atualizarMatricula`
+- [ ] **Seeds (opcional):** Remover `servicos` de `role_permissoes` para SECRETARIA
+
+**Validação:** Testar com usuário SECRETARIA: URL direta, menu, edição de matrícula com cobrança gerada.
 
 ---
 
