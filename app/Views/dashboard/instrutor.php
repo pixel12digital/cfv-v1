@@ -95,8 +95,28 @@ $currentRole = $_SESSION['current_role'] ?? '';
                             Ver Detalhes
                         </a>
                         <?php if ($nextLesson['status'] === 'agendada'): ?>
+                        <?php if ($hasConsecutive): ?>
+                        <?php $idsStr = implode(',', array_column(array_filter($consecutiveLessons, fn($l) => ($l['status'] ?? '') !== 'cancelada'), 'id')); ?>
+                        <?php if (!empty($idsStr)): ?>
+                        <a href="<?= base_path("agenda/iniciar-bloco?ids=" . urlencode($idsStr)) ?>" class="btn btn-sm btn-warning">
+                            Iniciar Bloco
+                        </a>
+                        <?php endif; ?>
+                        <?php else: ?>
                         <a href="<?= base_path("agenda/{$nextLesson['id']}/iniciar") ?>" class="btn btn-sm btn-warning">
                             Iniciar Aula
+                        </a>
+                        <?php endif; ?>
+                        <?php elseif ($nextLesson['status'] === 'em_andamento' && $hasConsecutive): ?>
+                        <?php $idsStr = implode(',', array_column(array_filter($consecutiveLessons, fn($l) => ($l['status'] ?? '') === 'em_andamento'), 'id')); ?>
+                        <?php if (!empty($idsStr)): ?>
+                        <a href="<?= base_path("agenda/finalizar-bloco?ids=" . urlencode($idsStr)) ?>" class="btn btn-sm btn-success">
+                            Finalizar Bloco
+                        </a>
+                        <?php endif; ?>
+                        <?php elseif ($nextLesson['status'] === 'em_andamento'): ?>
+                        <a href="<?= base_path("agenda/{$nextLesson['id']}/concluir") ?>" class="btn btn-sm btn-success">
+                            Finalizar Aula
                         </a>
                         <?php endif; ?>
                     </div>
@@ -155,8 +175,7 @@ $currentRole = $_SESSION['current_role'] ?? '';
                         ];
                         $status = $statusConfig[$group['status']] ?? ['label' => $group['status'], 'color' => '#666', 'bg' => '#f3f4f6'];
                         ?>
-                        <a href="<?= base_path("agenda/{$firstLesson['id']}") ?>" 
-                           style="display: block; padding: var(--spacing-md); border: 1px solid var(--color-border, #e0e0e0); border-radius: var(--radius-md, 8px); text-decoration: none; color: inherit; background: white; transition: all 0.2s; <?= $isGroup ? 'border-left: 3px solid #3b82f6;' : '' ?>">
+                        <div style="display: block; padding: var(--spacing-md); border: 1px solid var(--color-border, #e0e0e0); border-radius: var(--radius-md, 8px); background: white; <?= $isGroup ? 'border-left: 3px solid #3b82f6;' : '' ?>">
                             <div style="display: grid; gap: var(--spacing-xs);">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--spacing-sm); flex-wrap: wrap;">
                                     <div style="flex: 1; min-width: 200px;">
@@ -171,6 +190,13 @@ $currentRole = $_SESSION['current_role'] ?? '';
                                         <div style="color: var(--color-text-muted, #666); font-size: 0.875rem;">
                                             <?= htmlspecialchars($group['student_name']) ?>
                                         </div>
+                                        <?php if ($isGroup): ?>
+                                        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--color-text-muted, #666);">
+                                            <?php foreach ($group['lessons'] as $idx => $l): ?>
+                                            <span style="margin-right: 8px;">Aula <?= $idx + 1 ?>: <?= ($l['status'] ?? '') === 'cancelada' ? 'cancelada' : ($l['status'] ?? 'agendada'); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                     <div style="display: flex; gap: var(--spacing-xs); flex-wrap: wrap;">
                                         <?php if ($isGroup): ?>
@@ -183,8 +209,27 @@ $currentRole = $_SESSION['current_role'] ?? '';
                                         </span>
                                     </div>
                                 </div>
+                                <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm); flex-wrap: wrap;">
+                                    <a href="<?= base_path("agenda/{$firstLesson['id']}") ?>" class="btn btn-sm btn-outline">Ver Detalhes</a>
+                                    <?php if ($group['status'] === 'agendada' && $isGroup): ?>
+                                    <?php $idsStr = implode(',', array_column(array_filter($group['lessons'], fn($l) => ($l['status'] ?? '') !== 'cancelada'), 'id')); ?>
+                                    <?php if (!empty($idsStr)): ?>
+                                    <a href="<?= base_path("agenda/iniciar-bloco?ids=" . urlencode($idsStr)) ?>" class="btn btn-sm btn-warning">Iniciar Bloco</a>
+                                    <?php endif; ?>
+                                    <?php elseif ($group['status'] === 'agendada' && !$isGroup): ?>
+                                    <a href="<?= base_path("agenda/{$firstLesson['id']}/iniciar") ?>" class="btn btn-sm btn-warning">Iniciar Aula</a>
+                                    <?php endif; ?>
+                                    <?php if ($group['status'] === 'em_andamento' && $isGroup): ?>
+                                    <?php $idsStr = implode(',', array_column(array_filter($group['lessons'], fn($l) => ($l['status'] ?? '') === 'em_andamento'), 'id')); ?>
+                                    <?php if (!empty($idsStr)): ?>
+                                    <a href="<?= base_path("agenda/finalizar-bloco?ids=" . urlencode($idsStr)) ?>" class="btn btn-sm btn-success">Finalizar Bloco</a>
+                                    <?php endif; ?>
+                                    <?php elseif ($group['status'] === 'em_andamento' && !$isGroup): ?>
+                                    <a href="<?= base_path("agenda/{$firstLesson['id']}/concluir") ?>" class="btn btn-sm btn-success">Finalizar Aula</a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                        </a>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>

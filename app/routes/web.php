@@ -85,6 +85,10 @@ $router->post('/student-steps/{id}/toggle', [AlunosController::class, 'toggleSte
 $router->get('/agenda', [AgendaController::class, 'index'], [AuthMiddleware::class]);
 $router->get('/agenda/novo', [AgendaController::class, 'novo'], [AuthMiddleware::class]);
 $router->post('/agenda/criar', [AgendaController::class, 'criar'], [AuthMiddleware::class]);
+$router->get('/agenda/iniciar-bloco', [AgendaController::class, 'iniciarBloco'], [AuthMiddleware::class]);
+$router->post('/agenda/iniciar-bloco', [AgendaController::class, 'iniciarBloco'], [AuthMiddleware::class]);
+$router->get('/agenda/finalizar-bloco', [AgendaController::class, 'finalizarBloco'], [AuthMiddleware::class]);
+$router->post('/agenda/finalizar-bloco', [AgendaController::class, 'finalizarBloco'], [AuthMiddleware::class]);
 $router->get('/agenda/{id}', [AgendaController::class, 'show'], [AuthMiddleware::class]);
 $router->get('/agenda/{id}/editar', [AgendaController::class, 'editar'], [AuthMiddleware::class]);
 $router->post('/agenda/{id}/atualizar', [AgendaController::class, 'atualizar'], [AuthMiddleware::class]);

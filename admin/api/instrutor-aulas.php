@@ -103,23 +103,29 @@ try {
             }
 
             // Validações obrigatórias
-            if (empty($input['aula_id'])) {
-                returnJsonError('ID da aula é obrigatório');
-            }
-            if (empty($input['tipo_acao'])) {
+            $tipoAcao = $input['tipo_acao'] ?? null;
+            $isBloco = in_array($tipoAcao, ['iniciar_bloco', 'finalizar_bloco']);
+            
+            if (empty($tipoAcao)) {
                 returnJsonError('Tipo de ação é obrigatório');
             }
+            if (!$isBloco && empty($input['aula_id'])) {
+                returnJsonError('ID da aula é obrigatório');
+            }
+            if ($isBloco && empty($input['aula_ids'])) {
+                returnJsonError('IDs das aulas do bloco são obrigatórios');
+            }
 
-            $aulaId = (int)$input['aula_id'];
-            $tipoAcao = $input['tipo_acao']; // 'cancelamento', 'transferencia', 'iniciar' ou 'finalizar'
+            $aulaId = $isBloco ? null : (int)$input['aula_id'];
+            $aulaIds = $isBloco ? array_map('intval', array_filter(explode(',', $input['aula_ids']))) : [$aulaId];
             $justificativa = isset($input['justificativa']) ? trim($input['justificativa']) : null;
             $motivo = $input['motivo'] ?? null;
             $novaData = $input['nova_data'] ?? null;
             $novaHora = $input['nova_hora'] ?? null;
 
             // Validar tipo de ação
-            if (!in_array($tipoAcao, ['cancelamento', 'transferencia', 'iniciar', 'finalizar'])) {
-                returnJsonError('Tipo de ação inválido. Use "cancelamento", "transferencia", "iniciar" ou "finalizar"');
+            if (!in_array($tipoAcao, ['cancelamento', 'transferencia', 'iniciar', 'finalizar', 'iniciar_bloco', 'finalizar_bloco'])) {
+                returnJsonError('Tipo de ação inválido. Use "cancelamento", "transferencia", "iniciar", "finalizar", "iniciar_bloco" ou "finalizar_bloco"');
             }
             
             // Justificativa é obrigatória apenas para cancelamento e transferência
@@ -127,27 +133,44 @@ try {
                 returnJsonError('Justificativa é obrigatória para ' . $tipoAcao);
             }
 
-            // VALIDAÇÃO CRÍTICA: Verificar se a aula pertence ao instrutor logado
-            // Para cancelamento/transferência: excluir canceladas
-            // Para iniciar/finalizar: pode estar em qualquer status (será validado depois)
-            $whereStatus = "a.status != 'cancelada'";
-            if (in_array($tipoAcao, ['iniciar', 'finalizar'])) {
-                // Para iniciar/finalizar, permitir buscar mesmo se estiver cancelada (validação de status será feita depois)
-                $whereStatus = "1=1"; // Não filtrar por status aqui
-            }
-            
-            $aula = $db->fetch("
-                SELECT a.*, 
-                       al.nome as aluno_nome, al.telefone as aluno_telefone,
-                       v.modelo as veiculo_modelo, v.placa as veiculo_placa
-                FROM aulas a
-                JOIN alunos al ON a.aluno_id = al.id
-                LEFT JOIN veiculos v ON a.veiculo_id = v.id
-                WHERE a.id = ? AND a.instrutor_id = ? AND $whereStatus
-            ", [$aulaId, $instrutorId]);
+            // VALIDAÇÃO CRÍTICA: Verificar se a(s) aula(s) pertence(m) ao instrutor logado
+            if ($isBloco) {
+                $aulas = [];
+                foreach ($aulaIds as $aid) {
+                    if ($aid <= 0) continue;
+                    $a = $db->fetch("
+                        SELECT a.*, al.nome as aluno_nome, al.telefone as aluno_telefone,
+                               v.modelo as veiculo_modelo, v.placa as veiculo_placa
+                        FROM aulas a
+                        JOIN alunos al ON a.aluno_id = al.id
+                        LEFT JOIN veiculos v ON a.veiculo_id = v.id
+                        WHERE a.id = ? AND a.instrutor_id = ? AND a.tipo_aula = 'pratica'
+                    ", [$aid, $instrutorId]);
+                    if ($a) $aulas[] = $a;
+                }
+                if (empty($aulas)) {
+                    returnJsonError('Nenhuma aula do bloco encontrada ou não pertence a você', 404);
+                }
+                $aula = $aulas[0]; // Para compatibilidade com o resto do código
+            } else {
+                $whereStatus = "a.status != 'cancelada'";
+                if (in_array($tipoAcao, ['iniciar', 'finalizar'])) {
+                    $whereStatus = "1=1";
+                }
+                $aula = $db->fetch("
+                    SELECT a.*, 
+                           al.nome as aluno_nome, al.telefone as aluno_telefone,
+                           v.modelo as veiculo_modelo, v.placa as veiculo_placa
+                    FROM aulas a
+                    JOIN alunos al ON a.aluno_id = al.id
+                    LEFT JOIN veiculos v ON a.veiculo_id = v.id
+                    WHERE a.id = ? AND a.instrutor_id = ? AND $whereStatus
+                ", [$aulaId, $instrutorId]);
 
-            if (!$aula) {
-                returnJsonError('Aula não encontrada ou não pertence a você', 404);
+                if (!$aula) {
+                    returnJsonError('Aula não encontrada ou não pertence a você', 404);
+                }
+                $aulas = [$aula];
             }
 
             // Validações específicas por tipo de ação
@@ -193,28 +216,36 @@ try {
             $tempoAteAula = ($dataAula + $horaAula) - $agora;
             $horasAteAula = $tempoAteAula / 3600;
 
-            // Regra: mínimo 2 horas de antecedência
-            if ($horasAteAula < 2 && $horasAteAula > 0) {
+            // Regra: mínimo 2 horas de antecedência (apenas para cancelamento e transferência)
+            if (in_array($tipoAcao, ['cancelamento', 'transferencia']) && $horasAteAula < 2 && $horasAteAula > 0) {
                 returnJsonError('Ação só pode ser realizada com pelo menos 2 horas de antecedência');
             }
 
             // Validações de status específicas por tipo de ação
             if ($tipoAcao === 'cancelamento' || $tipoAcao === 'transferencia') {
-                // Para cancelamento e transferência, validar status como antes
+                if ($isBloco) {
+                    returnJsonError('Use cancelamento ou transferência por aula individual');
+                }
                 if ($aula['status'] === 'concluida') {
                     returnJsonError('Aula já foi concluída e não pode ser alterada');
                 }
                 if ($aula['status'] === 'em_andamento') {
                     returnJsonError('Aula em andamento não pode ser alterada');
                 }
-            } elseif ($tipoAcao === 'iniciar') {
-                // Para iniciar, a aula deve estar agendada
-                if ($aula['status'] !== 'agendada') {
+            } elseif ($tipoAcao === 'iniciar' || $tipoAcao === 'iniciar_bloco') {
+                $paraIniciar = $isBloco ? array_filter($aulas, fn($a) => ($a['status'] ?? '') === 'agendada') : [$aula];
+                if (empty($paraIniciar)) {
+                    returnJsonError($isBloco ? 'Nenhuma aula agendada no bloco para iniciar' : 'Apenas aulas agendadas podem ser iniciadas');
+                }
+                if (!$isBloco && $aula['status'] !== 'agendada') {
                     returnJsonError('Apenas aulas agendadas podem ser iniciadas');
                 }
-            } elseif ($tipoAcao === 'finalizar') {
-                // Para finalizar, a aula deve estar em andamento
-                if ($aula['status'] !== 'em_andamento') {
+            } elseif ($tipoAcao === 'finalizar' || $tipoAcao === 'finalizar_bloco') {
+                $paraFinalizar = $isBloco ? array_filter($aulas, fn($a) => in_array($a['status'] ?? '', ['agendada', 'em_andamento'])) : [$aula];
+                if (empty($paraFinalizar)) {
+                    returnJsonError($isBloco ? 'Nenhuma aula no bloco para finalizar' : 'Apenas aulas em andamento podem ser finalizadas');
+                }
+                if (!$isBloco && $aula['status'] !== 'em_andamento') {
                     returnJsonError('Apenas aulas em andamento podem ser finalizadas');
                 }
             }
@@ -296,8 +327,8 @@ try {
                     'hora_nova' => $novaHora
                 ], 'Aula transferida com sucesso');
 
-            } else if ($tipoAcao === 'iniciar') {
-                // TAREFA 2.2 - Iniciar aula prática
+            } else if ($tipoAcao === 'iniciar' || $tipoAcao === 'iniciar_bloco') {
+                // TAREFA 2.2 - Iniciar aula prática (ou bloco)
                 // Validar que é aula prática (KM só para práticas)
                 if (!isset($aula['tipo_aula']) || $aula['tipo_aula'] !== 'pratica') {
                     returnJsonError('Apenas aulas práticas podem ser iniciadas');
@@ -323,40 +354,39 @@ try {
                     returnJsonError('KM inicial deve ser um número positivo ou zero');
                 }
 
-                // Preparar observações (append de log)
-                $observacoesAtualizadas = ($aula['observacoes'] ?? '') . "\n\n[INICIADA POR INSTRUTOR] " . date('d/m/Y H:i:s') . "\nKM Inicial: " . $kmInicial . " km";
+                $idsParaIniciar = $isBloco ? array_column(array_filter($aulas, fn($a) => ($a['status'] ?? '') === 'agendada'), 'id') : [$aulaId];
+                $atualizadas = 0;
                 
-                // Atualizar: status, inicio_at (timestamp real), km_inicial
-                // Anti-bug: WHERE com status='agendada' para evitar clique duplo/race condition
-                $result = $db->query("
-                    UPDATE aulas 
-                    SET status = 'em_andamento', 
-                        inicio_at = NOW(),
-                        km_inicial = ?,
-                        observacoes = ?,
-                        atualizado_em = NOW()
-                    WHERE id = ? 
-                      AND instrutor_id = ? 
-                      AND status = 'agendada'
-                ", [$kmInicial, $observacoesAtualizadas, $aulaId, $instrutorId]);
-
-                if (!$result) {
-                    returnJsonError('Erro ao iniciar aula. Verifique se a aula ainda está agendada.', 500);
+                foreach ($idsParaIniciar as $aid) {
+                    $aParaObs = $db->fetch("SELECT observacoes FROM aulas WHERE id = ?", [$aid]);
+                    $observacoesAtualizadas = ($aParaObs['observacoes'] ?? '') . "\n\n[INICIADA POR INSTRUTOR" . ($isBloco ? " - BLOCO" : '') . "] " . date('d/m/Y H:i:s') . "\nKM Inicial: " . $kmInicial . " km";
+                    
+                    $result = $db->query("
+                        UPDATE aulas 
+                        SET status = 'em_andamento', 
+                            inicio_at = NOW(),
+                            km_inicial = ?,
+                            observacoes = ?,
+                            atualizado_em = NOW()
+                        WHERE id = ? 
+                          AND instrutor_id = ? 
+                          AND status = 'agendada'
+                    ", [$kmInicial, $observacoesAtualizadas, $aid, $instrutorId]);
+                    
+                    if ($result) $atualizadas++;
                 }
 
-                // Verificar se realmente atualizou (proteção contra status já alterado)
-                $aulaAtualizada = $db->fetch("SELECT id, status FROM aulas WHERE id = ?", [$aulaId]);
-                if (!$aulaAtualizada || $aulaAtualizada['status'] !== 'em_andamento') {
-                    returnJsonError('Aula não pôde ser iniciada. Status atual: ' . ($aulaAtualizada['status'] ?? 'desconhecido'), 409);
+                if ($atualizadas === 0) {
+                    returnJsonError('Nenhuma aula pôde ser iniciada. Verifique se ainda estão agendadas.', 500);
                 }
 
-                // Log de auditoria
                 if (defined('LOG_ENABLED') && LOG_ENABLED) {
                     error_log(sprintf(
-                        '[INSTRUTOR_INICIAR_AULA] instrutor_id=%d, usuario_id=%d, aula_id=%d, km_inicial=%d, timestamp=%s, ip=%s',
+                        '[INSTRUTOR_INICIAR_%s] instrutor_id=%d, usuario_id=%d, aula_ids=%s, km_inicial=%d, timestamp=%s, ip=%s',
+                        $isBloco ? 'BLOCO' : 'AULA',
                         $instrutorId,
                         $user['id'],
-                        $aulaId,
+                        implode(',', $idsParaIniciar),
                         $kmInicial,
                         date('Y-m-d H:i:s'),
                         $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
@@ -364,15 +394,16 @@ try {
                 }
 
                 returnJsonSuccess([
-                    'aula_id' => $aulaId,
-                    'acao' => 'iniciar',
+                    'aula_ids' => $idsParaIniciar,
+                    'acao' => $isBloco ? 'iniciar_bloco' : 'iniciar',
                     'status' => 'em_andamento',
                     'km_inicial' => $kmInicial,
-                    'inicio_at' => date('Y-m-d H:i:s')
-                ], 'Aula iniciada com sucesso');
+                    'inicio_at' => date('Y-m-d H:i:s'),
+                    'quantidade' => $atualizadas
+                ], $isBloco ? "Bloco iniciado com sucesso ({$atualizadas} aula(s))" : 'Aula iniciada com sucesso');
 
-            } else if ($tipoAcao === 'finalizar') {
-                // TAREFA 2.2 - Finalizar aula prática
+            } else if ($tipoAcao === 'finalizar' || $tipoAcao === 'finalizar_bloco') {
+                // TAREFA 2.2 - Finalizar aula prática (ou bloco)
                 // Validar que é aula prática (KM só para práticas)
                 if (!isset($aula['tipo_aula']) || $aula['tipo_aula'] !== 'pratica') {
                     returnJsonError('Apenas aulas práticas podem ser finalizadas');
@@ -398,66 +429,71 @@ try {
                     returnJsonError('KM final deve ser um número positivo ou zero');
                 }
 
-                // Validar km_final >= km_inicial (se km_inicial existir)
-                if (isset($aula['km_inicial']) && $aula['km_inicial'] !== null) {
-                    if ($kmFinal < $aula['km_inicial']) {
-                        returnJsonError('KM final (' . $kmFinal . ' km) não pode ser menor que KM inicial (' . $aula['km_inicial'] . ' km)');
+                // Para bloco: usar km_inicial da primeira aula em andamento
+                $kmInicialRef = $aula['km_inicial'] ?? null;
+                if ($isBloco) {
+                    foreach ($aulas as $aa) {
+                        if (($aa['status'] ?? '') === 'em_andamento' && isset($aa['km_inicial']) && $aa['km_inicial'] !== null) {
+                            $kmInicialRef = $aa['km_inicial'];
+                            break;
+                        }
                     }
                 }
-
-                // Preparar observações (append de log)
-                $observacoesAtualizadas = ($aula['observacoes'] ?? '') . "\n\n[FINALIZADA POR INSTRUTOR] " . date('d/m/Y H:i:s') . "\nKM Final: " . $kmFinal . " km";
-                if (isset($aula['km_inicial']) && $aula['km_inicial'] !== null) {
-                    $kmRodados = $kmFinal - $aula['km_inicial'];
-                    $observacoesAtualizadas .= " (Rodados: " . $kmRodados . " km)";
+                if ($kmInicialRef !== null && $kmFinal < $kmInicialRef) {
+                    returnJsonError('KM final (' . $kmFinal . ' km) não pode ser menor que KM inicial (' . $kmInicialRef . ' km)');
                 }
+
+                $idsParaFinalizar = $isBloco ? array_column(array_filter($aulas, fn($a) => ($a['status'] ?? '') === 'em_andamento'), 'id') : [$aulaId];
+                $atualizadas = 0;
                 
-                // Atualizar: status, fim_at (timestamp real), km_final
-                // Anti-bug: WHERE com status='em_andamento' para evitar clique duplo/race condition
-                $result = $db->query("
-                    UPDATE aulas 
-                    SET status = 'concluida', 
-                        fim_at = NOW(),
-                        km_final = ?,
-                        observacoes = ?,
-                        atualizado_em = NOW()
-                    WHERE id = ? 
-                      AND instrutor_id = ? 
-                      AND status = 'em_andamento'
-                ", [$kmFinal, $observacoesAtualizadas, $aulaId, $instrutorId]);
-
-                if (!$result) {
-                    returnJsonError('Erro ao finalizar aula. Verifique se a aula ainda está em andamento.', 500);
+                foreach ($idsParaFinalizar as $aid) {
+                    $aParaObs = $db->fetch("SELECT observacoes, km_inicial FROM aulas WHERE id = ?", [$aid]);
+                    $observacoesAtualizadas = ($aParaObs['observacoes'] ?? '') . "\n\n[FINALIZADA POR INSTRUTOR" . ($isBloco ? " - BLOCO" : '') . "] " . date('d/m/Y H:i:s') . "\nKM Final: " . $kmFinal . " km";
+                    if (isset($aParaObs['km_inicial']) && $aParaObs['km_inicial'] !== null) {
+                        $observacoesAtualizadas .= " (Rodados: " . ($kmFinal - $aParaObs['km_inicial']) . " km)";
+                    }
+                    
+                    $result = $db->query("
+                        UPDATE aulas 
+                        SET status = 'concluida', 
+                            fim_at = NOW(),
+                            km_final = ?,
+                            observacoes = ?,
+                            atualizado_em = NOW()
+                        WHERE id = ? 
+                          AND instrutor_id = ? 
+                          AND status = 'em_andamento'
+                    ", [$kmFinal, $observacoesAtualizadas, $aid, $instrutorId]);
+                    
+                    if ($result) $atualizadas++;
                 }
 
-                // Verificar se realmente atualizou (proteção contra status já alterado)
-                $aulaAtualizada = $db->fetch("SELECT id, status FROM aulas WHERE id = ?", [$aulaId]);
-                if (!$aulaAtualizada || $aulaAtualizada['status'] !== 'concluida') {
-                    returnJsonError('Aula não pôde ser finalizada. Status atual: ' . ($aulaAtualizada['status'] ?? 'desconhecido'), 409);
+                if ($atualizadas === 0) {
+                    returnJsonError('Nenhuma aula pôde ser finalizada. Verifique se ainda estão em andamento.', 500);
                 }
 
-                // Log de auditoria
                 if (defined('LOG_ENABLED') && LOG_ENABLED) {
                     error_log(sprintf(
-                        '[INSTRUTOR_FINALIZAR_AULA] instrutor_id=%d, usuario_id=%d, aula_id=%d, km_final=%d, km_inicial=%s, timestamp=%s, ip=%s',
+                        '[INSTRUTOR_FINALIZAR_%s] instrutor_id=%d, usuario_id=%d, aula_ids=%s, km_final=%d, timestamp=%s, ip=%s',
+                        $isBloco ? 'BLOCO' : 'AULA',
                         $instrutorId,
                         $user['id'],
-                        $aulaId,
+                        implode(',', $idsParaFinalizar),
                         $kmFinal,
-                        $aula['km_inicial'] ?? 'NULL',
                         date('Y-m-d H:i:s'),
                         $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
                     ));
                 }
 
                 returnJsonSuccess([
-                    'aula_id' => $aulaId,
-                    'acao' => 'finalizar',
+                    'aula_ids' => $idsParaFinalizar,
+                    'acao' => $isBloco ? 'finalizar_bloco' : 'finalizar',
                     'status' => 'concluida',
                     'km_final' => $kmFinal,
-                    'km_inicial' => $aula['km_inicial'] ?? null,
-                    'fim_at' => date('Y-m-d H:i:s')
-                ], 'Aula finalizada com sucesso');
+                    'km_inicial' => $kmInicialRef,
+                    'fim_at' => date('Y-m-d H:i:s'),
+                    'quantidade' => $atualizadas
+                ], $isBloco ? "Bloco finalizado com sucesso ({$atualizadas} aula(s))" : 'Aula finalizada com sucesso');
             }
 
             break;

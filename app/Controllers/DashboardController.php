@@ -846,6 +846,7 @@ class DashboardController extends Controller
                 
                 $isConsecutive = (
                     $lesson['student_id'] == $currentGroup['student_id'] &&
+                    ($lesson['vehicle_id'] ?? null) == ($lastLesson['vehicle_id'] ?? null) &&
                     $lesson['scheduled_date'] == $currentGroup['scheduled_date'] &&
                     $lastEndTime->format('H:i') == $currentStartTime->format('H:i')
                 );
@@ -911,6 +912,7 @@ class DashboardController extends Controller
             
             if (
                 $otherLesson['student_id'] == $lesson['student_id'] &&
+                ($otherLesson['vehicle_id'] ?? null) == ($lesson['vehicle_id'] ?? null) &&
                 $otherLesson['scheduled_date'] == $lesson['scheduled_date'] &&
                 $currentEndTime->format('H:i') == $otherStartTime->format('H:i')
             ) {

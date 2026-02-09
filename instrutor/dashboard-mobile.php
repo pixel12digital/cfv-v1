@@ -166,6 +166,54 @@ foreach ($aulasHoje as &$aula) {
 }
 unset($aula); // Remover referência do último elemento
 
+// BLOCOS DE AULAS PRÁTICAS CONSECUTIVAS (igual ao desktop)
+$aulasHojeProcessadas = [];
+if (!empty($aulasHoje)) {
+    $i = 0;
+    while ($i < count($aulasHoje)) {
+        $aula = $aulasHoje[$i];
+        if ($aula['tipo_aula'] === 'teorica') {
+            $aulasHojeProcessadas[] = ['type' => 'teorica', 'aula' => $aula];
+            $i++;
+            continue;
+        }
+        $bloco = [$aula];
+        $j = $i + 1;
+        while ($j < count($aulasHoje)) {
+            $proxima = $aulasHoje[$j];
+            if ($proxima['tipo_aula'] !== 'pratica') break;
+            $ultima = end($bloco);
+            $fimUltima = substr($ultima['hora_fim'] ?? '00:00', 0, 5);
+            $inicioProxima = substr($proxima['hora_inicio'] ?? '00:00', 0, 5);
+            $mesmoAluno = ($ultima['aluno_id'] ?? null) == ($proxima['aluno_id'] ?? null);
+            $mesmoVeiculo = ($ultima['veiculo_id'] ?? null) == ($proxima['veiculo_id'] ?? null);
+            $consecutiva = ($fimUltima === $inicioProxima) && $mesmoAluno && $mesmoVeiculo;
+            if (!$consecutiva) break;
+            $bloco[] = $proxima;
+            $j++;
+        }
+        $i = $j;
+        if (count($bloco) > 1) {
+            $primeira = $bloco[0];
+            $ultima = end($bloco);
+            $aulasHojeProcessadas[] = [
+                'type' => 'bloco',
+                'aulas' => $bloco,
+                'first_lesson' => $primeira,
+                'hora_inicio' => $primeira['hora_inicio'],
+                'hora_fim' => $ultima['hora_fim'],
+                'status' => array_reduce($bloco, function($carry, $a) {
+                    if (($a['status'] ?? '') === 'em_andamento') return 'em_andamento';
+                    return $carry;
+                }, $bloco[0]['status'] ?? 'agendada'),
+                'is_group' => true
+            ];
+        } else {
+            $aulasHojeProcessadas[] = ['type' => 'pratica_single', 'aula' => $bloco[0]];
+        }
+    }
+}
+
 // CORREÇÃO: Selecionar próxima aula pendente (igual ao desktop)
 // Selecionar primeira aula pendente (status IN ('agendada','em_andamento')) ordenada por horário
 $aulasPendentes = array_filter($aulasHoje, function($aula) {
@@ -339,7 +387,16 @@ ob_start();
                 </div>
                 <?php else: ?>
                 <div class="aula-list">
-                    <?php foreach ($aulasHoje as $aula): ?>
+                    <?php foreach ($aulasHojeProcessadas as $item): ?>
+                    <?php
+                    $aula = ($item['type'] === 'teorica') ? $item['aula'] : (($item['type'] === 'bloco') ? $item['first_lesson'] : $item['aula']);
+                    $isBloco = ($item['type'] === 'bloco');
+                    $blocoAulas = $isBloco ? $item['aulas'] : [$aula];
+                    $blocoCount = count($blocoAulas);
+                    $blocoStatus = $isBloco ? $item['status'] : ($aula['status'] ?? 'agendada');
+                    $aulaIdsStr = $isBloco ? implode(',', array_column($blocoAulas, 'id')) : (string)$aula['id'];
+                    $aulasValidasBloco = $isBloco ? array_filter($blocoAulas, fn($a) => ($a['status'] ?? '') !== 'cancelada') : [$aula];
+                    ?>
                     <div class="card mb-3 aula-item" data-aula-id="<?php echo $aula['id']; ?>">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -347,6 +404,9 @@ ob_start();
                                     <span class="badge bg-<?php echo $aula['tipo_aula'] === 'teorica' ? 'info' : 'success'; ?> mb-1">
                                         <?php echo ucfirst($aula['tipo_aula']); ?>
                                     </span>
+                                    <?php if ($isBloco): ?>
+                                    <span class="badge bg-light text-primary ms-1" style="font-size: 0.7rem;"><?php echo $blocoCount; ?> aulas</span>
+                                    <?php endif; ?>
                                     <h6 class="mb-1">
                                         <?php if ($aula['tipo_aula'] === 'pratica' && isset($aula['aluno_id'])): ?>
                                         <a href="#" onclick="abrirModalAluno(<?= $aula['aluno_id'] ?>); return false;" 
@@ -365,12 +425,12 @@ ob_start();
                                         <?php endif; ?>
                                     </h6>
                                     <small class="text-muted">
-                                        <?php echo date('H:i', strtotime($aula['hora_inicio'])); ?> - 
-                                        <?php echo date('H:i', strtotime($aula['hora_fim'])); ?>
+                                        <?php echo date('H:i', strtotime($isBloco ? $item['hora_inicio'] : $aula['hora_inicio'])); ?> - 
+                                        <?php echo date('H:i', strtotime($isBloco ? $item['hora_fim'] : $aula['hora_fim'])); ?>
                                     </small>
                                 </div>
-                                <span class="badge bg-<?php echo $aula['status'] === 'agendada' ? 'warning' : 'success'; ?>">
-                                    <?php echo ucfirst($aula['status']); ?>
+                                <span class="badge bg-<?php echo ($isBloco ? $blocoStatus : $aula['status']) === 'agendada' ? 'warning' : (($isBloco ? $blocoStatus : $aula['status']) === 'em_andamento' ? 'primary' : 'success'); ?>">
+                                    <?php echo ucfirst($isBloco ? $blocoStatus : $aula['status']); ?>
                                 </span>
                             </div>
                             
@@ -379,6 +439,14 @@ ob_start();
                                 <div class="d-flex align-items-center mb-1">
                                     <i class="fas fa-car text-muted me-2"></i>
                                     <small><?php echo htmlspecialchars($aula['veiculo_modelo']); ?> - <?php echo htmlspecialchars($aula['veiculo_placa']); ?></small>
+                                </div>
+                                <?php endif; ?>
+                                <?php if ($isBloco): ?>
+                                <div class="small text-muted mb-1" style="font-size: 0.75rem;">
+                                    <?php foreach ($blocoAulas as $idx => $a): ?>
+                                    Aula <?= $idx + 1 ?>: <?= ($a['status'] ?? '') === 'cancelada' ? '<span style="color: #dc2626; text-decoration: line-through;">cancelada</span>' : ($a['status'] ?? 'agendada'); ?>
+                                    <?= $idx < count($blocoAulas) - 1 ? ' · ' : ''; ?>
+                                    <?php endforeach; ?>
                                 </div>
                                 <?php endif; ?>
                                 <?php if ($aula['tipo_aula'] === 'pratica'): ?>
@@ -402,12 +470,10 @@ ob_start();
                             </div>
                             
                             <?php 
-                            // CORREÇÃO: Só mostrar botões se a aula não estiver concluída ou cancelada
                             $mostrarBotoes = true;
                             if ($aula['tipo_aula'] === 'pratica') {
-                                $mostrarBotoes = !in_array($aula['status'] ?? '', ['concluida', 'cancelada']);
+                                $mostrarBotoes = !in_array($blocoStatus, ['concluida']) && !empty($aulasValidasBloco);
                             } else {
-                                // Teórica: não mostrar botões se tem chamada registrada OU status = 'realizada'
                                 $mostrarBotoes = !($aula['chamada_registrada'] ?? false) && ($aula['status'] ?? '') !== 'realizada';
                             }
                             ?>
@@ -427,17 +493,19 @@ ob_start();
                                     Abrir Diário
                                 </button>
                                 <?php else: ?>
-                                <?php if (($aula['status'] ?? '') === 'agendada'): ?>
-                                <button class="btn btn-primary btn-mobile iniciar-aula" 
-                                        data-aula-id="<?php echo $aula['id']; ?>">
+                                <?php if ($blocoStatus === 'agendada'): ?>
+                                <button class="btn btn-primary btn-mobile <?php echo $isBloco ? 'iniciar-bloco' : 'iniciar-aula'; ?>" 
+                                        data-aula-id="<?php echo $aula['id']; ?>"
+                                        data-aula-ids="<?php echo htmlspecialchars($aulaIdsStr); ?>">
                                     <i class="fas fa-play me-2"></i>
-                                    Iniciar Aula
+                                    <?php echo $isBloco ? 'Iniciar Bloco' : 'Iniciar Aula'; ?>
                                 </button>
-                                <?php elseif (($aula['status'] ?? '') === 'em_andamento'): ?>
-                                <button class="btn btn-success btn-mobile finalizar-aula" 
-                                        data-aula-id="<?php echo $aula['id']; ?>">
+                                <?php elseif ($blocoStatus === 'em_andamento'): ?>
+                                <button class="btn btn-success btn-mobile <?php echo $isBloco ? 'finalizar-bloco' : 'finalizar-aula'; ?>" 
+                                        data-aula-id="<?php echo $aula['id']; ?>"
+                                        data-aula-ids="<?php echo htmlspecialchars($aulaIdsStr); ?>">
                                     <i class="fas fa-stop me-2"></i>
-                                    Finalizar Aula
+                                    <?php echo $isBloco ? 'Finalizar Bloco' : 'Finalizar Aula'; ?>
                                 </button>
                                 <?php endif; ?>
                                 <?php endif; ?>
@@ -770,6 +838,76 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = this.dataset.data;
             const hora = this.dataset.hora;
             abrirModal('transferir', aulaId, data, hora);
+        });
+    });
+
+    // Iniciar Bloco
+    document.querySelectorAll('.iniciar-bloco').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const aulaIds = (this.dataset.aulaIds || this.dataset.aulaId || '').toString().split(',').filter(Boolean);
+            if (aulaIds.length === 0) return;
+            const kmInicialStr = prompt('Informe o KM inicial do veículo (será aplicado a todas as aulas do bloco):');
+            if (kmInicialStr === null || kmInicialStr.trim() === '') return;
+            const kmInicial = Number(kmInicialStr.trim());
+            if (isNaN(kmInicial) || kmInicial < 0) {
+                showToast('KM inicial deve ser um número válido (>= 0).', 'error');
+                return;
+            }
+            showLoading('Iniciando bloco...');
+            try {
+                const response = await fetch('../admin/api/instrutor-aulas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo_acao: 'iniciar_bloco', aula_ids: aulaIds.join(','), km_inicial: kmInicial })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message || 'Bloco iniciado com sucesso!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message || 'Erro ao iniciar bloco.', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+    });
+
+    // Finalizar Bloco
+    document.querySelectorAll('.finalizar-bloco').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const aulaIds = (this.dataset.aulaIds || this.dataset.aulaId || '').toString().split(',').filter(Boolean);
+            if (aulaIds.length === 0) return;
+            const kmFinalStr = prompt('Informe o KM final do veículo (será aplicado a todas as aulas do bloco):');
+            if (kmFinalStr === null || kmFinalStr.trim() === '') return;
+            const kmFinal = Number(kmFinalStr.trim());
+            if (isNaN(kmFinal) || kmFinal < 0) {
+                showToast('KM final deve ser um número válido (>= 0).', 'error');
+                return;
+            }
+            showLoading('Finalizando bloco...');
+            try {
+                const response = await fetch('../admin/api/instrutor-aulas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo_acao: 'finalizar_bloco', aula_ids: aulaIds.join(','), km_final: kmFinal })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message || 'Bloco finalizado com sucesso!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message || 'Erro ao finalizar bloco.', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                hideLoading();
+            }
         });
     });
 

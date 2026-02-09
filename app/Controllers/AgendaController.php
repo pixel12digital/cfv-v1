@@ -1091,6 +1091,208 @@ class AgendaController extends Controller
     }
 
     /**
+     * Inicia um bloco de aulas práticas consecutivas
+     */
+    public function iniciarBloco()
+    {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if ($currentRole === Constants::ROLE_ALUNO) {
+            $_SESSION['error'] = 'Você não tem permissão para iniciar aulas.';
+            redirect(base_url('agenda'));
+        }
+        
+        $idsStr = $_GET['ids'] ?? $_POST['ids'] ?? '';
+        $ids = array_filter(array_map('intval', explode(',', $idsStr)));
+        if (empty($ids)) {
+            $_SESSION['error'] = 'IDs das aulas não informados.';
+            redirect(base_url('agenda'));
+        }
+        
+        $lessonModel = new Lesson();
+        $lessons = [];
+        foreach ($ids as $id) {
+            $lesson = $lessonModel->findWithDetails($id);
+            if (!$lesson || $lesson['cfc_id'] != $this->cfcId) continue;
+            if ($lesson['status'] !== Constants::AULA_AGENDADA) continue;
+            if ($currentRole === Constants::ROLE_INSTRUTOR && $userId) {
+                $userModel = new User();
+                $user = $userModel->findWithLinks($userId);
+                if (empty($user['instructor_id']) || $user['instructor_id'] != $lesson['instructor_id']) continue;
+            }
+            $lessons[] = $lesson;
+        }
+        
+        if (empty($lessons)) {
+            $_SESSION['error'] = 'Nenhuma aula agendada encontrada para iniciar no bloco.';
+            redirect(base_url('agenda'));
+        }
+        
+        $firstLesson = $lessons[0];
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $studentSummary = $lessonModel->getStudentSummaryForInstructor(
+                $firstLesson['instructor_id'],
+                $firstLesson['student_id'],
+                $firstLesson['enrollment_id']
+            );
+            $data = [
+                'pageTitle' => 'Iniciar Bloco',
+                'lessons' => $lessons,
+                'lesson' => $firstLesson,
+                'studentSummary' => $studentSummary,
+                'ids' => implode(',', $ids)
+            ];
+            $this->view('agenda/iniciar-bloco', $data);
+            return;
+        }
+        
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('agenda'));
+        }
+        
+        $practiceTypes = isset($_POST['practice_type']) && is_array($_POST['practice_type'])
+            ? array_map('trim', $_POST['practice_type']) : [];
+        $practiceTypes = array_filter($practiceTypes);
+        $validPracticeTypes = ['rua', 'garagem', 'baliza'];
+        $invalid = array_diff($practiceTypes, $validPracticeTypes);
+        if (empty($practiceTypes) || !empty($invalid)) {
+            $_SESSION['error'] = 'Selecione pelo menos um tipo de aula (Rua, Garagem ou Baliza).';
+            redirect(base_url('agenda/iniciar-bloco?ids=' . urlencode(implode(',', $ids))));
+        }
+        $practiceType = implode(',', array_unique($practiceTypes));
+        
+        $kmStart = isset($_POST['km_start']) ? (int)trim($_POST['km_start']) : 0;
+        if ($kmStart < 0) {
+            $_SESSION['error'] = 'Quilometragem inicial deve ser um número positivo.';
+            redirect(base_url('agenda/iniciar-bloco?ids=' . urlencode(implode(',', $ids))));
+        }
+        
+        $enrollmentModel = new Enrollment();
+        $enrollment = $enrollmentModel->find($firstLesson['enrollment_id']);
+        if (!EnrollmentPolicy::canStartLesson($enrollment)) {
+            $_SESSION['error'] = 'Não é possível iniciar. Aluno com situação financeira bloqueada.';
+            redirect(base_url('agenda'));
+        }
+        
+        $now = date('Y-m-d H:i:s');
+        $idsToUpdate = array_column($lessons, 'id');
+        
+        foreach ($idsToUpdate as $lid) {
+            $lessonModel->update($lid, [
+                'status' => Constants::AULA_EM_ANDAMENTO,
+                'started_at' => $now,
+                'km_start' => $kmStart,
+                'practice_type' => $practiceType
+            ]);
+        }
+        
+        $dateTime = date('d/m/Y H:i', strtotime("{$firstLesson['scheduled_date']} {$firstLesson['scheduled_time']}"));
+        $this->historyService->logAgendaEvent(
+            $firstLesson['student_id'],
+            "Bloco de " . count($lessons) . " aula(s) iniciado (agendado para {$dateTime}) - KM inicial: {$kmStart}"
+        );
+        
+        $_SESSION['success'] = 'Bloco iniciado com sucesso (' . count($lessons) . ' aula(s))!';
+        redirect(base_url('agenda/' . $firstLesson['id']));
+    }
+
+    /**
+     * Finaliza um bloco de aulas práticas consecutivas
+     */
+    public function finalizarBloco()
+    {
+        $currentRole = $_SESSION['current_role'] ?? '';
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if ($currentRole === Constants::ROLE_ALUNO) {
+            $_SESSION['error'] = 'Você não tem permissão para finalizar aulas.';
+            redirect(base_url('agenda'));
+        }
+        
+        $idsStr = $_GET['ids'] ?? $_POST['ids'] ?? '';
+        $ids = array_filter(array_map('intval', explode(',', $idsStr)));
+        if (empty($ids)) {
+            $_SESSION['error'] = 'IDs das aulas não informados.';
+            redirect(base_url('agenda'));
+        }
+        
+        $lessonModel = new Lesson();
+        $lessons = [];
+        foreach ($ids as $id) {
+            $lesson = $lessonModel->findWithDetails($id);
+            if (!$lesson || $lesson['cfc_id'] != $this->cfcId) continue;
+            if (!in_array($lesson['status'], [Constants::AULA_AGENDADA, Constants::AULA_EM_ANDAMENTO])) continue;
+            if ($currentRole === Constants::ROLE_INSTRUTOR && $userId) {
+                $userModel = new User();
+                $user = $userModel->findWithLinks($userId);
+                if (empty($user['instructor_id']) || $user['instructor_id'] != $lesson['instructor_id']) continue;
+            }
+            $lessons[] = $lesson;
+        }
+        
+        if (empty($lessons)) {
+            $_SESSION['error'] = 'Nenhuma aula em andamento encontrada para finalizar no bloco.';
+            redirect(base_url('agenda'));
+        }
+        
+        $firstLesson = $lessons[0];
+        $kmInicialRef = $firstLesson['km_start'] ?? null;
+        foreach ($lessons as $l) {
+            if (($l['status'] ?? '') === Constants::AULA_EM_ANDAMENTO && !empty($l['km_start'])) {
+                $kmInicialRef = $l['km_start'];
+                break;
+            }
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $data = [
+                'pageTitle' => 'Finalizar Bloco',
+                'lessons' => $lessons,
+                'lesson' => $firstLesson,
+                'ids' => implode(',', array_column($lessons, 'id'))
+            ];
+            $this->view('agenda/finalizar-bloco', $data);
+            return;
+        }
+        
+        if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Token CSRF inválido.';
+            redirect(base_url('agenda'));
+        }
+        
+        $kmEnd = isset($_POST['km_end']) ? (int)trim($_POST['km_end']) : 0;
+        if ($kmEnd < 0) {
+            $_SESSION['error'] = 'Quilometragem final deve ser um número positivo.';
+            redirect(base_url('agenda/finalizar-bloco?ids=' . urlencode(implode(',', $ids))));
+        }
+        if ($kmInicialRef !== null && $kmEnd < $kmInicialRef) {
+            $_SESSION['error'] = 'KM final não pode ser menor que KM inicial (' . $kmInicialRef . ' km).';
+            redirect(base_url('agenda/finalizar-bloco?ids=' . urlencode(implode(',', $ids))));
+        }
+        
+        $now = date('Y-m-d H:i:s');
+        foreach ($lessons as $l) {
+            $lessonModel->update($l['id'], [
+                'status' => Constants::AULA_CONCLUIDA,
+                'completed_at' => $now,
+                'km_end' => $kmEnd
+            ]);
+        }
+        
+        $dateTime = date('d/m/Y H:i', strtotime("{$firstLesson['scheduled_date']} {$firstLesson['scheduled_time']}"));
+        $this->historyService->logAgendaEvent(
+            $firstLesson['student_id'],
+            "Bloco de " . count($lessons) . " aula(s) finalizado - KM final: {$kmEnd}"
+        );
+        
+        $_SESSION['success'] = 'Bloco finalizado com sucesso (' . count($lessons) . ' aula(s))!';
+        redirect(base_url('agenda/' . $firstLesson['id']));
+    }
+
+    /**
      * API: Busca aulas para calendário (AJAX)
      */
     public function apiCalendario()
