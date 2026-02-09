@@ -635,8 +635,16 @@ function handlePut($db) {
 
 /**
  * Processar requisições DELETE
+ * Apenas ADMIN pode excluir matrículas (alinhado com AlunosController::excluirMatricula)
  */
 function handleDelete($db) {
+    $currentUser = getCurrentUser();
+    if (($currentUser['tipo'] ?? '') !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Apenas administradores podem excluir matrículas']);
+        return;
+    }
+
     $id = $_GET['id'] ?? null;
     
     if (!$id) {

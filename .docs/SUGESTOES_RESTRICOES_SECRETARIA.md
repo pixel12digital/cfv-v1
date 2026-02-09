@@ -158,6 +158,8 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 | **Usuários (admin legado)** | `admin/api/usuarios.php` | ✅ POST: SECRETARIA não cria admin; PUT: não edita nem atribui admin; DELETE: só ADMIN; reset_password: SECRETARIA não redefini admin |
 | **Usuários (admin/pages/usuarios.php)** | `admin/pages/usuarios.php` | ✅ Botão Excluir oculto para SECRETARIA; Editar/Senha ocultos para usuários admin; opção Admin oculta no form |
 | **Relatórios financeiros/gerenciais** | `admin/pages/financeiro-relatorios.php`, `admin/api/financeiro-relatorios.php` | ✅ Apenas ADMIN; SECRETARIA não vê menu nem acessa URL; API bloqueada |
+| **Excluir matrícula (API legada)** | `admin/api/matriculas.php` DELETE | ✅ Apenas ADMIN; SECRETARIA recebe 403 em requisição direta |
+| **Excluir matrícula / Excluir definitivamente (UI)** | `matricula_show.php`, `financeiro/index.php` | ✅ Botões ocultos para não-ADMIN; fallback para `user_type`/`tipo` legado |
 
 ---
 
@@ -175,7 +177,23 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 
 ---
 
-### 3.6 Financeiro — Regras SECRETARIA (implementado)
+### 3.6 Botões de ações críticas (implementado)
+
+Em telas de detalhe (aluno, matrícula, aula), botões proibidos para SECRETARIA:
+- **Não aparecem** na UI (condição `$isAdmin` ou `current_role === ADMIN`)
+- **Não executam** por requisição direta (backend retorna 403)
+
+| Ação | Tela | UI | Backend |
+|------|------|-----|---------|
+| Excluir Matrícula | matricula_show | Oculta para não-ADMIN | AlunosController::excluirMatricula, admin/api/matriculas DELETE |
+| Excluir Definitivamente | matricula_show, financeiro | Oculta para não-ADMIN | AlunosController::excluirDefinitivamente |
+| Excluir Usuário | usuarios (admin e app) | Oculta para SECRETARIA | admin/api/usuarios DELETE, UsuariosController::excluir |
+
+**Cancelar aula:** SECRETARIA pode (operacional). **Desativar aluno:** SECRETARIA pode (operacional).
+
+---
+
+### 3.7 Financeiro — Regras SECRETARIA (implementado)
 
 | O que SECRETARIA pode | O que SECRETARIA NÃO pode |
 |-----------------------|---------------------------|
@@ -196,6 +214,7 @@ WHERE modulo IN ('alunos', 'matriculas', 'agenda', 'financeiro')
 - [x] **Bloqueio URL admin:** `rotasBloqueadasSecretaria` para instrutores, veiculos, configuracoes-salas, servicos, financeiro-relatorios
 - [x] **Financeiro:** SECRETARIA não edita valores após cobrança gerada
 - [x] **Relatórios:** Relatórios Financeiros e Inadimplência apenas ADMIN
+- [x] **Botões críticos:** Excluir matrícula/definitivamente e excluir usuário ocultos na UI e bloqueados no backend
 - [x] **Permissões:** Alinhamento `matriculas`/`enrollments` em `atualizarMatricula`
 - [ ] **Seeds (opcional):** Remover `servicos` de `role_permissoes` para SECRETARIA
 

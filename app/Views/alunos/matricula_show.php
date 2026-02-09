@@ -733,7 +733,8 @@
                 <?php 
                 // Botão Excluir Matrícula (apenas ADMIN) - cancela a matrícula
                 $currentRole = $_SESSION['current_role'] ?? '';
-                $isAdmin = ($currentRole === \App\Config\Constants::ROLE_ADMIN);
+                $tipoLegado = $_SESSION['user_type'] ?? $_SESSION['tipo'] ?? '';
+                $isAdmin = ($currentRole === \App\Config\Constants::ROLE_ADMIN) || ($tipoLegado === 'admin');
                 if ($isAdmin && $enrollment['status'] !== 'cancelada'):
                     // Verificar se pode excluir (não tem cobrança ativa na EFI)
                     $canDelete = empty($enrollment['gateway_charge_id']) || 
