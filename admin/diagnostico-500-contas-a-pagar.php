@@ -50,7 +50,14 @@ if (!$isAdmin && $userType !== 'secretaria') {
 }
 echo "5. Permissão OK\n";
 
-// Incluir a página (só o PHP, sem HTML do admin)
+// Verificar se a tabela financeiro_pagamentos existe
+$tabela = $db->fetch("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'financeiro_pagamentos' LIMIT 1");
+if (!$tabela) {
+    echo "5b. AVISO: Tabela financeiro_pagamentos não existe. Rode a migration: php tools/run_migration_007_financeiro_pagamentos.php\n";
+}
+
+// Incluir a página (só o PHP, sem HTML do admin) — precisa das variáveis que o index.php define
+$isAdmin = ($user['tipo'] ?? '') === 'admin';
 echo "6. Incluindo pages/financeiro-despesas.php ...\n";
 ob_start();
 try {

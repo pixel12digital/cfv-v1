@@ -3,11 +3,18 @@
 $base_path = dirname(__DIR__);
 $_admin_dir = __DIR__;
 
-// Debug: exibir erros apenas quando ?debug=1 (remover ou desativar em produção após diagnóstico)
+// Debug: exibir erros e gravar fatal em log quando ?debug=1 (remover em produção após diagnóstico)
 if (!empty($_GET['debug']) && $_GET['debug'] === '1') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
+    register_shutdown_function(function () {
+        $e = error_get_last();
+        if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+            $log = __DIR__ . '/debug-error.log';
+            file_put_contents($log, date('c') . ' ' . $e['type'] . ' ' . $e['message'] . ' in ' . $e['file'] . ':' . $e['line'] . "\n", LOCK_EX | FILE_APPEND);
+        }
+    });
 }
 
 // Forçar charset UTF-8 para evitar problemas de codificação
