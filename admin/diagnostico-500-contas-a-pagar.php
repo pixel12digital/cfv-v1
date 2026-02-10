@@ -18,8 +18,13 @@ echo "1. Includes OK\n";
 $db = Database::getInstance();
 echo "2. DB OK\n";
 
-// Simular sessão de um admin (buscar primeiro admin do banco)
-$admin = $db->fetch("SELECT id FROM usuarios WHERE tipo = 'admin' LIMIT 1");
+// Simular sessão: buscar usuário (produção pode não ter coluna tipo em usuarios; preferir usuario_roles)
+$admin = null;
+try {
+    $admin = $db->fetch("SELECT usuario_id as id FROM usuario_roles WHERE role = 'ADMIN' LIMIT 1");
+} catch (Exception $e) {
+    // Tabela usuario_roles pode não existir
+}
 if (!$admin) {
     $admin = $db->fetch("SELECT id FROM usuarios LIMIT 1");
 }

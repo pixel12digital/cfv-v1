@@ -436,12 +436,20 @@ class Auth {
                 return $roleMap[strtoupper($role['role'])] ?? 'aluno';
             }
             
-            // Se não encontrou em usuario_roles, tentar campo 'tipo' (sistema antigo)
-            $sql = "SELECT tipo FROM usuarios WHERE id = :id LIMIT 1";
-            $usuario = $this->db->fetch($sql, ['id' => $userId]);
-            
-            if ($usuario && !empty($usuario['tipo'])) {
-                return strtolower($usuario['tipo']);
+            // Se não encontrou em usuario_roles, tentar campo 'tipo' (sistema antigo) só se a coluna existir
+            try {
+                $col = $this->db->fetch(
+                    "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'tipo' LIMIT 1"
+                );
+                if ($col) {
+                    $sql = "SELECT tipo FROM usuarios WHERE id = :id LIMIT 1";
+                    $usuario = $this->db->fetch($sql, ['id' => $userId]);
+                    if ($usuario && !empty($usuario['tipo'])) {
+                        return strtolower($usuario['tipo']);
+                    }
+                }
+            } catch (Exception $e) {
+                // Coluna tipo não existe ou query falhou (ex.: banco só com RBAC)
             }
             
             // Fallback: retornar 'aluno' como padrão
