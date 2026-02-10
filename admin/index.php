@@ -178,6 +178,14 @@ if ($userType === 'instrutor') {
     }
 }
 
+// Relatório de Aulas: apenas ADMIN e SECRETARIA (bloquear instrutor e outros)
+if ($page === 'relatorio-aulas' && $userType !== 'admin' && $userType !== 'secretaria') {
+    $_SESSION['flash_message'] = 'Acesso negado. Apenas administradores e secretárias podem acessar o Relatório de Aulas.';
+    $_SESSION['flash_type'] = 'warning';
+    header('Location: index.php');
+    exit();
+}
+
 // BLOQUEIO DE ROTAS PARA SECRETARIA (apenas ADMIN)
 // Secretaria não pode acessar: instrutores, veículos, salas, serviços
 if ($userType === 'secretaria') {
@@ -1711,6 +1719,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                             <span>Agenda Geral</span>
                             <div class="nav-badge"><?php echo $stats['total_aulas']; ?></div>
                         </a>
+                        <?php if ($isAdmin || $userType === 'secretaria'): ?>
+                        <a href="index.php?page=relatorio-aulas" class="nav-sublink <?php echo $page === 'relatorio-aulas' ? 'active' : ''; ?>">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Relatório de Aulas</span>
+                        </a>
+                        <?php endif; ?>
                         <?php if ($isAdmin): ?>
                         <a href="index.php?page=instrutores" class="nav-sublink <?php echo $page === 'instrutores' ? 'active' : ''; ?>">
                             <i class="fas fa-chalkboard-teacher"></i>
@@ -2057,6 +2071,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                     <span>Agenda Geral</span>
                                     <span class="mobile-nav-badge"><?php echo $stats['total_aulas']; ?></span>
                                 </a>
+                                <?php if ($isAdmin || $userType === 'secretaria'): ?>
+                                <a href="index.php?page=relatorio-aulas" class="mobile-nav-sublink <?php echo $page === 'relatorio-aulas' ? 'active' : ''; ?>">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Relatório de Aulas</span>
+                                </a>
+                                <?php endif; ?>
                                 <?php if ($isAdmin): ?>
                                 <a href="index.php?page=instrutores" class="mobile-nav-sublink <?php echo $page === 'instrutores' ? 'active' : ''; ?>">
                                     <i class="fas fa-chalkboard-teacher"></i>
@@ -2741,6 +2761,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         // Dados específicos de relatórios podem ser carregados aqui
                     } catch (Exception $e) {
                         // Tratar erro se necessário
+                    }
+                    break;
+
+                case 'relatorio-aulas':
+                    // Relatório de Aulas por período (ADMIN/SECRETARIA) - mesma base da agenda
+                    $relatorio_data_inicio = $_GET['data_inicio'] ?? date('Y-m-d', strtotime('-30 days'));
+                    $relatorio_data_fim = $_GET['data_fim'] ?? date('Y-m-d');
+                    $relatorio_instrutor_id = isset($_GET['instrutor_id']) && $_GET['instrutor_id'] !== '' ? (int)$_GET['instrutor_id'] : '';
+                    $relatorio_aluno_id = isset($_GET['aluno_id']) && $_GET['aluno_id'] !== '' ? (int)$_GET['aluno_id'] : '';
+                    $relatorio_status = isset($_GET['status']) && $_GET['status'] !== '' ? $_GET['status'] : '';
+                    try {
+                        $sql = "
+                            SELECT a.*,
+                                   al.nome as aluno_nome,
+                                   COALESCE(u.nome, i.nome) as instrutor_nome,
+                                   v.placa as veiculo_placa,
+                                   v.modelo as veiculo_modelo,
+                                   c.nome as cfc_nome
+                            FROM aulas a
+                            LEFT JOIN alunos al ON a.aluno_id = al.id
+                            LEFT JOIN instrutores i ON a.instrutor_id = i.id
+                            LEFT JOIN usuarios u ON i.usuario_id = u.id
+                            LEFT JOIN veiculos v ON a.veiculo_id = v.id
+                            LEFT JOIN cfcs c ON a.cfc_id = c.id
+                            WHERE a.data_aula BETWEEN ? AND ?
+                        ";
+                        $params = [$relatorio_data_inicio, $relatorio_data_fim];
+                        if ($relatorio_instrutor_id !== '') {
+                            $sql .= " AND a.instrutor_id = ?";
+                            $params[] = $relatorio_instrutor_id;
+                        }
+                        if ($relatorio_aluno_id !== '') {
+                            $sql .= " AND a.aluno_id = ?";
+                            $params[] = $relatorio_aluno_id;
+                        }
+                        if ($relatorio_status !== '') {
+                            $sql .= " AND a.status = ?";
+                            $params[] = $relatorio_status;
+                        }
+                        $sql .= " ORDER BY a.data_aula ASC, a.hora_inicio ASC";
+                        $relatorio_aulas_lista = $db->fetchAll($sql, $params);
+                    } catch (Exception $e) {
+                        $relatorio_aulas_lista = [];
+                    }
+                    $relatorio_totais = ['total' => 0, 'agendadas' => 0, 'realizadas' => 0, 'canceladas' => 0, 'em_andamento' => 0];
+                    foreach ($relatorio_aulas_lista as $a) {
+                        $relatorio_totais['total']++;
+                        $s = $a['status'] ?? '';
+                        if ($s === 'agendada') $relatorio_totais['agendadas']++;
+                        elseif ($s === 'concluida') $relatorio_totais['realizadas']++;
+                        elseif ($s === 'cancelada') $relatorio_totais['canceladas']++;
+                        elseif ($s === 'em_andamento') $relatorio_totais['em_andamento']++;
+                    }
+                    try {
+                        $relatorio_instrutores_lista = $db->fetchAll("SELECT id, nome FROM instrutores WHERE ativo = 1 ORDER BY nome");
+                    } catch (Exception $e) {
+                        $relatorio_instrutores_lista = [];
+                    }
+                    try {
+                        $relatorio_alunos_lista = $db->fetchAll("SELECT id, nome FROM alunos ORDER BY nome");
+                    } catch (Exception $e) {
+                        $relatorio_alunos_lista = [];
                     }
                     break;
 
