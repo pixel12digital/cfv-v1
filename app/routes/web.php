@@ -143,6 +143,8 @@ $router->get('/configuracoes/smtp', [ConfiguracoesController::class, 'smtp'], [A
 $router->post('/configuracoes/smtp/salvar', [ConfiguracoesController::class, 'salvarSmtp'], [AuthMiddleware::class]);
 $router->post('/configuracoes/smtp/testar', [ConfiguracoesController::class, 'testarSmtp'], [AuthMiddleware::class]);
 
+$router->get('/configuracoes/categorias-despesa', [ConfiguracoesController::class, 'categoriasDespesa'], [AuthMiddleware::class]);
+
 // Configurações do CFC (Logo PWA)
 $router->get('/configuracoes/cfc', [ConfiguracoesController::class, 'cfc'], [AuthMiddleware::class]);
 $router->post('/configuracoes/cfc/salvar', [ConfiguracoesController::class, 'salvarCfc'], [AuthMiddleware::class]);

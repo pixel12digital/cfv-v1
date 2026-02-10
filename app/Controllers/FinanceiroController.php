@@ -501,9 +501,40 @@ class FinanceiroController extends Controller
             return;
         }
         $apiUrl = base_path('admin/api/financeiro-despesas.php');
+        $categorias = $this->getCategoriasDespesaAtivas();
         $this->view('financeiro/contas-a-pagar', [
             'pageTitle' => 'Contas a Pagar',
-            'apiUrl' => $apiUrl
+            'apiUrl' => $apiUrl,
+            'categorias' => $categorias
         ]);
+    }
+
+    /**
+     * Retorna categorias de despesa ativas (slug => nome) para Contas a Pagar.
+     * Fallback para lista fixa se a tabela não existir ou falhar.
+     */
+    private function getCategoriasDespesaAtivas(): array
+    {
+        $fallback = [
+            'combustivel' => 'Combustível', 'manutencao' => 'Manutenção', 'salarios' => 'Salários',
+            'aluguel' => 'Aluguel', 'energia' => 'Energia', 'agua' => 'Água', 'telefone' => 'Telefone',
+            'internet' => 'Internet', 'outros' => 'Outros'
+        ];
+        try {
+            $stmt = $this->db->query(
+                "SELECT slug, nome FROM financeiro_categorias_despesa WHERE ativo = 1 ORDER BY ordem ASC, nome ASC"
+            );
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            if (empty($rows)) {
+                return $fallback;
+            }
+            $out = [];
+            foreach ($rows as $r) {
+                $out[$r['slug']] = $r['nome'];
+            }
+            return $out;
+        } catch (\Throwable $e) {
+            return $fallback;
+        }
     }
 }

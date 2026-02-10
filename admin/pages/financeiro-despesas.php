@@ -90,6 +90,13 @@ $totais_vencido = is_array($totais_vencido) ? $totais_vencido : ['valor' => 0, '
 $totais_pago = is_array($totais_pago) ? $totais_pago : ['valor' => 0, 'qtd' => 0];
 
 $categorias_cap = ['combustivel' => 'Combustível', 'manutencao' => 'Manutenção', 'salarios' => 'Salários', 'aluguel' => 'Aluguel', 'energia' => 'Energia', 'agua' => 'Água', 'telefone' => 'Telefone', 'internet' => 'Internet', 'outros' => 'Outros'];
+try {
+    $rows_cat = $db->fetchAll("SELECT slug, nome FROM financeiro_categorias_despesa WHERE ativo = 1 ORDER BY ordem ASC, nome ASC");
+    if (!empty($rows_cat)) {
+        $categorias_cap = [];
+        foreach ($rows_cat as $r) { $categorias_cap[$r['slug']] = $r['nome']; }
+    }
+} catch (Exception $e) { /* manter fallback */ }
 ?>
 <style>
 .stats-card { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; color: #fff; }

@@ -1,6 +1,6 @@
 <?php
 $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-despesas.php');
-$categorias = [
+$categorias = $categorias ?? [
     'combustivel' => 'Combustível', 'manutencao' => 'Manutenção', 'salarios' => 'Salários',
     'aluguel' => 'Aluguel', 'energia' => 'Energia', 'agua' => 'Água', 'telefone' => 'Telefone',
     'internet' => 'Internet', 'outros' => 'Outros'

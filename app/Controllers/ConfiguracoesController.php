@@ -113,6 +113,18 @@ class ConfiguracoesController extends Controller
     }
 
     /**
+     * Categorias de despesa (Contas a Pagar) – listar, adicionar, editar, excluir
+     */
+    public function categoriasDespesa()
+    {
+        $apiUrl = base_path('admin/api/financeiro-categorias.php');
+        $this->view('configuracoes/categorias-despesa', [
+            'pageTitle' => 'Categorias de despesa',
+            'apiUrl' => $apiUrl
+        ]);
+    }
+
+    /**
      * Testa envio de e-mail
      */
     public function testarSmtp()
