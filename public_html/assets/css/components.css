@@ -76,6 +76,19 @@ body {
   font-size: var(--font-size-sm);
 }
 
+.btn-icon {
+  padding: var(--spacing-xs);
+}
+.btn-icon.btn-sm {
+  padding: var(--spacing-xs);
+  min-width: 2rem;
+  min-height: 2rem;
+}
+.btn-icon svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 .btn-lg {
   padding: var(--spacing-md) var(--spacing-lg);
   font-size: var(--font-size-lg);

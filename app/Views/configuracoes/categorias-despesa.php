@@ -119,9 +119,9 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
                     var id = escAttr(c.id);
                     var ordem = escAttr(c.ordem);
                     var ativoVal = escAttr(c.ativo);
-                    return '<tr><td>' + nome + '</td><td><code>' + slug + '</code></td><td>' + (c.ordem || 0) + '</td><td class="' + ativoClass + '">' + ativo + '</td><td>' +
-                        '<button type="button" class="btn btn-sm btn-outline" data-action="editar" data-id="' + id + '" data-nome="' + nomeAttr + '" data-slug="' + slugAttr + '" data-ordem="' + ordem + '" data-ativo="' + ativoVal + '">Editar</button> ' +
-                        '<button type="button" class="btn btn-sm btn-outline" data-action="excluir" data-id="' + id + '" data-nome="' + nomeAttr + '">Excluir</button>' +
+                    return '<tr><td>' + nome + '</td><td><code>' + slug + '</code></td><td>' + (c.ordem || 0) + '</td><td class="' + ativoClass + '">' + ativo + '</td><td class="text-nowrap">' +
+                        '<button type="button" class="btn btn-sm btn-outline btn-icon" title="Editar" data-action="editar" data-id="' + id + '" data-nome="' + nomeAttr + '" data-slug="' + slugAttr + '" data-ordem="' + ordem + '" data-ativo="' + ativoVal + '"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button> ' +
+                        '<button type="button" class="btn btn-sm btn-outline btn-icon" title="Excluir" data-action="excluir" data-id="' + id + '" data-nome="' + nomeAttr + '"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>' +
                         '</td></tr>';
                 }).join('');
                 tbody.querySelectorAll('[data-action]').forEach(function(btn) {
