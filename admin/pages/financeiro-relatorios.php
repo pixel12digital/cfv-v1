@@ -23,13 +23,13 @@ if (!$isAdmin) {
 $dataInicio = $_GET['data_inicio'] ?? date('Y-m-d', strtotime('-30 days'));
 $dataFim = $_GET['data_fim'] ?? date('Y-m-d');
 
-// Obter estatísticas do período
+// Obter estatísticas do período (contas a pagar: financeiro_pagamentos)
 try {
     $stats = [
         'total_receitas' => $db->fetchColumn("SELECT SUM(valor) FROM financeiro_faturas WHERE status = 'paga' AND data_pagamento BETWEEN ? AND ?", [$dataInicio, $dataFim]) ?? 0,
-        'total_despesas' => $db->fetchColumn("SELECT SUM(valor) FROM financeiro_despesas WHERE status = 'paga' AND data_pagamento BETWEEN ? AND ?", [$dataInicio, $dataFim]) ?? 0,
+        'total_despesas' => $db->fetchColumn("SELECT SUM(valor) FROM financeiro_pagamentos WHERE status = 'pago' AND data_pagamento BETWEEN ? AND ?", [$dataInicio, $dataFim]) ?? 0,
         'faturas_emitidas' => $db->count('financeiro_faturas', 'data_emissao BETWEEN ? AND ?', [$dataInicio, $dataFim]),
-        'despesas_registradas' => $db->count('financeiro_despesas', 'data_emissao BETWEEN ? AND ?', [$dataInicio, $dataFim])
+        'despesas_registradas' => $db->count('financeiro_pagamentos', 'vencimento BETWEEN ? AND ?', [$dataInicio, $dataFim])
     ];
     
     $stats['saldo'] = $stats['total_receitas'] - $stats['total_despesas'];
@@ -60,8 +60,8 @@ try {
         SELECT 
             categoria,
             SUM(valor) as total
-        FROM financeiro_despesas 
-        WHERE status = 'paga' 
+        FROM financeiro_pagamentos 
+        WHERE status = 'pago' 
         AND data_pagamento BETWEEN ? AND ?
         GROUP BY categoria
         ORDER BY total DESC

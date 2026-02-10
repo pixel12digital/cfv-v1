@@ -171,6 +171,15 @@ if ($userType === 'secretaria') {
     }
 }
 
+// Contas a Pagar: apenas ADMIN e SECRETARIA (bloquear acesso direto para instrutor etc.)
+if ($page === 'financeiro-despesas' && $userType !== 'admin' && $userType !== 'secretaria') {
+    error_log('[BLOQUEIO] Acesso negado a contas a pagar: tipo=' . ($userType ?? '') . ', user_id=' . ($userId ?? ''));
+    $_SESSION['flash_message'] = 'Você não tem permissão para acessar Contas a Pagar.';
+    $_SESSION['flash_type'] = 'warning';
+    header('Location: index.php');
+    exit();
+}
+
 // Verificação ANTECIPADA para turma-chamada (ANTES de qualquer output HTML)
 // Isso evita o erro "headers already sent" quando a página requer turma_id
 if ($page === 'turma-chamada' && !isset($_GET['turma_id'])) {
