@@ -1,6 +1,7 @@
 <?php   
-// Definir caminho base
+// Definir caminho base (sempre a partir do diretório deste script, evita 500 quando CWD ≠ admin/)
 $base_path = dirname(__DIR__);
+$_admin_dir = __DIR__;
 
 // Forçar charset UTF-8 para evitar problemas de codificação
 if (!headers_sent()) {
@@ -10,9 +11,9 @@ if (!headers_sent()) {
     header('Expires: 0');
 }
 
-require_once '../includes/config.php';
-require_once '../includes/database.php';
-require_once '../includes/auth.php';
+require_once $_admin_dir . '/../includes/config.php';
+require_once $_admin_dir . '/../includes/database.php';
+require_once $_admin_dir . '/../includes/auth.php';
 
 // AJUSTE DASHBOARD INSTRUTOR - Verificar se o usuário está logado e tem permissão de admin ou é instrutor
 // hasPermission('instrutor') verifica se tem a permissão 'instrutor', não se É instrutor
@@ -2824,12 +2825,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 $content_file = "pages/{$page}.php";
             }
             
-            if (file_exists($content_file)) {
-                // Incluir arquivo da página
-                include $content_file;
+            $content_path = $_admin_dir . '/' . $content_file;
+            if (file_exists($content_path)) {
+                // Incluir arquivo da página (path absoluto evita 500 quando CWD ≠ admin/)
+                include $content_path;
             } else {
                 // Página padrão - Dashboard
-                include 'pages/dashboard.php';
+                include $_admin_dir . '/pages/dashboard.php';
             }
             ?>
         </main>
