@@ -489,4 +489,17 @@ class FinanceiroController extends Controller
         echo json_encode($output);
         exit;
     }
+
+    /**
+     * Redireciona para Contas a Pagar no admin legado (apenas ADMIN e SECRETARIA).
+     */
+    public function contasAPagar()
+    {
+        $role = strtoupper($_SESSION['current_role'] ?? '');
+        if (!in_array($role, ['ADMIN', 'SECRETARIA'])) {
+            redirect(base_url('dashboard'));
+            return;
+        }
+        redirect(base_url('admin/index.php?page=financeiro-despesas'));
+    }
 }

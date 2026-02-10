@@ -121,6 +121,7 @@ $router->post('/veiculos/{id}/excluir', [VeiculosController::class, 'excluir'], 
 
 // Financeiro
 $router->get('/financeiro', [FinanceiroController::class, 'index'], [AuthMiddleware::class]);
+$router->get('/financeiro/contas-a-pagar', [FinanceiroController::class, 'contasAPagar'], [AuthMiddleware::class]);
 $router->get('/api/financeiro/autocomplete', [FinanceiroController::class, 'autocomplete'], [AuthMiddleware::class]);
 
 // Usuários (ADMIN)
