@@ -1,7 +1,7 @@
 <?php
 $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
 $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
-?>
+?><!-- categorias-despesa-view-v2 -->
 <div class="page-header" id="categorias-despesa-page" data-api-url="<?= $apiUrlSafe ?>">
     <div class="page-header-content" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--spacing-md);">
         <div>
