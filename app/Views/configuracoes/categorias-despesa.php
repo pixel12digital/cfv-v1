@@ -68,7 +68,7 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
     var apiUrl = (el && el.getAttribute('data-api-url')) || '';
 
     function api(method, url, body) {
-        var opt = { method: method, headers: { 'Content-Type': 'application/json' } };
+        var opt = { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
         if (body) opt.body = JSON.stringify(body);
         return fetch(url, opt).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, json: j }; }); });
     }
@@ -80,7 +80,7 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">URL da API não configurada.</td></tr>';
             return;
         }
-        fetch(apiUrl + '?all=1')
+        fetch(apiUrl + '?all=1', { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 var list = (res.success && res.data) ? res.data : [];

@@ -18,7 +18,8 @@ if (!function_exists('opcache_reset')) {
 }
 
 if (opcache_reset()) {
-    echo "OPcache limpo. Recarregue a página de categorias-despesa (F5).\n";
+    echo "OPcache limpo. Recarregue a página (F5).\n";
+    echo "Se categorias-despesa ainda mostrar erro de sintaxe, reinicie o PHP (Hostinger: Painel > PHP > Reiniciar) para limpar todos os workers.\n";
 } else {
     echo "Falha ao limpar OPcache.\n";
 }

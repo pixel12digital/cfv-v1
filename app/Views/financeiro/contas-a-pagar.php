@@ -221,7 +221,7 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
     }
 
     function api(method, url, body) {
-        var opt = { method: method, headers: { 'Content-Type': 'application/json' } };
+        var opt = { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
         if (body) opt.body = JSON.stringify(body);
         return fetch(url, opt).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, json: j }; }); });
     }
@@ -232,7 +232,7 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
 
     function loadTotais() {
         var q = queryString();
-        fetch(apiUrl + (q ? q + '&' : '?') + 'relatorio=totais')
+        fetch(apiUrl + (q ? q + '&' : '?') + 'relatorio=totais', { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 if (!res.success || !res.data) return;
@@ -250,7 +250,7 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
     function loadList() {
         var tbody = document.getElementById('tbody-lista');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding: var(--spacing-lg);">Carregando...</td></tr>';
-        fetch(apiUrl + queryString())
+        fetch(apiUrl + queryString(), { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 var list = (res.success && res.data) ? res.data : [];
@@ -320,7 +320,7 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
         var desc = btn.getAttribute('data-desc') || '';
         if (action === 'baixar') { document.getElementById('baixarId').value = id; document.getElementById('baixarDescricao').textContent = desc; document.getElementById('baixarData').value = new Date().toISOString().slice(0,10); document.getElementById('modalBaixar').showModal(); }
         else if (action === 'editar') {
-            fetch(apiUrl + '?id=' + id).then(function(r) { return r.json(); }).then(function(res) {
+            fetch(apiUrl + '?id=' + id, { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success || !res.data) { alert('Conta não encontrada'); return; }
                 var d = res.data;
                 document.getElementById('editId').value = d.id;
