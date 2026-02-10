@@ -4,7 +4,7 @@
  * Estratégias de cache otimizadas para PWA
  */
 
-const CACHE_VERSION = 'cfc-v1.0.10';
+const CACHE_VERSION = 'cfc-v1.0.11';
 const CACHE_NAME = `cfc-cache-${CACHE_VERSION}`;
 const OFFLINE_CACHE = 'cfc-offline-v1';
 
@@ -26,7 +26,7 @@ const STATIC_RESOURCES = [
   '/pwa/icons/'
 ];
 
-// Rotas autenticadas que NUNCA devem ser cacheadas
+// Rotas autenticadas que NUNCA devem ser cacheadas (inclui app painel)
 const AUTHENTICATED_ROUTES = [
   '/admin/',
   '/admin/index.php',
@@ -40,7 +40,16 @@ const AUTHENTICATED_ROUTES = [
   '/aluno/dashboard.php',
   '/admin/pages/',
   '/instrutor/pages/',
-  '/aluno/pages/'
+  '/aluno/pages/',
+  '/configuracoes/',
+  '/dashboard',
+  '/financeiro/',
+  '/alunos',
+  '/agenda/',
+  '/matriculas/',
+  '/notificacoes',
+  '/logout',
+  '/change-password'
 ];
 
 // Rotas que NÃO devem ser cacheadas (conteúdo sensível)
