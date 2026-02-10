@@ -139,7 +139,7 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
                             document.getElementById('catAtivo').checked = this.getAttribute('data-ativo') == '1';
                             document.getElementById('modalCategoria').showModal();
                         } else if (action === 'excluir') {
-                            if (!confirm('Excluir a categoria “‘ + escJsStr(nome) + '”?\n\nSó é possível se não houver contas a pagar usando ela.')) return;
+                            if (!confirm("Excluir a categoria \"" + escJsStr(nome) + "\"?\n\nSó é possível se não houver contas a pagar usando ela.")) return;
                             api('DELETE', apiUrl + '?id=' + id).then(function(res) {
                                 if (res.ok && res.json.success) loadCategorias();
                                 else alert(res.json.error || 'Erro ao excluir');
