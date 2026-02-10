@@ -570,51 +570,74 @@ class Auth {
         ]);
     }
     
-    // Buscar usuário por email ou CPF
+    // Buscar usuário por email ou CPF (com fallback quando cfcs.responsavel_id não existe)
     private function getUserByLogin($login) {
         $login = trim($login);
-        
-        // Se contém apenas números, tratar como CPF
         if (preg_match('/^[0-9]+$/', $login)) {
-            $sql = "SELECT u.*, c.id as cfc_id FROM usuarios u 
-                    LEFT JOIN cfcs c ON u.id = c.responsavel_id 
-                    WHERE u.cpf = :cpf LIMIT 1";
-            
-            return $this->db->fetch($sql, ['cpf' => $login]);
+            $u = $this->fetchUsuarioComCfc('cpf', ['cpf' => $login]);
+            if ($u) return $u;
+            $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE cpf = :cpf LIMIT 1", ['cpf' => $login]);
+            if ($u) $u['cfc_id'] = null;
+            return $u;
         }
-        
-        // Caso contrário, tratar como email
-        $sql = "SELECT u.*, c.id as cfc_id FROM usuarios u 
-                LEFT JOIN cfcs c ON u.id = c.responsavel_id 
-                WHERE u.email = :email LIMIT 1";
-        
-        return $this->db->fetch($sql, ['email' => strtolower($login)]);
+        $u = $this->fetchUsuarioComCfc('email', ['email' => strtolower($login)]);
+        if ($u) return $u;
+        $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower($login)]);
+        if ($u) $u['cfc_id'] = null;
+        return $u;
+    }
+    
+    private function fetchUsuarioComCfc($campo, $params) {
+        try {
+            $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.ativo, c.id as cfc_id FROM usuarios u 
+                    LEFT JOIN cfcs c ON u.id = c.responsavel_id WHERE u.{$campo} = :{$campo} LIMIT 1";
+            $row = $this->db->fetch($sql, $params);
+            if ($row) $row['cfc_id'] = $row['cfc_id'] ?? null;
+            return $row;
+        } catch (Exception $e) {
+            return null;
+        }
     }
     
     // Buscar usuário por email (método mantido para compatibilidade)
     private function getUserByEmail($email) {
-        $sql = "SELECT u.*, c.id as cfc_id FROM usuarios u 
-                LEFT JOIN cfcs c ON u.id = c.responsavel_id 
-                WHERE u.email = :email LIMIT 1";
-        
-        return $this->db->fetch($sql, ['email' => strtolower(trim($email))]);
+        $u = $this->fetchUsuarioComCfc('email', ['email' => strtolower(trim($email))]);
+        if ($u) return $u;
+        $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower(trim($email))]);
+        if ($u) $u['cfc_id'] = null;
+        return $u;
     }
     
-    // Obter dados do usuário (sem ultimo_login para compatibilidade com DB sem essa coluna)
+    // Obter dados do usuário (compatível com DB sem ultimo_login e sem cfcs.responsavel_id)
     private function getUserData($userId) {
-        $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.telefone,
-                       c.id as cfc_id, c.nome as cfc_nome, c.cnpj as cfc_cnpj
-                FROM usuarios u 
-                LEFT JOIN cfcs c ON u.id = c.responsavel_id 
-                WHERE u.id = :id LIMIT 1";
-        
-        $user = $this->db->fetch($sql, ['id' => $userId]);
-        
+        $user = null;
+        try {
+            $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.telefone,
+                           c.id as cfc_id, c.nome as cfc_nome, c.cnpj as cfc_cnpj
+                    FROM usuarios u
+                    LEFT JOIN cfcs c ON u.id = c.responsavel_id
+                    WHERE u.id = :id LIMIT 1";
+            $user = $this->db->fetch($sql, ['id' => $userId]);
+        } catch (Exception $e) {
+            // Fallback: produção pode não ter cfcs.responsavel_id ou estrutura diferente
+            try {
+                $user = $this->db->fetch(
+                    "SELECT id, nome, email, cpf, telefone FROM usuarios WHERE id = :id LIMIT 1",
+                    ['id' => $userId]
+                );
+                if ($user) {
+                    $user['cfc_id'] = null;
+                    $user['cfc_nome'] = null;
+                    $user['cfc_cnpj'] = null;
+                }
+            } catch (Exception $e2) {
+                return null;
+            }
+        }
         if ($user) {
-            $user['ultimo_login'] = null;
+            $user['ultimo_login'] = $user['ultimo_login'] ?? null;
             $user['tipo'] = $this->getUserType($userId);
         }
-        
         return $user;
     }
     
