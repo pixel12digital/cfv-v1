@@ -9,7 +9,7 @@ if (!defined('FINANCEIRO_ENABLED') || !FINANCEIRO_ENABLED) {
     return;
 }
 
-if (!$isAdmin && ($user['tipo'] ?? '') !== 'secretaria') {
+if (empty($user) || (!$isAdmin && ($user['tipo'] ?? '') !== 'secretaria')) {
     echo '<div class="alert alert-danger">Você não tem permissão para acessar esta página.</div>';
     return;
 }
