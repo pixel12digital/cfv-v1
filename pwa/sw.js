@@ -4,7 +4,7 @@
  * Estratégias de cache otimizadas para PWA
  */
 
-const CACHE_VERSION = 'cfc-v1.0.11';
+const CACHE_VERSION = 'cfc-v1.0.12';
 const CACHE_NAME = `cfc-cache-${CACHE_VERSION}`;
 const OFFLINE_CACHE = 'cfc-offline-v1';
 
@@ -165,6 +165,12 @@ self.addEventListener('fetch', (event) => {
   
   // Ignorar requisições de outros domínios
   if (url.origin !== location.origin) {
+    return;
+  }
+
+  // NUNCA cachear o próprio SW: sempre rede para /sw.js e /pwa/sw.js (permite atualização)
+  if (url.pathname === '/sw.js' || url.pathname === '/pwa/sw.js') {
+    event.respondWith(fetch(request));
     return;
   }
   

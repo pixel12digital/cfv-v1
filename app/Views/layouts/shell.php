@@ -31,13 +31,14 @@
     <!-- PWA Manifest (usando pwa-manifest.php para white-label dinâmico) -->
     <link rel="manifest" href="<?= pwa_asset_path('pwa-manifest.php') ?>">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="<?= base_url('icons/icon-192x192.png') ?>">
+    <!-- Favicon (ícones em icons/{cfc_id}/) -->
+    <?php $iconCfcId = $_SESSION['cfc_id'] ?? 1; ?>
+    <link rel="icon" type="image/png" href="<?= base_url('icons/' . (int)$iconCfcId . '/icon-192x192.png') ?>">
     
     <!-- Apple Touch Icon (iOS) -->
-    <link rel="apple-touch-icon" href="<?= base_url('icons/icon-192x192.png') ?>">
-    <link rel="apple-touch-icon" sizes="152x152" href="<?= base_url('icons/icon-192x192.png') ?>">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('icons/icon-192x192.png') ?>">
+    <link rel="apple-touch-icon" href="<?= base_url('icons/' . (int)$iconCfcId . '/icon-192x192.png') ?>">
+    <link rel="apple-touch-icon" sizes="152x152" href="<?= base_url('icons/' . (int)$iconCfcId . '/icon-192x192.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('icons/' . (int)$iconCfcId . '/icon-192x192.png') ?>">
     
     <!-- CSS -->
     <link rel="stylesheet" href="<?= asset_url('css/tokens.css') ?>">
