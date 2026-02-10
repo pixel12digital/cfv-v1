@@ -67,6 +67,15 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
     var el = document.getElementById('categorias-despesa-page');
     var apiUrl = (el && el.getAttribute('data-api-url')) || '';
 
+    function escAttr(s) {
+        if (s == null || s === undefined) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\r/g,'').replace(/\n/g,' ');
+    }
+    function escHtml(s) {
+        if (s == null || s === undefined) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     function api(method, url, body) {
         var opt = { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
         if (body) opt.body = JSON.stringify(body);
@@ -81,8 +90,16 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
             return;
         }
         fetch(apiUrl + '?all=1', { credentials: 'same-origin' })
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                var ct = (r.headers.get('Content-Type') || '').toLowerCase();
+                if (r.status === 401 || (ct.indexOf('html') >= 0 && r.redirected)) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">Sessão expirada ou sem permissão. <a href="login">Fazer login</a>.</td></tr>';
+                    return null;
+                }
+                return r.json();
+            })
             .then(function(res) {
+                if (res == null) return;
                 var list = (res.success && res.data) ? res.data : [];
                 if (list.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: var(--spacing-lg);">Nenhuma categoria. Clique em Nova categoria.</td></tr>';
@@ -91,9 +108,16 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
                 tbody.innerHTML = list.map(function(c) {
                     var ativo = c.ativo == 1 ? 'Sim' : 'Não';
                     var ativoClass = c.ativo == 1 ? '' : 'text-muted';
-                    return '<tr><td>' + (c.nome || '') + '</td><td><code>' + (c.slug || '') + '</code></td><td>' + (c.ordem || 0) + '</td><td class="' + ativoClass + '">' + ativo + '</td><td>' +
-                        '<button type="button" class="btn btn-sm btn-outline" data-action="editar" data-id="' + c.id + '" data-nome="' + (c.nome || '').replace(/"/g, '&quot;') + '" data-slug="' + (c.slug || '').replace(/"/g, '&quot;') + '" data-ordem="' + (c.ordem || 0) + '" data-ativo="' + (c.ativo || 0) + '">Editar</button> ' +
-                        '<button type="button" class="btn btn-sm btn-outline" data-action="excluir" data-id="' + c.id + '" data-nome="' + (c.nome || '').replace(/"/g, '&quot;') + '">Excluir</button>' +
+                    var nome = escHtml(c.nome);
+                    var slug = escHtml(c.slug);
+                    var nomeAttr = escAttr(c.nome);
+                    var slugAttr = escAttr(c.slug);
+                    var id = escAttr(c.id);
+                    var ordem = escAttr(c.ordem);
+                    var ativoVal = escAttr(c.ativo);
+                    return '<tr><td>' + nome + '</td><td><code>' + slug + '</code></td><td>' + (c.ordem || 0) + '</td><td class="' + ativoClass + '">' + ativo + '</td><td>' +
+                        '<button type="button" class="btn btn-sm btn-outline" data-action="editar" data-id="' + id + '" data-nome="' + nomeAttr + '" data-slug="' + slugAttr + '" data-ordem="' + ordem + '" data-ativo="' + ativoVal + '">Editar</button> ' +
+                        '<button type="button" class="btn btn-sm btn-outline" data-action="excluir" data-id="' + id + '" data-nome="' + nomeAttr + '">Excluir</button>' +
                         '</td></tr>';
                 }).join('');
                 tbody.querySelectorAll('[data-action]').forEach(function(btn) {
@@ -121,7 +145,7 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
                 });
             })
             .catch(function(err) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">Erro ao carregar categorias. Verifique o console.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">Erro ao carregar. Se persistir, faça login novamente ou verifique o console.</td></tr>';
                 console.error('Categorias despesa:', err);
             });
     }
