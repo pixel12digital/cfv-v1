@@ -33,7 +33,7 @@ if (!isLoggedIn()) {
 }
 
 $currentUser = getCurrentUser();
-if (!in_array($currentUser['tipo'], ['admin', 'secretaria'])) {
+if (empty($currentUser) || !in_array($currentUser['tipo'] ?? '', ['admin', 'secretaria'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Sem permissão. Apenas Secretaria e Admin.']);
     exit;

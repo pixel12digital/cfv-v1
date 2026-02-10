@@ -31,16 +31,21 @@ if (!isLoggedIn()) {
 }
 
 $user = getCurrentUser();
-if (!$user || ($user['tipo'] !== 'admin' && $user['tipo'] !== 'instrutor' && $user['tipo'] !== 'secretaria')) {
+if (!$user) {
+    header('Location: ../index.php');
+    exit;
+}
+$userType = $user['tipo'] ?? null;
+if (!in_array($userType, ['admin', 'instrutor', 'secretaria'], true)) {
     header('Location: ../index.php');
     exit;
 }
 
 // Obter dados do usuário logado (já obtido acima na verificação de permissão)
-$userType = $user['tipo'] ?? 'admin';
+$userType = $userType ?: 'admin';
 $userId = $user['id'] ?? null;
-$isAdmin = ($user['tipo'] === 'admin');
-$isInstrutor = ($user['tipo'] === 'instrutor');
+$isAdmin = ($userType === 'admin');
+$isInstrutor = ($userType === 'instrutor');
 $db = Database::getInstance();
 
 // AJUSTE IDENTIDADE INSTRUTOR - Detectar se estamos em fluxo de instrutor
@@ -1629,7 +1634,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 </div>
                 
                 <!-- Alunos -->
-                <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                <?php if ($isAdmin || $userType === 'secretaria'): ?>
                 <div class="nav-item nav-group">
                     <a href="index.php?page=alunos" class="nav-link nav-toggle" data-group="alunos" title="Alunos">
                         <div class="nav-icon">
@@ -1663,7 +1668,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 <?php endif; ?>
                 
                 <!-- Acadêmico -->
-                <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                <?php if ($isAdmin || $userType === 'secretaria'): ?>
                 <div class="nav-item nav-group">
                     <a href="index.php?page=turmas-teoricas" class="nav-link nav-toggle" data-group="academico" title="Acadêmico">
                         <div class="nav-icon">
@@ -1720,7 +1725,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 <?php endif; ?>
                 
                 <!-- Provas & Exames -->
-                <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                <?php if ($isAdmin || $userType === 'secretaria'): ?>
                 <div class="nav-item nav-group">
                     <a href="index.php?page=exames&tipo=teorico" class="nav-link nav-toggle" data-group="provas-exames" title="Provas & Exames">
                         <div class="nav-icon">
@@ -1753,7 +1758,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 <?php endif; ?>
                 
                 <!-- Financeiro -->
-                <?php if (defined('FINANCEIRO_ENABLED') && FINANCEIRO_ENABLED && ($isAdmin || $user['tipo'] === 'secretaria')): ?>
+                <?php if (defined('FINANCEIRO_ENABLED') && FINANCEIRO_ENABLED && ($isAdmin || $userType === 'secretaria')): ?>
                 <div class="nav-item nav-group">
                     <a href="index.php?page=financeiro-faturas" class="nav-link nav-toggle" data-group="financeiro" title="Financeiro">
                         <div class="nav-icon">
@@ -1791,7 +1796,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 <?php endif; ?>
                 
                 <!-- Relatórios -->
-                <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                <?php if ($isAdmin || $userType === 'secretaria'): ?>
                 <div class="nav-item nav-group">
                     <a href="pages/relatorio-frequencia.php" class="nav-link nav-toggle" data-group="relatorios" title="Relatórios">
                         <div class="nav-icon">
@@ -1830,7 +1835,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                 <?php endif; ?>
                 
                 <!-- Usuários do Sistema -->
-                <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                <?php if ($isAdmin || $userType === 'secretaria'): ?>
                 <div class="nav-item">
                     <a href="index.php?page=usuarios" class="nav-link <?php echo $page === 'usuarios' ? 'active' : ''; ?>" title="Usuários do Sistema">
                         <div class="nav-icon">
@@ -1985,7 +1990,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         </div>
                         
                         <!-- Alunos -->
-                        <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                        <?php if ($isAdmin || $userType === 'secretaria'): ?>
                         <div class="mobile-nav-group" data-group="alunos">
                             <div class="mobile-nav-group-header">
                                 <i class="fas fa-graduation-cap"></i>
@@ -2015,7 +2020,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         <?php endif; ?>
                         
                         <!-- Acadêmico -->
-                        <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                        <?php if ($isAdmin || $userType === 'secretaria'): ?>
                         <div class="mobile-nav-group" data-group="academico">
                             <div class="mobile-nav-group-header">
                                 <i class="fas fa-book-reader"></i>
@@ -2066,7 +2071,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         <?php endif; ?>
                         
                         <!-- Provas & Exames -->
-                        <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                        <?php if ($isAdmin || $userType === 'secretaria'): ?>
                         <div class="mobile-nav-group" data-group="provas-exames">
                             <div class="mobile-nav-group-header">
                                 <i class="fas fa-clipboard-check"></i>
@@ -2095,7 +2100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         <?php endif; ?>
                         
                         <!-- Financeiro -->
-                        <?php if (defined('FINANCEIRO_ENABLED') && FINANCEIRO_ENABLED && ($isAdmin || $user['tipo'] === 'secretaria')): ?>
+                        <?php if (defined('FINANCEIRO_ENABLED') && FINANCEIRO_ENABLED && ($isAdmin || $userType === 'secretaria')): ?>
                         <div class="mobile-nav-group" data-group="financeiro">
                             <div class="mobile-nav-group-header">
                                 <i class="fas fa-dollar-sign"></i>
@@ -2129,7 +2134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         <?php endif; ?>
                         
                         <!-- Relatórios -->
-                        <?php if ($isAdmin || $user['tipo'] === 'secretaria'): ?>
+                        <?php if ($isAdmin || $userType === 'secretaria'): ?>
                         <div class="mobile-nav-group" data-group="relatorios">
                             <div class="mobile-nav-group-header">
                                 <i class="fas fa-chart-bar"></i>
