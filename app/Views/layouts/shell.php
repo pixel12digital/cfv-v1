@@ -143,6 +143,7 @@
                 }
 
                 $hasMultipleRoles = count($normalizedRoles) > 1;
+                $hideSelectorOnMobile = $hideSelectorOnMobile ?? false;
                 // Determinar label amigável para o papel atual
                 $currentRoleCode = strtoupper($_SESSION['active_role'] ?? $_SESSION['current_role'] ?? 'ALUNO');
                 $currentRoleLabel = $roleNameMap[$currentRoleCode] ?? $currentRoleCode;
