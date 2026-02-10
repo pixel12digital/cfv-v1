@@ -1,7 +1,8 @@
 <?php
 $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
+$apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
 ?>
-<div class="page-header">
+<div class="page-header" id="categorias-despesa-page" data-api-url="<?= $apiUrlSafe ?>">
     <div class="page-header-content" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--spacing-md);">
         <div>
             <h1>Categorias de despesa</h1>
@@ -48,7 +49,7 @@ $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
             <label class="form-label">Ordem</label>
             <input type="number" name="ordem" id="catOrdem" class="form-input" value="0" min="0">
         </div>
-        <div class="form-group" style="margin-bottom: var(--spacing-md);" id="wrapCatAtivo" style="display: none;">
+        <div class="form-group" style="margin-bottom: var(--spacing-md); display: none;" id="wrapCatAtivo">
             <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
                 <input type="checkbox" name="ativo" id="catAtivo" value="1" checked>
                 <span>Ativa (aparece no dropdown de Contas a Pagar)</span>
@@ -63,7 +64,8 @@ $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
 
 <script>
 (function() {
-    var apiUrl = <?= json_encode($apiUrl) ?>;
+    var el = document.getElementById('categorias-despesa-page');
+    var apiUrl = (el && el.getAttribute('data-api-url')) || '';
 
     function api(method, url, body) {
         var opt = { method: method, headers: { 'Content-Type': 'application/json' } };
@@ -74,6 +76,10 @@ $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
     function loadCategorias() {
         var tbody = document.getElementById('tbody-categorias');
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: var(--spacing-lg);">Carregando...</td></tr>';
+        if (!apiUrl) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">URL da API não configurada.</td></tr>';
+            return;
+        }
         fetch(apiUrl + '?all=1')
             .then(function(r) { return r.json(); })
             .then(function(res) {
@@ -113,6 +119,10 @@ $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-categorias.php');
                         }
                     });
                 });
+            })
+            .catch(function(err) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger" style="padding: var(--spacing-lg);">Erro ao carregar categorias. Verifique o console.</td></tr>';
+                console.error('Categorias despesa:', err);
             });
     }
 
