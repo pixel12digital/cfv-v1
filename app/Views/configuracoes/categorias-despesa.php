@@ -75,6 +75,10 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
         if (s == null || s === undefined) return '';
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+    function escJsStr(s) {
+        if (s == null || s === undefined) return '';
+        return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '').replace(/\n/g, '\\n');
+    }
 
     function api(method, url, body) {
         var opt = { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
@@ -135,7 +139,7 @@ $apiUrlSafe = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
                             document.getElementById('catAtivo').checked = this.getAttribute('data-ativo') == '1';
                             document.getElementById('modalCategoria').showModal();
                         } else if (action === 'excluir') {
-                            if (!confirm('Excluir a categoria “‘ + nome + '”?\n\nSó é possível se não houver contas a pagar usando ela.')) return;
+                            if (!confirm('Excluir a categoria “‘ + escJsStr(nome) + '”?\n\nSó é possível se não houver contas a pagar usando ela.')) return;
                             api('DELETE', apiUrl + '?id=' + id).then(function(res) {
                                 if (res.ok && res.json.success) loadCategorias();
                                 else alert(res.json.error || 'Erro ao excluir');
