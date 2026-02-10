@@ -491,7 +491,7 @@ class FinanceiroController extends Controller
     }
 
     /**
-     * Redireciona para Contas a Pagar no admin legado (apenas ADMIN e SECRETARIA).
+     * Contas a Pagar – template moderno (app shell). Apenas ADMIN e SECRETARIA.
      */
     public function contasAPagar()
     {
@@ -500,6 +500,10 @@ class FinanceiroController extends Controller
             redirect(base_url('dashboard'));
             return;
         }
-        redirect(base_url('admin/index.php?page=financeiro-despesas'));
+        $apiUrl = base_path('admin/api/financeiro-despesas.php');
+        $this->view('financeiro/contas-a-pagar', [
+            'pageTitle' => 'Contas a Pagar',
+            'apiUrl' => $apiUrl
+        ]);
     }
 }
