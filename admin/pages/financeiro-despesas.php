@@ -83,10 +83,11 @@ try {
     $totais_vencido = $db->fetch("SELECT COALESCE(SUM(valor), 0) as valor, COUNT(*) as qtd FROM financeiro_pagamentos WHERE status = 'pendente' AND vencimento < CURDATE() AND $where_totais", $params_totais);
     $totais_pago = $db->fetch("SELECT COALESCE(SUM(valor), 0) as valor, COUNT(*) as qtd FROM financeiro_pagamentos WHERE status = 'pago' AND $where_totais", $params_totais);
 } catch (Exception $e) {
-    $totais_aberto = ['valor' => 0, 'qtd' => 0];
-    $totais_vencido = ['valor' => 0, 'qtd' => 0];
-    $totais_pago = ['valor' => 0, 'qtd' => 0];
+    $totais_aberto = $totais_vencido = $totais_pago = ['valor' => 0, 'qtd' => 0];
 }
+$totais_aberto = is_array($totais_aberto) ? $totais_aberto : ['valor' => 0, 'qtd' => 0];
+$totais_vencido = is_array($totais_vencido) ? $totais_vencido : ['valor' => 0, 'qtd' => 0];
+$totais_pago = is_array($totais_pago) ? $totais_pago : ['valor' => 0, 'qtd' => 0];
 
 $categorias_cap = ['combustivel' => 'Combustível', 'manutencao' => 'Manutenção', 'salarios' => 'Salários', 'aluguel' => 'Aluguel', 'energia' => 'Energia', 'agua' => 'Água', 'telefone' => 'Telefone', 'internet' => 'Internet', 'outros' => 'Outros'];
 ?>
