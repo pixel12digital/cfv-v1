@@ -501,10 +501,12 @@ class FinanceiroController extends Controller
             return;
         }
         $apiUrl = base_path('admin/api/financeiro-despesas.php');
+        $categoriasApiUrl = base_path('admin/api/financeiro-categorias.php');
         $categorias = $this->getCategoriasDespesaAtivas();
         $this->view('financeiro/contas-a-pagar', [
             'pageTitle' => 'Contas a Pagar',
             'apiUrl' => $apiUrl,
+            'categoriasApiUrl' => $categoriasApiUrl,
             'categorias' => $categorias
         ]);
     }

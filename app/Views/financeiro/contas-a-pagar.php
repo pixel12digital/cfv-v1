@@ -1,5 +1,6 @@
 <?php
 $apiUrl = $apiUrl ?? base_path('admin/api/financeiro-despesas.php');
+$categoriasApiUrl = $categoriasApiUrl ?? base_path('admin/api/financeiro-categorias.php');
 $categorias = $categorias ?? [
     'combustivel' => 'Combustível', 'manutencao' => 'Manutenção', 'salarios' => 'Salários',
     'aluguel' => 'Aluguel', 'energia' => 'Energia', 'agua' => 'Água', 'telefone' => 'Telefone',
@@ -20,6 +21,9 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
             <a href="<?= htmlspecialchars($apiUrl) ?>?export=csv<?= $filtroStatus ? '&status=' . urlencode($filtroStatus) : '' ?><?= $filtroDataInicio ? '&data_inicio=' . urlencode($filtroDataInicio) : '' ?><?= $filtroDataFim ? '&data_fim=' . urlencode($filtroDataFim) : '' ?>" class="btn btn-outline" target="_blank" rel="noopener">
                 Exportar CSV
             </a>
+            <button type="button" class="btn btn-outline" id="btnGerenciarCategorias" title="Categorias usadas nas contas">
+                Categorias
+            </button>
             <button type="button" class="btn btn-primary" id="btnNovaConta">
                 Nova conta
             </button>
@@ -200,9 +204,66 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
     </div>
 </dialog>
 
+<!-- Modal Gerenciar categorias (integrado em Contas a Pagar) -->
+<dialog id="modalCategorias" style="border-radius: var(--radius-md); border: 1px solid var(--color-border, #e2e8f0); max-width: 560px; width: 95vw; padding: 0;">
+    <div style="padding: var(--spacing-lg); border-bottom: 1px solid var(--color-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+        <strong>Categorias de despesa</strong>
+        <button type="button" class="btn btn-sm btn-primary" id="btnNovaCategoria">Nova categoria</button>
+    </div>
+    <div style="padding: var(--spacing-md); max-height: 50vh; overflow: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Slug</th>
+                    <th>Ordem</th>
+                    <th>Ativa</th>
+                    <th style="width: 100px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-categorias">
+                <tr><td colspan="5" class="text-center text-muted" style="padding: var(--spacing-md);">Carregando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="padding: var(--spacing-md); border-top: 1px solid var(--color-border, #e2e8f0);">
+        <button type="button" class="btn btn-outline" id="btnCategoriasFechar">Fechar</button>
+    </div>
+</dialog>
+
+<dialog id="modalCategoriaForm" style="border-radius: var(--radius-md); border: 1px solid var(--color-border, #e2e8f0); max-width: 420px; padding: 0;">
+    <div style="padding: var(--spacing-lg); border-bottom: 1px solid var(--color-border, #e2e8f0);"><strong id="modalCategoriaTitulo">Nova categoria</strong></div>
+    <form id="formCategoria" style="padding: var(--spacing-lg);">
+        <input type="hidden" name="id" id="catId">
+        <div class="form-group" style="margin-bottom: var(--spacing-md);">
+            <label class="form-label">Nome *</label>
+            <input type="text" name="nome" id="catNome" class="form-input" required placeholder="Ex: Combustível">
+        </div>
+        <div class="form-group" style="margin-bottom: var(--spacing-md);">
+            <label class="form-label">Slug (opcional)</label>
+            <input type="text" name="slug" id="catSlug" class="form-input" placeholder="Gerado automaticamente se vazio">
+        </div>
+        <div class="form-group" style="margin-bottom: var(--spacing-md);">
+            <label class="form-label">Ordem</label>
+            <input type="number" name="ordem" id="catOrdem" class="form-input" value="0" min="0">
+        </div>
+        <div class="form-group" style="margin-bottom: var(--spacing-md);" id="wrapCatAtivo">
+            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" name="ativo" id="catAtivo" value="1" checked>
+                <span>Ativa (aparece no dropdown)</span>
+            </label>
+        </div>
+    </form>
+    <div style="padding: var(--spacing-lg); border-top: 1px solid var(--color-border, #e2e8f0); display: flex; justify-content: flex-end; gap: var(--spacing-sm);">
+        <button type="button" class="btn btn-outline" id="btnCatCancelar">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnCatSalvar">Salvar</button>
+    </div>
+</dialog>
+
 <script>
 (function() {
     var apiUrl = <?= json_encode($apiUrl) ?>;
+    var categoriasApiUrl = <?= json_encode($categoriasApiUrl ?? '') ?>;
     var categorias = <?= json_encode($categorias) ?>;
     var params = {
         status: <?= json_encode($filtroStatus) ?>,
@@ -334,6 +395,100 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
         }
         else if (action === 'excluir') { if (confirm('Excluir esta conta?\n\n' + desc)) api('DELETE', apiUrl + '?id=' + id).then(function(res) { if (res.ok && res.json.success) { loadList(); loadTotais(); } else alert(res.json.error || 'Erro'); }); }
         else if (action === 'estornar') { if (confirm('Estornar esta conta?\n\n' + desc + '\n\nEla voltará como em aberto.')) api('PUT', apiUrl + '?id=' + id, { action: 'estornar' }).then(function(res) { if (res.ok && res.json.success) { loadList(); loadTotais(); } else alert(res.json.error || 'Erro'); }); }
+    });
+
+    function updateSelectsCategorias(obj) {
+        categorias = obj || categorias;
+        var opts = '<option value="">Todas</option>';
+        for (var k in categorias) { if (categorias.hasOwnProperty(k)) opts += '<option value="' + k.replace(/"/g, '&quot;') + '">' + categorias[k].replace(/</g, '&lt;') + '</option>'; }
+        var selFiltro = document.querySelector('form#formFiltros select[name="categoria"]');
+        if (selFiltro) { var v = selFiltro.value; selFiltro.innerHTML = opts; selFiltro.value = v; }
+        var optsReq = opts.replace('<option value="">Todas</option>', '');
+        var selNova = document.querySelector('#formNova select[name="categoria"]');
+        if (selNova) { var v = selNova.value; selNova.innerHTML = optsReq; selNova.value = v || (Object.keys(categorias)[0] || ''); }
+        var selEdit = document.getElementById('editCategoria');
+        if (selEdit) { var v = selEdit.value; selEdit.innerHTML = optsReq; selEdit.value = v || (Object.keys(categorias)[0] || ''); }
+    }
+
+    function loadCategoriasModal() {
+        var tbody = document.getElementById('tbody-categorias');
+        if (!categoriasApiUrl) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">API não configurada.</td></tr>'; return; }
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Carregando...</td></tr>';
+        fetch(categoriasApiUrl + '?all=1', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                var list = (res.success && res.data) ? res.data : [];
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma categoria. Clique em Nova categoria.</td></tr>';
+                    return;
+                }
+                function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+                tbody.innerHTML = list.map(function(c) {
+                    var ativo = c.ativo == 1 ? 'Sim' : 'Não';
+                    var ativoClass = c.ativo == 1 ? '' : 'text-muted';
+                    return '<tr><td>' + esc(c.nome) + '</td><td><code>' + esc(c.slug) + '</code></td><td>' + (c.ordem || 0) + '</td><td class="' + ativoClass + '">' + ativo + '</td><td class="text-nowrap">' +
+                        '<button type="button" class="btn btn-sm btn-outline" data-cat-action="editar" data-cat-id="' + c.id + '" data-cat-nome="' + esc(c.nome) + '" data-cat-slug="' + esc(c.slug) + '" data-cat-ordem="' + (c.ordem||0) + '" data-cat-ativo="' + (c.ativo||0) + '">Editar</button> ' +
+                        '<button type="button" class="btn btn-sm btn-outline" data-cat-action="excluir" data-cat-id="' + c.id + '" data-cat-nome="' + esc(c.nome) + '">Excluir</button></td></tr>';
+                }).join('');
+                var ativas = {};
+                list.filter(function(c) { return c.ativo == 1; }).forEach(function(c) { ativas[c.slug] = c.nome; });
+                updateSelectsCategorias(ativas);
+                tbody.querySelectorAll('[data-cat-action]').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var action = this.getAttribute('data-cat-action');
+                        var id = this.getAttribute('data-cat-id');
+                        var nome = this.getAttribute('data-cat-nome') || '';
+                        if (action === 'editar') {
+                            document.getElementById('modalCategoriaTitulo').textContent = 'Editar categoria';
+                            document.getElementById('wrapCatAtivo').style.display = 'block';
+                            document.getElementById('catId').value = id;
+                            document.getElementById('catNome').value = nome;
+                            document.getElementById('catSlug').value = this.getAttribute('data-cat-slug') || '';
+                            document.getElementById('catOrdem').value = this.getAttribute('data-cat-ordem') || '0';
+                            document.getElementById('catAtivo').checked = this.getAttribute('data-cat-ativo') == '1';
+                            document.getElementById('modalCategoriaForm').showModal();
+                        } else if (action === 'excluir') {
+                            if (!confirm('Excluir a categoria “‘ + nome + '”?\n\nSó é possível se não houver contas usando ela.')) return;
+                            api('DELETE', categoriasApiUrl + '?id=' + encodeURIComponent(id)).then(function(res) {
+                                if (res.ok && res.json.success) loadCategoriasModal();
+                                else alert(res.json.error || 'Erro ao excluir');
+                            });
+                        }
+                    });
+                });
+            })
+            .catch(function() { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar. Faça login novamente se necessário.</td></tr>'; });
+    }
+
+    document.getElementById('btnGerenciarCategorias').addEventListener('click', function() {
+        document.getElementById('modalCategorias').showModal();
+        loadCategoriasModal();
+    });
+    document.getElementById('btnCategoriasFechar').addEventListener('click', function() { document.getElementById('modalCategorias').close(); });
+    document.getElementById('btnNovaCategoria').addEventListener('click', function() {
+        document.getElementById('modalCategoriaTitulo').textContent = 'Nova categoria';
+        document.getElementById('wrapCatAtivo').style.display = 'none';
+        document.getElementById('formCategoria').reset();
+        document.getElementById('catId').value = '';
+        document.getElementById('catOrdem').value = '0';
+        document.getElementById('modalCategoriaForm').showModal();
+    });
+    document.getElementById('btnCatCancelar').addEventListener('click', function() { document.getElementById('modalCategoriaForm').close(); });
+    document.getElementById('btnCatSalvar').addEventListener('click', function() {
+        var id = document.getElementById('catId').value;
+        var payload = { nome: document.getElementById('catNome').value.trim(), slug: document.getElementById('catSlug').value.trim() || undefined, ordem: parseInt(document.getElementById('catOrdem').value, 10) || 0 };
+        if (!payload.nome) { alert('Preencha o nome.'); return; }
+        if (id) { payload.id = parseInt(id, 10); payload.ativo = document.getElementById('catAtivo').checked ? 1 : 0; }
+        var method = id ? 'PUT' : 'POST';
+        var url = id ? categoriasApiUrl + '?id=' + id : categoriasApiUrl;
+        api(method, url, payload).then(function(res) {
+            if (res.ok && res.json.success) {
+                document.getElementById('modalCategoriaForm').close();
+                loadCategoriasModal();
+            } else {
+                alert(res.json.error || (id ? 'Erro ao atualizar' : 'Erro ao criar'));
+            }
+        });
     });
 
     loadTotais();
