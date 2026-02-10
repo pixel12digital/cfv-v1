@@ -600,10 +600,9 @@ class Auth {
         return $this->db->fetch($sql, ['email' => strtolower(trim($email))]);
     }
     
-    // Obter dados do usuário
+    // Obter dados do usuário (sem ultimo_login para compatibilidade com DB sem essa coluna)
     private function getUserData($userId) {
-        // Buscar dados básicos do usuário
-        $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.telefone, u.ultimo_login, 
+        $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.telefone,
                        c.id as cfc_id, c.nome as cfc_nome, c.cnpj as cfc_cnpj
                 FROM usuarios u 
                 LEFT JOIN cfcs c ON u.id = c.responsavel_id 
@@ -611,18 +610,25 @@ class Auth {
         
         $user = $this->db->fetch($sql, ['id' => $userId]);
         
-        // Adicionar tipo do usuário (compatibilidade com RBAC e sistema antigo)
         if ($user) {
+            $user['ultimo_login'] = null;
             $user['tipo'] = $this->getUserType($userId);
         }
         
         return $user;
     }
     
-    // Atualizar último login
+    // Atualizar último login (só executa se a coluna ultimo_login existir)
     private function updateLastLogin($userId) {
-        $sql = "UPDATE usuarios SET ultimo_login = NOW() WHERE id = :id";
-        $this->db->query($sql, ['id' => $userId]);
+        try {
+            $col = $this->db->fetch("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'ultimo_login' LIMIT 1");
+            if (!$col) {
+                return;
+            }
+            $this->db->query("UPDATE usuarios SET ultimo_login = NOW() WHERE id = :id", ['id' => $userId]);
+        } catch (Exception $e) {
+            // Ignorar se coluna não existir ou query falhar
+        }
     }
     
     // Verificar se IP está bloqueado

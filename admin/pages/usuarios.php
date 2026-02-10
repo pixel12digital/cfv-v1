@@ -11,28 +11,31 @@ $isSecretaria = (isset($user) && ($user['tipo'] ?? '') === 'secretaria');
 $action = $_GET['action'] ?? 'list';
 $db = Database::getInstance();
 
-// Buscar usuários se for listagem
+// Buscar usuários se for listagem (compatível com DB sem colunas tipo/ultimo_login)
 $usuarios = [];
 if ($action === 'list') {
     try {
-        // Buscar também último acesso se a coluna existir
         $usuarios = $db->fetchAll("
-            SELECT 
-                id,
-                nome,
-                email,
-                tipo,
-                ativo,
-                criado_em,
-                atualizado_em,
-                COALESCE(ultimo_login, NULL) as ultimo_acesso
-            FROM usuarios 
-            ORDER BY nome
+            SELECT id, nome, email, tipo, ativo, criado_em, atualizado_em,
+                   COALESCE(ultimo_login, NULL) as ultimo_acesso
+            FROM usuarios ORDER BY nome
         ");
     } catch (Exception $e) {
-        $usuarios = [];
-        if (LOG_ENABLED) {
-            error_log('Erro ao buscar usuários: ' . $e->getMessage());
+        try {
+            // Fallback: DB sem tipo/ultimo_login (ex.: produção com usuario_roles)
+            $usuarios = $db->fetchAll("
+                SELECT u.id, u.nome, u.email, u.ativo, u.criado_em, u.atualizado_em,
+                       NULL as ultimo_acesso,
+                       LOWER(COALESCE(ur.role, 'aluno')) as tipo
+                FROM usuarios u
+                LEFT JOIN (SELECT usuario_id, MIN(role) as role FROM usuario_roles GROUP BY usuario_id) ur ON u.id = ur.usuario_id
+                ORDER BY u.nome
+            ");
+        } catch (Exception $e2) {
+            $usuarios = [];
+            if (LOG_ENABLED) {
+                error_log('Erro ao buscar usuários: ' . $e2->getMessage());
+            }
         }
     }
 }
