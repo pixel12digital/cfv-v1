@@ -343,6 +343,8 @@ if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_domain', SESSION_COOKIE_DOMAIN);
     ini_set('session.cookie_secure', SESSION_COOKIE_SECURE);
     ini_set('session.cookie_httponly', SESSION_COOKIE_HTTPONLY);
+    ini_set('session.use_strict_mode', 1);
+    ini_set('session.cookie_samesite', 'Lax');
 }
 
 // INICIAR SESSÃO IMEDIATAMENTE após todas as definições (apenas se headers não foram enviados)
@@ -411,8 +413,11 @@ if (!headers_sent()) {
     
     // Headers específicos para produção
     if ($environment === 'production') {
-        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
         header('X-Content-Type-Options: nosniff');
+        header('X-Permitted-Cross-Domain-Policies: none');
+        header('Cross-Origin-Opener-Policy: same-origin');
+        header('Cross-Origin-Resource-Policy: same-origin');
         
         if (defined('APP_URL') && APP_URL) {
             header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://www.google.com https://www.gstatic.com https://cdn.jsdelivr.net https://kit.fontawesome.com https://unpkg.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src \'self\' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src \'self\' data: https:; connect-src \'self\' https://viacep.com.br https://cdn.jsdelivr.net https://unpkg.com; object-src \'none\'; base-uri \'self\';');
@@ -428,13 +433,6 @@ if (!headers_sent()) {
         header('X-Environment: HOMOLOG');
         header('X-Debug: ENABLED');
         header('X-Testing: TRUE');
-    } elseif ($environment === 'homolog') {
-        header('X-Environment: HOMOLOG');
-        header('X-Debug: ENABLED');
-        header('X-Testing: TRUE');
-        
-        // CSP para desenvolvimento local - TEMPORARIAMENTE DESABILITADO PARA DEBUG
-        // header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://www.google.com https://www.gstatic.com https://cdn.jsdelivr.net https://kit.fontawesome.com https://unpkg.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src \'self\' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src \'self\' data: https:; connect-src \'self\' https://viacep.com.br https://cdn.jsdelivr.net https://unpkg.com; object-src \'none\'; base-uri \'self\';');
     }
 }
 

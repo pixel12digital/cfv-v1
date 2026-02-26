@@ -46,15 +46,9 @@ class Auth {
                 return ['success' => false, 'message' => 'Login ou senha inválidos'];
             }
             
-            // Verificar se usuário está ativo (campo pode ser 'ativo' ou 'status')
-            $ativo = $usuario['ativo'] ?? null;
-            if ($ativo === null) {
-                // Se não tem campo 'ativo', verificar 'status'
-                $status = strtolower($usuario['status'] ?? '');
-                if ($status !== 'ativo') {
-                    return ['success' => false, 'message' => 'Usuário inativo. Entre em contato com o administrador'];
-                }
-            } elseif (!$ativo) {
+            // Verificar se usuário está ativo (campo é 'status' na tabela atual)
+            $status = $usuario['status'] ?? null;
+            if (!$status || $status !== 'ativo') {
                 return ['success' => false, 'message' => 'Usuário inativo. Entre em contato com o administrador'];
             }
             
@@ -576,20 +570,20 @@ class Auth {
         if (preg_match('/^[0-9]+$/', $login)) {
             $u = $this->fetchUsuarioComCfc('cpf', ['cpf' => $login]);
             if ($u) return $u;
-            $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE cpf = :cpf LIMIT 1", ['cpf' => $login]);
+            $u = $this->db->fetch("SELECT id, nome, email, cpf, status FROM usuarios WHERE cpf = :cpf LIMIT 1", ['cpf' => $login]);
             if ($u) $u['cfc_id'] = null;
             return $u;
         }
         $u = $this->fetchUsuarioComCfc('email', ['email' => strtolower($login)]);
         if ($u) return $u;
-        $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower($login)]);
+        $u = $this->db->fetch("SELECT id, nome, email, cpf, status FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower($login)]);
         if ($u) $u['cfc_id'] = null;
         return $u;
     }
     
     private function fetchUsuarioComCfc($campo, $params) {
         try {
-            $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.ativo, c.id as cfc_id FROM usuarios u 
+            $sql = "SELECT u.id, u.nome, u.email, u.cpf, u.status, c.id as cfc_id FROM usuarios u 
                     LEFT JOIN cfcs c ON u.id = c.responsavel_id WHERE u.{$campo} = :{$campo} LIMIT 1";
             $row = $this->db->fetch($sql, $params);
             if ($row) $row['cfc_id'] = $row['cfc_id'] ?? null;
@@ -603,7 +597,7 @@ class Auth {
     private function getUserByEmail($email) {
         $u = $this->fetchUsuarioComCfc('email', ['email' => strtolower(trim($email))]);
         if ($u) return $u;
-        $u = $this->db->fetch("SELECT id, nome, email, cpf, ativo FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower(trim($email))]);
+        $u = $this->db->fetch("SELECT id, nome, email, cpf, status FROM usuarios WHERE email = :email LIMIT 1", ['email' => strtolower(trim($email))]);
         if ($u) $u['cfc_id'] = null;
         return $u;
     }
@@ -703,7 +697,7 @@ class Auth {
     private function validateRememberToken($token) {
         $sql = "SELECT s.*, u.* FROM sessoes s 
                 JOIN usuarios u ON s.usuario_id = u.id 
-                WHERE s.token = :token AND s.expira_em > NOW() AND u.ativo = 1 
+                WHERE s.token = :token AND s.expira_em > NOW() AND u.status = 'ativo' 
                 LIMIT 1";
         
         $result = $this->db->fetch($sql, ['token' => $token]);

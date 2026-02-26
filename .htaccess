@@ -17,8 +17,10 @@ RewriteRule ^sw\.(js|php)$ - [L]
 # Permitir acesso direto aos assets (garantir que assets/ sempre seja servido diretamente)
 RewriteRule ^assets/ - [L]
 
-# Permitir acesso direto aos tools (scripts de diagnóstico)
-RewriteRule ^tools/ - [L]
+# BLOQUEIO: /tools/ NÃO deve ser acessível via web (contém scripts administrativos)
+# Acesso apenas via CLI. O .htaccess dentro de /tools/ também bloqueia.
+RewriteRule ^tools/ - [F,L]
+RewriteRule ^public_html/tools/ - [F,L]
 
 # Se o arquivo/pasta existe fisicamente, NÃO reescreve (servir diretamente)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -86,10 +88,40 @@ RewriteRule ^ - [L]
 </IfModule>
 
 # Proteger arquivos sensíveis
-<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|sql|conf)$">
-    Order Allow,Deny
-    Deny from all
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|sql|conf|env|p12|pfx|pem)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
+
+# Bloquear acesso direto ao deploy.php (webhook - contém shell_exec)
+<Files "deploy.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# Bloquear acesso a diretórios sensíveis
+RewriteRule ^includes/ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^logs/ - [F,L]
+RewriteRule ^storage/.*\.(p12|pfx|pem|key)$ - [F,L]
+RewriteRule ^certificados/ - [F,L]
+RewriteRule ^admin/tools/ - [F,L]
+
+# Bloquear scripts de debug/diagnóstico na raiz (informações sensíveis)
+RewriteRule ^debug_.*\.php$ - [F,L]
+
+# Impedir listagem de diretórios
+Options -Indexes
 
 # Proteger diretórios
 # COMENTADO TEMPORARIAMENTE - pode estar causando erro 500
@@ -107,11 +139,11 @@ ErrorDocument 404 /404.php
 ErrorDocument 403 /403.php
 ErrorDocument 500 /500.php
 
-# Configurações de sessão - COMENTADAS TEMPORARIAMENTE
-# php_value session.cookie_httponly 1
-# php_value session.cookie_secure 1
-# php_value session.use_strict_mode 1
-# php_value session.cookie_samesite "Strict"
+# Configurações de sessão seguras (necessário para reputação SSL/VPN scanners)
+# Nota: session.cookie_secure é gerenciado pelo config.php (true apenas em produção)
+php_value session.cookie_httponly 1
+php_value session.use_strict_mode 1
+php_value session.cookie_samesite "Lax"
 
 # Configurações de upload
 php_value upload_max_filesize 5M

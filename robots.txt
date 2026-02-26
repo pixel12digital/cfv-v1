@@ -1,0 +1,29 @@
+# ==============================================
+# robots.txt - Sistema CFC Bom Conselho
+# ==============================================
+
+User-agent: *
+
+# Permitir páginas públicas
+Allow: /
+Allow: /login.php
+Allow: /index.php
+Allow: /trabalhe-conosco.php
+Allow: /links-uteis.php
+
+# Bloquear áreas administrativas e sensíveis
+Disallow: /admin/
+Disallow: /tools/
+Disallow: /includes/
+Disallow: /config/
+Disallow: /logs/
+Disallow: /storage/
+Disallow: /certificados/
+Disallow: /public_html/tools/
+Disallow: /admin/tools/
+Disallow: /deploy.php
+Disallow: /aluno/
+Disallow: /instrutor/
+
+# Sitemap (quando disponível)
+# Sitemap: https://cfcbomconselho.com.br/sitemap.xml

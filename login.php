@@ -47,18 +47,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $aluno = null;
                 
                 // Tentar buscar por CPF (limpo) primeiro na tabela usuarios
-                $aluno = $db->fetch("SELECT * FROM usuarios WHERE cpf = ? AND tipo = 'aluno' AND ativo = 1", [$cpfLimpo]);
+                $aluno = $db->fetch("SELECT * FROM usuarios WHERE cpf = ? AND status = 'ativo'", [$cpfLimpo]);
                 error_log("[LOGIN ALUNO] Busca por CPF limpo na tabela usuarios: " . ($aluno ? "Encontrado ID " . $aluno['id'] : "Não encontrado"));
                 
                 // Se não encontrar por CPF, tentar por email na tabela usuarios
                 if (!$aluno) {
-                    $aluno = $db->fetch("SELECT * FROM usuarios WHERE email = ? AND tipo = 'aluno' AND ativo = 1", [$email]);
+                    $aluno = $db->fetch("SELECT * FROM usuarios WHERE email = ? AND status = 'ativo'", [$email]);
                     error_log("[LOGIN ALUNO] Busca por email na tabela usuarios: " . ($aluno ? "Encontrado ID " . $aluno['id'] : "Não encontrado"));
                 }
                 
                 // Se não encontrar na tabela usuarios, tentar na tabela alunos (compatibilidade com sistema antigo)
                 if (!$aluno) {
-                    $aluno = $db->fetch("SELECT * FROM alunos WHERE cpf = ? AND ativo = 1", [$cpfLimpo]);
+                    $aluno = $db->fetch("SELECT * FROM alunos WHERE cpf = ? AND status = 'ativo'", [$cpfLimpo]);
                     error_log("[LOGIN ALUNO] Busca na tabela alunos (fallback) com CPF limpo: " . ($aluno ? "Encontrado ID " . $aluno['id'] : "Não encontrado"));
                 }
                 

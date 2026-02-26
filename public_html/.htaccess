@@ -26,11 +26,11 @@ RewriteRule ^sw\.(js|php)$ - [L]
     Header set Cache-Control "public, max-age=3600"
 </FilesMatch>
 
-# 2.3) Permitir acesso direto aos tools (scripts de diagnóstico)
-RewriteRule ^tools/ - [L]
+# 2.3) BLOQUEIO: /tools/ NÃO deve ser acessível via web (contém scripts administrativos)
+RewriteRule ^tools/ - [F,L]
 
-# 2.4) Permitir acesso direto ao diagnostico.php (script de diagnóstico)
-RewriteRule ^diagnostico\.php$ - [L]
+# 2.4) BLOQUEIO: Scripts de diagnóstico não devem ser acessíveis via web
+RewriteRule ^diagnostico.*\.php$ - [F,L]
 
 # 3) Front controller (só chega aqui se não for arquivo estático)
 RewriteRule ^ index.php [L]
