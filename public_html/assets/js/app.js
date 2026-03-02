@@ -3,6 +3,24 @@
 (function() {
     'use strict';
     
+    // Função para inicializar submenu toggles
+    function initSubmenuToggles() {
+        const submenuToggles = document.querySelectorAll('[data-submenu-toggle]');
+        
+        submenuToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const wrapper = this.closest('.sidebar-menu-item-wrapper');
+                const submenu = wrapper.querySelector('.sidebar-submenu');
+                
+                if (submenu) {
+                    submenu.classList.toggle('open');
+                    this.classList.toggle('active');
+                }
+            });
+        });
+    }
+    
     // Função para inicializar o sidebar toggle
     function initSidebarToggle() {
         // Sidebar elements
@@ -79,10 +97,14 @@
     
     // Inicializar quando o DOM estiver pronto
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSidebarToggle);
+        document.addEventListener('DOMContentLoaded', function() {
+            initSidebarToggle();
+            initSubmenuToggles();
+        });
     } else {
         // DOM já está pronto
         initSidebarToggle();
+        initSubmenuToggles();
     }
     
     // Sidebar elements para uso em outros listeners (acessíveis globalmente dentro do IIFE)
