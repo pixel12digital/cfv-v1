@@ -28,7 +28,6 @@ function statusBadgeClass($status) {
 }
 ?>
 <style>
-.relatorio-print .no-print { display: none !important; }
 @media print {
     .no-print, .sidebar, .topbar, .btn { display: none !important; }
     .relatorio-print { padding: 0; }
