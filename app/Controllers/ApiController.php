@@ -232,11 +232,12 @@ class ApiController extends Controller
         // Buscar matrículas (excluir canceladas - alinhado com aba Matrículas do perfil)
         $enrollmentModel = new Enrollment();
         $lessonModel = new \App\Models\Lesson();
+        $quotaModel = new \App\Models\EnrollmentLessonQuota();
         $enrollments = $enrollmentModel->findByStudent($studentId);
         $enrollments = array_values(array_filter($enrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
         
         // Formatar resposta (incluir contador de aulas para agendamento)
-        $result = array_map(function($enr) use ($lessonModel) {
+        $result = array_map(function($enr) use ($lessonModel, $quotaModel) {
             $aulasContratadas = isset($enr['aulas_contratadas']) && $enr['aulas_contratadas'] !== null
                 ? (int)$enr['aulas_contratadas']
                 : null;
@@ -244,6 +245,11 @@ class ApiController extends Controller
             $aulasFaltantes = $aulasContratadas !== null
                 ? max(0, $aulasContratadas - $aulasAgendadas)
                 : null;
+            
+            // Carregar quotas por categoria se existirem
+            $quotas = $quotaModel->getAllQuotasWithScheduledCount($enr['id']);
+            $hasQuotas = !empty($quotas);
+            
             return [
                 'id' => (int)$enr['id'],
                 'service_name' => $enr['service_name'] ?? 'Matrícula',
@@ -251,7 +257,9 @@ class ApiController extends Controller
                 'status' => $enr['status'],
                 'aulas_contratadas' => $aulasContratadas,
                 'aulas_agendadas' => $aulasAgendadas,
-                'aulas_faltantes' => $aulasFaltantes
+                'aulas_faltantes' => $aulasFaltantes,
+                'has_quotas' => $hasQuotas,
+                'quotas' => $quotas
             ];
         }, $enrollments);
         
