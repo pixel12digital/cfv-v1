@@ -444,6 +444,8 @@ function loadEnrollments(studentId) {
                     option.dataset.aulasContratadas = enr.aulas_contratadas != null ? enr.aulas_contratadas : '';
                     option.dataset.aulasAgendadas = enr.aulas_agendadas != null ? enr.aulas_agendadas : 0;
                     option.dataset.aulasFaltantes = enr.aulas_faltantes != null ? enr.aulas_faltantes : '';
+                    option.dataset.hasQuotas = enr.has_quotas ? '1' : '0';
+                    option.dataset.quotas = enr.quotas ? JSON.stringify(enr.quotas) : '[]';
                     const status = enr.financial_status === 'bloqueado' ? '⚠️ BLOQUEADO' : '✅ Ativa';
                     option.textContent = (enr.service_name || 'Matrícula') + ' - ' + status;
                     enrollmentSelect.appendChild(option);
