@@ -41,10 +41,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('icons/' . (int)$iconCfcId . '/icon-192x192.png') ?>">
     
     <!-- CSS -->
-    <link rel="stylesheet" href="<?= asset_url('css/tokens.css') ?>">
-    <link rel="stylesheet" href="<?= asset_url('css/components.css') ?>">
-    <link rel="stylesheet" href="<?= asset_url('css/layout.css') ?>">
-    <link rel="stylesheet" href="<?= asset_url('css/utilities.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('css/tokens.css') ?>?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= asset_url('css/components.css') ?>?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= asset_url('css/layout.css') ?>?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= asset_url('css/utilities.css') ?>?v=<?= time() ?>">
     
     <?php if (isset($additionalCSS)): ?>
         <?php foreach ($additionalCSS as $css): ?>
@@ -303,7 +303,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
     <!-- JavaScript -->
-    <script src="<?= asset_url('js/app.js') ?>"></script>
+    <script src="<?= asset_url('js/app.js') ?>?v=<?= time() ?>"></script>
     
     <?php if (isset($additionalJS)): ?>
         <?php foreach ($additionalJS as $js): ?>
