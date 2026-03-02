@@ -241,17 +241,13 @@
                                     <?= $item['icon'] ?? '' ?>
                                 </span>
                                 <span class="sidebar-menu-label"><?= htmlspecialchars($item['label']) ?></span>
-                                <span class="sidebar-menu-arrow">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </span>
                             </button>
                             <div class="sidebar-submenu <?= $hasActiveSubmenu ? 'open' : '' ?>">
                                 <?php foreach ($item['submenu'] as $subitem):
                                     $isSubActive = strpos($currentPath, $subitem['path']) === 0;
                                 ?>
                                     <a href="<?= base_url($subitem['path']) ?>" class="sidebar-submenu-item <?= $isSubActive ? 'active' : '' ?>">
+                                        <span class="sidebar-submenu-bullet"></span>
                                         <span class="sidebar-submenu-label"><?= htmlspecialchars($subitem['label']) ?></span>
                                     </a>
                                 <?php endforeach; ?>

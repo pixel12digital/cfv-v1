@@ -403,21 +403,7 @@
   text-align: left;
 }
 
-.sidebar-menu-arrow {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform var(--transition-base);
-  margin-left: auto;
-}
-
-.sidebar-menu-toggle.active .sidebar-menu-arrow,
-.sidebar-submenu.open ~ .sidebar-menu-toggle .sidebar-menu-arrow {
-  transform: rotate(180deg);
-}
+/* Submenu indicator removed - using cleaner design */
 
 .sidebar-submenu {
   max-height: 0;
@@ -433,12 +419,14 @@
 .sidebar-submenu-item {
   display: flex;
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) + 24px + var(--spacing-md));
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-left: calc(var(--spacing-md) + 24px + var(--spacing-sm));
   color: var(--color-text);
   text-decoration: none;
   transition: background-color var(--transition-base);
   font-size: var(--font-size-sm);
   position: relative;
+  gap: var(--spacing-sm);
 }
 
 .sidebar-submenu-item:hover {
@@ -451,16 +439,19 @@
   font-weight: var(--font-weight-medium);
 }
 
-.sidebar-submenu-item.active::before {
-  content: '';
-  position: absolute;
-  left: calc(var(--spacing-md) + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 4px;
+.sidebar-submenu-bullet {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background-color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: background-color var(--transition-base);
+}
+
+.sidebar-submenu-item.active .sidebar-submenu-bullet {
   background-color: var(--color-primary);
+  width: 8px;
+  height: 8px;
 }
 
 .sidebar-submenu-label {
@@ -479,6 +470,32 @@
   .sidebar-menu-item {
     justify-content: center;
     padding: var(--spacing-sm);
+  }
+  
+  /* Hide submenu when sidebar is collapsed */
+  .sidebar-submenu {
+    display: none;
+  }
+  
+  /* Show submenu on hover */
+  .sidebar:hover .sidebar-submenu.open {
+    display: block;
+  }
+  
+  .sidebar:hover .sidebar-menu-label,
+  .sidebar:hover .sidebar-submenu-label,
+  .sidebar:hover .sidebar-submenu-bullet {
+    display: block;
+  }
+  
+  .sidebar:hover .sidebar-menu-item {
+    justify-content: flex-start;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .sidebar:hover .sidebar-submenu-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-left: calc(var(--spacing-md) + 24px + var(--spacing-sm));
   }
 }
 
