@@ -810,7 +810,7 @@ class AlunosController extends Controller
                     $categoryModel = new \App\Models\LessonCategory();
                     $category = $categoryModel->find((int)$categoryId);
                     if ($category) {
-                        $historyService->logEvent($id, "Aulas práticas contratadas: {$quantity}x {$category['name']} (Cat. {$category['code']})");
+                        $historyService->add($id, 'matricula', "Aulas práticas contratadas: {$quantity}x {$category['name']} (Cat. {$category['code']})");
                     }
                 }
             }
