@@ -134,6 +134,18 @@ $isAdmin = !$isAluno && !$isInstrutor; // Admin ou Secretaria
                     </div>
                 </div>
                 
+                <!-- Categoria da Aula Prática -->
+                <?php if (!$isTheoryLesson && !empty($lesson['lesson_category_code'])): ?>
+                <div>
+                    <label class="form-label">Categoria</label>
+                    <div>
+                        <span style="padding: 4px 12px; background: #dbeafe; color: #1e40af; border-radius: 4px; font-weight: 600;">
+                            <?= htmlspecialchars($lesson['lesson_category_name']) ?> (<?= htmlspecialchars($lesson['lesson_category_code']) ?>)
+                        </span>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <!-- Data e Hora -->
                 <?php 
                 $hasConsecutive = !empty($consecutiveBlock);
