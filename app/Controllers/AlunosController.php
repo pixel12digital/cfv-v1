@@ -824,6 +824,9 @@ class AlunosController extends Controller
             redirect(base_url("alunos/{$id}?tab=matricula"));
         } catch (\Exception $e) {
             $db->rollBack();
+            error_log('[CRIAR_MATRICULA] Erro: ' . $e->getMessage());
+            error_log('[CRIAR_MATRICULA] Stack trace: ' . $e->getTraceAsString());
+            error_log('[CRIAR_MATRICULA] POST data: ' . print_r($_POST, true));
             $_SESSION['error'] = 'Erro ao criar matrícula: ' . $e->getMessage();
             redirect(base_url("alunos/{$id}/matricular"));
         }
