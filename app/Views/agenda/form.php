@@ -337,6 +337,15 @@ function updateEnrollmentCounter() {
                 categoryContainer.style.display = 'block';
                 categorySelect.setAttribute('required', 'required');
                 
+                // Limpar e popular select com apenas as categorias contratadas
+                categorySelect.innerHTML = '<option value="">Selecione a categoria</option>';
+                quotasData.forEach(quota => {
+                    const option = document.createElement('option');
+                    option.value = quota.lesson_category_id;
+                    option.textContent = `${quota.category_name} (${quota.code})`;
+                    categorySelect.appendChild(option);
+                });
+                
                 // Atualizar informações de quotas
                 if (categoryQuotasInfo) {
                     let html = '<div style="padding: var(--spacing-sm); background: var(--color-bg-light); border-radius: var(--radius-sm);">';
