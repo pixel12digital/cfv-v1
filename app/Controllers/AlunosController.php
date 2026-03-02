@@ -1035,12 +1035,8 @@ class AlunosController extends Controller
             $outstandingAmount = $entryAmount > 0 ? max(0, $finalPrice - $entryAmount) : $finalPrice;
         }
         
-        // Recalcular financial_status baseado em outstanding_amount (coerência)
-        // Se outstanding_amount > 0 e não está bloqueado, deve ser 'pendente'
-        // Se outstanding_amount = 0, deve ser 'em_dia' (a menos que esteja bloqueado)
-        if ($financialStatus !== 'bloqueado') {
-            $financialStatus = $outstandingAmount > 0 ? 'pendente' : 'em_dia';
-        }
+        // Manter financial_status selecionado pelo usuário
+        // Permitir ajuste manual para casos especiais (ex: acordo, cortesia, etc.)
 
         // Verificar se pode alterar parcelamento (não pode se já gerou cobrança)
         $billingStatus = $enrollment['billing_status'] ?? 'draft';
