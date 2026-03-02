@@ -896,6 +896,19 @@ class AlunosController extends Controller
         $canEditMatriculaValues = ($currentRole === Constants::ROLE_ADMIN)
             || ($currentRole === Constants::ROLE_SECRETARIA && in_array($billingStatus, ['draft', 'ready', 'error']));
 
+        // Carregar categorias de aula prática e quotas da matrícula
+        $lessonCategories = [];
+        $enrollmentQuotas = [];
+        try {
+            $lessonCategoryModel = new \App\Models\LessonCategory();
+            $lessonCategories = $lessonCategoryModel->findActive();
+            
+            $quotaModel = new \App\Models\EnrollmentLessonQuota();
+            $enrollmentQuotas = $quotaModel->findByEnrollment($id);
+        } catch (\Exception $e) {
+            error_log("AlunosController::showMatricula() - Erro ao buscar categorias/quotas: " . $e->getMessage());
+        }
+
         $data = [
             'pageTitle' => 'Matrícula #' . $id,
             'enrollment' => $enrollment,
@@ -908,7 +921,9 @@ class AlunosController extends Controller
             'installLinkError' => $installLinkError,
             'waMessage' => $waMessage,
             'studentPhoneForWa' => $studentPhoneForWa,
-            'hasValidPhone' => $hasValidPhone
+            'hasValidPhone' => $hasValidPhone,
+            'lessonCategories' => $lessonCategories,
+            'enrollmentQuotas' => $enrollmentQuotas
         ];
         $this->view('alunos/matricula_show', $data);
     }
@@ -1144,12 +1159,38 @@ class AlunosController extends Controller
         $dataBefore = $enrollment;
         $studentId = $enrollment['student_id'];
 
-        $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
-            ? max(1, (int)$_POST['aulas_contratadas'])
-            : null;
-        if ($aulasContratadas === null) {
-            $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas. Sem este valor, agendamentos não serão permitidos.';
-            redirect(base_url("matriculas/{$id}"));
+        // Processar quotas por categoria (sistema novo) ou campo único (sistema antigo)
+        $lessonQuotas = $_POST['lesson_quotas'] ?? [];
+        $aulasContratadas = null;
+        
+        // Verificar se está usando sistema novo (quotas por categoria)
+        $hasQuotas = false;
+        if (!empty($lessonQuotas) && is_array($lessonQuotas)) {
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $hasQuotas = true;
+                    break;
+                }
+            }
+        }
+        
+        // Se não tem quotas por categoria, usar campo único (retrocompatibilidade)
+        if (!$hasQuotas) {
+            $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
+                ? max(1, (int)$_POST['aulas_contratadas'])
+                : null;
+            if ($aulasContratadas === null) {
+                $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas (campo único ou por categoria).';
+                redirect(base_url("matriculas/{$id}"));
+            }
+        } else {
+            // Calcular total de aulas contratadas somando as quotas
+            $aulasContratadas = 0;
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $aulasContratadas += (int)$quantity;
+                }
+            }
         }
 
         $data = [
@@ -1202,6 +1243,30 @@ class AlunosController extends Controller
         }
 
         $enrollmentModel->update($id, $data);
+        
+        // Atualizar quotas por categoria se foram informadas
+        if ($hasQuotas) {
+            $quotaModel = new \App\Models\EnrollmentLessonQuota();
+            
+            // Deletar quotas antigas
+            $quotaModel->deleteByEnrollment($id);
+            
+            // Criar novas quotas
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $quotaData = [
+                        'enrollment_id' => $id,
+                        'lesson_category_id' => (int)$categoryId,
+                        'quantity' => (int)$quantity
+                    ];
+                    $quotaModel->create($quotaData);
+                }
+            }
+        } else {
+            // Se mudou para sistema único, deletar quotas antigas
+            $quotaModel = new \App\Models\EnrollmentLessonQuota();
+            $quotaModel->deleteByEnrollment($id);
+        }
         
         $dataAfter = array_merge($enrollment, $data);
         $auditService->logUpdate('enrollments', $id, $dataBefore, $dataAfter);

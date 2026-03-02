@@ -64,19 +64,72 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas *</label>
-                <input 
-                    type="number" 
-                    id="aulas_contratadas" 
-                    name="aulas_contratadas" 
-                    class="form-input" 
-                    min="1" 
-                    step="1" 
-                    value="<?= !empty($enrollment['aulas_contratadas']) ? (int)$enrollment['aulas_contratadas'] : '' ?>"
-                    placeholder="Ex: 6"
-                    required
-                >
-                <small class="form-hint">Obrigatório para agendamento. Define quantas aulas práticas o aluno pode agendar. Sem este valor, agendamento não será permitido.</small>
+                <label class="form-label">Aulas práticas contratadas *</label>
+                
+                <?php 
+                $hasQuotas = !empty($enrollmentQuotas);
+                $quotasByCategory = [];
+                if ($hasQuotas) {
+                    foreach ($enrollmentQuotas as $q) {
+                        $quotasByCategory[$q['lesson_category_id']] = $q['quantity'];
+                    }
+                }
+                ?>
+                
+                <div style="margin-bottom: var(--spacing-sm);">
+                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                        <input 
+                            type="checkbox" 
+                            id="distribute_by_category" 
+                            <?= $hasQuotas ? 'checked' : '' ?>
+                            style="margin-right: var(--spacing-xs);"
+                        >
+                        <span>Distribuir por categoria (A, B, C, etc.)</span>
+                    </label>
+                </div>
+                
+                <div id="single_quota_container" style="<?= $hasQuotas ? 'display: none;' : '' ?>">
+                    <input 
+                        type="number" 
+                        id="aulas_contratadas" 
+                        name="aulas_contratadas" 
+                        class="form-input" 
+                        min="1" 
+                        step="1" 
+                        value="<?= !$hasQuotas && !empty($enrollment['aulas_contratadas']) ? (int)$enrollment['aulas_contratadas'] : '' ?>"
+                        placeholder="Ex: 6"
+                        <?= !$hasQuotas ? 'required' : '' ?>
+                    >
+                    <small class="form-hint">Total de aulas práticas contratadas.</small>
+                </div>
+                
+                <div id="category_quotas_container" style="<?= !$hasQuotas ? 'display: none;' : '' ?>">
+                    <?php if (!empty($lessonCategories)): ?>
+                        <?php foreach ($lessonCategories as $cat): ?>
+                            <div style="margin-bottom: var(--spacing-sm);">
+                                <label class="form-label" style="font-weight: normal;">
+                                    <?= htmlspecialchars($cat['name']) ?> (<?= htmlspecialchars($cat['code']) ?>)
+                                </label>
+                                <div style="display: flex; align-items: center; gap: var(--spacing-xs);">
+                                    <input 
+                                        type="number" 
+                                        name="lesson_quotas[<?= $cat['id'] ?>]" 
+                                        class="form-input lesson-quota-input" 
+                                        min="0" 
+                                        step="1" 
+                                        value="<?= $quotasByCategory[$cat['id']] ?? 0 ?>"
+                                        placeholder="0"
+                                        style="max-width: 120px;"
+                                    >
+                                    <span class="text-muted">aulas</span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <small class="form-hint">Informe quantas aulas de cada categoria o aluno contratou. Deixe em 0 as categorias não contratadas.</small>
+                    <?php else: ?>
+                        <p class="text-muted">Nenhuma categoria de aula cadastrada.</p>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="form-group">
@@ -1754,4 +1807,48 @@ function confirmarPagamentoPix() {
         }
     });
 }
+
+// Controlar toggle de distribuição por categoria
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleCheckbox = document.getElementById('distribute_by_category');
+    const singleContainer = document.getElementById('single_quota_container');
+    const categoryContainer = document.getElementById('category_quotas_container');
+    const singleInput = document.getElementById('aulas_contratadas');
+    const categoryInputs = document.querySelectorAll('.lesson-quota-input');
+    
+    if (toggleCheckbox) {
+        toggleCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                singleContainer.style.display = 'none';
+                categoryContainer.style.display = 'block';
+                singleInput.removeAttribute('required');
+            } else {
+                singleContainer.style.display = 'block';
+                categoryContainer.style.display = 'none';
+                singleInput.setAttribute('required', 'required');
+            }
+        });
+    }
+    
+    // Validação antes de submeter
+    const form = document.getElementById('enrollmentForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (toggleCheckbox && toggleCheckbox.checked) {
+                let hasAtLeastOne = false;
+                categoryInputs.forEach(function(input) {
+                    if (parseInt(input.value) > 0) {
+                        hasAtLeastOne = true;
+                    }
+                });
+                
+                if (!hasAtLeastOne) {
+                    e.preventDefault();
+                    alert('Informe pelo menos uma quota de aula por categoria.');
+                    return false;
+                }
+            }
+        });
+    }
+});
 </script>
