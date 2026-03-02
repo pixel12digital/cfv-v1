@@ -298,10 +298,15 @@ class AgendaController extends Controller
                 $allEnrollments = $enrollmentModel->findByStudent($studentId);
                 $enrollments = array_values(array_filter($allEnrollments, fn($e) => ($e['status'] ?? '') !== 'cancelada'));
                 $lessonModel = new Lesson();
+                $quotaModel = new \App\Models\EnrollmentLessonQuota();
                 foreach ($enrollments as &$e) {
                     $e['aulas_contratadas'] = isset($e['aulas_contratadas']) && $e['aulas_contratadas'] !== null ? (int)$e['aulas_contratadas'] : null;
                     $e['aulas_agendadas'] = $lessonModel->countScheduledByEnrollment($e['id']);
                     $e['aulas_faltantes'] = $e['aulas_contratadas'] !== null ? max(0, $e['aulas_contratadas'] - $e['aulas_agendadas']) : null;
+                    
+                    // Carregar quotas por categoria se existirem
+                    $e['quotas'] = $quotaModel->getAllQuotasWithScheduledCount($e['id']);
+                    $e['has_quotas'] = !empty($e['quotas']);
                 }
                 unset($e);
                 if ($enrollmentId) {
@@ -315,6 +320,15 @@ class AgendaController extends Controller
             }
         }
         
+        // Carregar categorias de aula prática
+        $lessonCategories = [];
+        try {
+            $lessonCategoryModel = new \App\Models\LessonCategory();
+            $lessonCategories = $lessonCategoryModel->findActive();
+        } catch (\Exception $e) {
+            error_log("AgendaController::novo() - Erro ao buscar categorias de aula: " . $e->getMessage());
+        }
+        
         $data = [
             'pageTitle' => 'Nova Aula',
             'students' => $allStudents, // Lista completa de alunos para o select
@@ -322,7 +336,8 @@ class AgendaController extends Controller
             'enrollment' => $enrollment,
             'enrollments' => $enrollments,
             'instructors' => $instructorModel->findAvailableForAgenda($this->cfcId), // Apenas com credencial válida
-            'vehicles' => $vehicleModel->findActive($this->cfcId)
+            'vehicles' => $vehicleModel->findActive($this->cfcId),
+            'lessonCategories' => $lessonCategories
         ];
         
         $this->view('agenda/form', $data);
@@ -344,6 +359,7 @@ class AgendaController extends Controller
         
         $studentId = $_POST['student_id'] ?? null;
         $enrollmentId = $_POST['enrollment_id'] ?? null;
+        $lessonCategoryId = $_POST['lesson_category_id'] ?? null;
         $notes = $_POST['notes'] ?? null;
         $durationMinutes = Constants::DURACAO_AULA_PADRAO;
 
@@ -400,16 +416,33 @@ class AgendaController extends Controller
 
         $lessonModel = new Lesson();
 
-        // Validar limite de aulas contratadas (se definido na matrícula)
-        $aulasContratadas = isset($enrollment['aulas_contratadas']) && $enrollment['aulas_contratadas'] !== null
-            ? (int)$enrollment['aulas_contratadas']
-            : null;
-        if ($aulasContratadas !== null) {
-            $aulasAgendadas = $lessonModel->countScheduledByEnrollment($enrollmentId);
-            $aulasFaltantes = max(0, $aulasContratadas - $aulasAgendadas);
-            if ($totalLessonCount > $aulasFaltantes) {
-                $_SESSION['error'] = "A matrícula permite agendar no máximo {$aulasFaltantes} aula(s) restante(s). Contratadas: {$aulasContratadas}, já agendadas: {$aulasAgendadas}.";
+        // Verificar se matrícula usa sistema de quotas por categoria
+        $hasQuotas = EnrollmentPolicy::hasQuotasByCategory($enrollmentId);
+        
+        if ($hasQuotas) {
+            // Sistema novo: validar por categoria
+            if (!$lessonCategoryId) {
+                $_SESSION['error'] = 'Selecione a categoria da aula prática (A, B, C, etc.).';
                 redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+            }
+            
+            $validation = EnrollmentPolicy::canScheduleCategory($enrollment, $lessonCategoryId, $totalLessonCount);
+            if (!$validation['can_schedule']) {
+                $_SESSION['error'] = 'Não é possível agendar: ' . $validation['reason'];
+                redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+            }
+        } else {
+            // Sistema antigo: validar pelo total (retrocompatibilidade)
+            $aulasContratadas = isset($enrollment['aulas_contratadas']) && $enrollment['aulas_contratadas'] !== null
+                ? (int)$enrollment['aulas_contratadas']
+                : null;
+            if ($aulasContratadas !== null) {
+                $aulasAgendadas = $lessonModel->countScheduledByEnrollment($enrollmentId);
+                $aulasFaltantes = max(0, $aulasContratadas - $aulasAgendadas);
+                if ($totalLessonCount > $aulasFaltantes) {
+                    $_SESSION['error'] = "A matrícula permite agendar no máximo {$aulasFaltantes} aula(s) restante(s). Contratadas: {$aulasContratadas}, já agendadas: {$aulasAgendadas}.";
+                    redirect(base_url('agenda/novo?' . http_build_query(['student_id' => $studentId, 'enrollment_id' => $enrollmentId])));
+                }
             }
         }
 
@@ -477,6 +510,7 @@ class AgendaController extends Controller
                     'enrollment_id' => $enrollmentId,
                     'instructor_id' => $instructorId,
                     'vehicle_id' => $vehicleId,
+                    'lesson_category_id' => $lessonCategoryId,
                     'type' => 'pratica',
                     'status' => Constants::AULA_AGENDADA,
                     'scheduled_date' => $scheduledDate,

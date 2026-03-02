@@ -31,6 +31,51 @@
                 </select>
             </div>
 
+            <?php if (!empty($lessonCategories)): ?>
+            <div class="form-group">
+                <label class="form-label">Aulas práticas contratadas *</label>
+                <div style="margin-bottom: var(--spacing-sm);">
+                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="use_quotas_by_category" style="margin-right: var(--spacing-xs);">
+                        <span>Distribuir por categoria (A, B, C, etc.)</span>
+                    </label>
+                </div>
+                
+                <div id="simple_quota_container">
+                    <input 
+                        type="number" 
+                        id="aulas_contratadas" 
+                        name="aulas_contratadas" 
+                        class="form-input" 
+                        min="1" 
+                        step="1" 
+                        placeholder="Ex: 6"
+                    >
+                    <small class="form-hint">Quantidade total de aulas práticas (todas as categorias juntas)</small>
+                </div>
+                
+                <div id="quotas_by_category_container" style="display: none;">
+                    <?php foreach ($lessonCategories as $category): ?>
+                    <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-sm);">
+                        <label style="min-width: 120px; font-weight: 500;">
+                            <?= htmlspecialchars($category['name']) ?> (<?= htmlspecialchars($category['code']) ?>)
+                        </label>
+                        <input 
+                            type="number" 
+                            name="lesson_quotas[<?= $category['id'] ?>]" 
+                            class="form-input quota-input" 
+                            min="0" 
+                            step="1" 
+                            placeholder="0"
+                            style="max-width: 100px;"
+                        >
+                        <small style="color: var(--color-text-muted);">aulas</small>
+                    </div>
+                    <?php endforeach; ?>
+                    <small class="form-hint">Informe a quantidade de aulas para cada categoria contratada</small>
+                </div>
+            </div>
+            <?php else: ?>
             <div class="form-group">
                 <label class="form-label" for="aulas_contratadas">Aulas práticas contratadas *</label>
                 <input 
@@ -43,8 +88,9 @@
                     placeholder="Ex: 6"
                     required
                 >
-                <small class="form-hint">Obrigatório para agendamento. Define quantas aulas práticas o aluno pode agendar nesta matrícula. Sem este valor, agendamento não será permitido.</small>
+                <small class="form-hint">Obrigatório para agendamento. Define quantas aulas práticas o aluno pode agendar nesta matrícula.</small>
             </div>
+            <?php endif; ?>
 
             <div class="form-group">
                 <label class="form-label" for="base_price_display">Preço Base</label>
@@ -644,10 +690,47 @@ function validateDownPayment() {
     return true;
 }
 
+// Toggle entre sistema simples e por categoria
+document.getElementById('use_quotas_by_category')?.addEventListener('change', function() {
+    const simpleContainer = document.getElementById('simple_quota_container');
+    const quotasContainer = document.getElementById('quotas_by_category_container');
+    const simpleInput = document.getElementById('aulas_contratadas');
+    const quotaInputs = document.querySelectorAll('.quota-input');
+    
+    if (this.checked) {
+        simpleContainer.style.display = 'none';
+        quotasContainer.style.display = 'block';
+        simpleInput.removeAttribute('required');
+        simpleInput.value = '';
+    } else {
+        simpleContainer.style.display = 'block';
+        quotasContainer.style.display = 'none';
+        simpleInput.setAttribute('required', 'required');
+        quotaInputs.forEach(input => input.value = '');
+    }
+});
+
 // Validar antes do submit
 document.getElementById('enrollmentForm')?.addEventListener('submit', function(e) {
     calculateFinal();
     calculateOutstanding();
+    
+    // Validar quotas por categoria se estiver usando esse sistema
+    const useQuotas = document.getElementById('use_quotas_by_category')?.checked;
+    if (useQuotas) {
+        const quotaInputs = document.querySelectorAll('.quota-input');
+        let hasQuota = false;
+        quotaInputs.forEach(input => {
+            if (input.value && parseInt(input.value) > 0) {
+                hasQuota = true;
+            }
+        });
+        if (!hasQuota) {
+            e.preventDefault();
+            alert('Informe a quantidade de aulas para pelo menos uma categoria.');
+            return false;
+        }
+    }
     
     const paymentMethod = document.getElementById('payment_method').value;
     const entryAmount = parseFloat(document.getElementById('entry_amount').value || 0);

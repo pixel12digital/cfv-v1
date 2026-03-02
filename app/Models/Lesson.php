@@ -621,6 +621,23 @@ class Lesson extends Model
         return (int)($row['count'] ?? 0);
     }
 
+    /**
+     * Conta aulas práticas agendadas/não canceladas de uma matrícula por categoria
+     */
+    public function countScheduledByEnrollmentAndCategory($enrollmentId, $categoryId)
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) as count FROM {$this->table}
+             WHERE enrollment_id = ? 
+               AND lesson_category_id = ?
+               AND type = 'pratica' 
+               AND status != 'cancelada'",
+            [$enrollmentId, $categoryId]
+        );
+        $row = $stmt->fetch();
+        return (int)($row['count'] ?? 0);
+    }
+
     public function hasInstructorConflict($instructorId, $scheduledDate, $scheduledTime, $durationMinutes, $excludeLessonId = null, $cfcId = null)
     {
         $startTime = $scheduledTime;

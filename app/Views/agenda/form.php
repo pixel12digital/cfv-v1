@@ -72,6 +72,8 @@ $pageTitle = $isEdit ? 'Remarcar Aula' : 'Nova Aula';
                                     data-aulas-contratadas="<?= $enr['aulas_contratadas'] ?? '' ?>"
                                     data-aulas-agendadas="<?= $enr['aulas_agendadas'] ?? 0 ?>"
                                     data-aulas-faltantes="<?= $enr['aulas_faltantes'] ?? '' ?>"
+                                    data-has-quotas="<?= !empty($enr['has_quotas']) ? '1' : '0' ?>"
+                                    data-quotas="<?= !empty($enr['quotas']) ? htmlspecialchars(json_encode($enr['quotas'])) : '[]' ?>"
                                     <?= ($enrollment && $enrollment['id'] == $enr['id']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($enr['service_name'] ?? 'Matrícula') ?> - 
                                     <?= $enr['financial_status'] === 'bloqueado' ? '⚠️ BLOQUEADO' : '✅ Ativa' ?>
@@ -108,6 +110,21 @@ $pageTitle = $isEdit ? 'Remarcar Aula' : 'Nova Aula';
                         </div>
                     <?php endif; ?>
                 </div>
+
+                <?php if (!$isEdit && !empty($lessonCategories)): ?>
+                <div class="form-group" id="lesson_category_container" style="display: none;">
+                    <label class="form-label">Categoria da Aula Prática *</label>
+                    <select name="lesson_category_id" id="lesson_category_id" class="form-input">
+                        <option value="">Selecione a categoria</option>
+                        <?php foreach ($lessonCategories as $category): ?>
+                        <option value="<?= $category['id'] ?>">
+                            <?= htmlspecialchars($category['name']) ?> (<?= htmlspecialchars($category['code']) ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div id="category_quotas_info" style="margin-top: var(--spacing-sm);"></div>
+                </div>
+                <?php endif; ?>
             </div>
             
             <?php if (!$isEdit): ?>
@@ -285,23 +302,65 @@ function updateEnrollmentCounter() {
     const counter = document.getElementById('enrollment_counter');
     const text = document.getElementById('counter_text');
     const warning = document.getElementById('enrollment_no_aulas_warning');
-    if (!counter || !text) return;
-    const data = getEnrollmentData();
-    if (!data) {
+    const select = document.getElementById('enrollment_id');
+    const categoryContainer = document.getElementById('lesson_category_container');
+    const categorySelect = document.getElementById('lesson_category_id');
+    const categoryQuotasInfo = document.getElementById('category_quotas_info');
+    
+    if (!select || !counter || !text || !warning) return;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (!selectedOption || !selectedOption.value) {
         counter.style.display = 'none';
-        if (warning) warning.style.display = 'none';
+        warning.style.display = 'none';
+        if (categoryContainer) categoryContainer.style.display = 'none';
         return;
     }
-    if (data.contratadas === null || data.contratadas <= 0) {
+    
+    const contratadas = selectedOption.dataset.aulasContratadas;
+    const agendadas = parseInt(selectedOption.dataset.aulasAgendadas || 0);
+    const faltantes = selectedOption.dataset.aulasFaltantes;
+    const hasQuotas = selectedOption.dataset.hasQuotas === '1' || selectedOption.dataset.hasQuotas === 'true';
+    const quotasData = selectedOption.dataset.quotas ? JSON.parse(selectedOption.dataset.quotas) : [];
+    
+    if (contratadas === '' || contratadas === null || contratadas === undefined) {
         counter.style.display = 'none';
-        if (warning) warning.style.display = 'block';
-        return;
+        warning.style.display = 'block';
+        if (categoryContainer) categoryContainer.style.display = 'none';
+    } else {
+        warning.style.display = 'none';
+        
+        if (hasQuotas && quotasData.length > 0) {
+            // Sistema novo: mostrar seletor de categoria
+            if (categoryContainer) {
+                categoryContainer.style.display = 'block';
+                categorySelect.setAttribute('required', 'required');
+                
+                // Atualizar informações de quotas
+                if (categoryQuotasInfo) {
+                    let html = '<div style="padding: var(--spacing-sm); background: var(--color-bg-light); border-radius: var(--radius-sm);">';
+                    html += '<strong>Saldo por categoria:</strong><ul style="margin: var(--spacing-xs) 0 0 0; padding-left: var(--spacing-md);">';
+                    quotasData.forEach(quota => {
+                        const remaining = parseInt(quota.remaining || 0);
+                        const color = remaining > 0 ? 'var(--color-success)' : 'var(--color-danger)';
+                        html += `<li><strong>${quota.category_name} (${quota.code}):</strong> <span style="color: ${color};">${remaining} restante(s)</span> de ${quota.contracted} contratadas</li>`;
+                    });
+                    html += '</ul></div>';
+                    categoryQuotasInfo.innerHTML = html;
+                }
+            }
+            counter.style.display = 'none';
+        } else {
+            // Sistema antigo: mostrar contador total
+            counter.style.display = 'block';
+            text.textContent = `${faltantes} restante(s) de ${contratadas} contratadas (${agendadas} já agendadas)`;
+            if (categoryContainer) {
+                categoryContainer.style.display = 'none';
+                categorySelect.removeAttribute('required');
+            }
+        }
     }
-    if (warning) warning.style.display = 'none';
-    counter.style.display = 'block';
-    const totalNesteEnvio = getTotalLessonsInBlocks();
-    const faltantesApos = data.faltantes - totalNesteEnvio;
-    text.textContent = data.contratadas + ' contratadas, ' + data.agendadas + ' já agendadas, ' + data.faltantes + ' faltantes. Neste envio: ' + totalNesteEnvio + ' (restarão ' + Math.max(0, faltantesApos) + ')';
 }
 
 function getTotalLessonsInBlocks() {

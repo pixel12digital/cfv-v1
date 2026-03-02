@@ -413,13 +413,24 @@ class AlunosController extends Controller
             $pixAccounts = [];
         }
 
+        // Buscar categorias de aula prática (com tratamento de erro caso tabela não exista ainda)
+        $lessonCategories = [];
+        try {
+            $lessonCategoryModel = new \App\Models\LessonCategory();
+            $lessonCategories = $lessonCategoryModel->findActive();
+        } catch (\Exception $e) {
+            error_log("AlunosController::matricular() - Erro ao buscar categorias de aula (tabela pode não existir ainda): " . $e->getMessage());
+            $lessonCategories = [];
+        }
+
         $data = [
             'pageTitle' => 'Nova Matrícula',
             'student' => $student,
             'services' => $services,
             'theoryCourses' => $courses,
             'theoryClasses' => $classes,
-            'pixAccounts' => $pixAccounts
+            'pixAccounts' => $pixAccounts,
+            'lessonCategories' => $lessonCategories
         ];
         $this->view('alunos/matricular', $data);
     }
@@ -626,12 +637,38 @@ class AlunosController extends Controller
             }
         }
 
-        $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
-            ? max(1, (int)$_POST['aulas_contratadas'])
-            : null;
-        if ($aulasContratadas === null) {
-            $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas. Este campo é obrigatório para permitir agendamentos.';
-            redirect(base_url("alunos/{$id}/matricular"));
+        // Processar quotas por categoria (sistema novo) ou campo único (sistema antigo)
+        $lessonQuotas = $_POST['lesson_quotas'] ?? [];
+        $aulasContratadas = null;
+        
+        // Verificar se está usando sistema novo (quotas por categoria)
+        $hasQuotas = false;
+        if (!empty($lessonQuotas) && is_array($lessonQuotas)) {
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $hasQuotas = true;
+                    break;
+                }
+            }
+        }
+        
+        // Se não tem quotas por categoria, usar campo único (retrocompatibilidade)
+        if (!$hasQuotas) {
+            $aulasContratadas = isset($_POST['aulas_contratadas']) && $_POST['aulas_contratadas'] !== ''
+                ? max(1, (int)$_POST['aulas_contratadas'])
+                : null;
+            if ($aulasContratadas === null) {
+                $_SESSION['error'] = 'Informe a quantidade de aulas práticas contratadas (campo único ou por categoria). Este campo é obrigatório para permitir agendamentos.';
+                redirect(base_url("alunos/{$id}/matricular"));
+            }
+        } else {
+            // Calcular total de aulas contratadas somando as quotas
+            $aulasContratadas = 0;
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $aulasContratadas += (int)$quantity;
+                }
+            }
         }
 
         $enrollmentData = [
@@ -754,6 +791,28 @@ class AlunosController extends Controller
                     'created_by' => $_SESSION['user_id'] ?? null
                 ];
                 $theoryEnrollmentModel->create($theoryEnrollmentData);
+            }
+        }
+
+        // Criar quotas por categoria se foram informadas
+        if ($hasQuotas) {
+            $quotaModel = new \App\Models\EnrollmentLessonQuota();
+            foreach ($lessonQuotas as $categoryId => $quantity) {
+                if (!empty($quantity) && (int)$quantity > 0) {
+                    $quotaData = [
+                        'enrollment_id' => $enrollmentId,
+                        'lesson_category_id' => (int)$categoryId,
+                        'quantity' => (int)$quantity
+                    ];
+                    $quotaModel->create($quotaData);
+                    
+                    // Registrar no histórico
+                    $categoryModel = new \App\Models\LessonCategory();
+                    $category = $categoryModel->find((int)$categoryId);
+                    if ($category) {
+                        $historyService->logEvent($id, "Aulas práticas contratadas: {$quantity}x {$category['name']} (Cat. {$category['code']})");
+                    }
+                }
             }
         }
 
