@@ -22,6 +22,7 @@ use App\Controllers\TheoryEnrollmentsController;
 use App\Controllers\TheoryAttendanceController;
 use App\Controllers\PaymentsController;
 use App\Controllers\RelatorioAulasController;
+use App\Controllers\RelatorioQuilometragemController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\RoleMiddleware;
 
@@ -88,6 +89,10 @@ $router->get('/agenda', [AgendaController::class, 'index'], [AuthMiddleware::cla
 // Relatório de Aulas por período (ADMIN/SECRETARIA - checado no controller)
 $router->get('/relatorio-aulas', [RelatorioAulasController::class, 'index'], [AuthMiddleware::class]);
 $router->get('/relatorio-aulas/exportar', [RelatorioAulasController::class, 'exportar'], [AuthMiddleware::class]);
+
+// Relatório de Quilometragem por período (ADMIN/SECRETARIA - checado no controller)
+$router->get('/relatorio-quilometragem', [RelatorioQuilometragemController::class, 'index'], [AuthMiddleware::class]);
+$router->get('/relatorio-quilometragem/exportar', [RelatorioQuilometragemController::class, 'exportar'], [AuthMiddleware::class]);
 $router->get('/agenda/novo', [AgendaController::class, 'novo'], [AuthMiddleware::class]);
 $router->post('/agenda/criar', [AgendaController::class, 'criar'], [AuthMiddleware::class]);
 $router->get('/agenda/iniciar-bloco', [AgendaController::class, 'iniciarBloco'], [AuthMiddleware::class]);
