@@ -185,10 +185,12 @@ if ($instrutorId) {
                    al.categoria_cnh as aluno_categoria_cnh,
                    al.email as aluno_email,
                    v.modelo as veiculo_modelo, v.placa as veiculo_placa,
+                   lc.code as categoria_code, lc.name as categoria_name,
                    'pratica' as tipo_aula
             FROM aulas a
             JOIN alunos al ON a.aluno_id = al.id
             LEFT JOIN veiculos v ON a.veiculo_id = v.id
+            LEFT JOIN lesson_categories lc ON a.lesson_category_id = lc.id
             WHERE a.instrutor_id = ? 
               AND a.data_aula = ?
               AND a.status != 'cancelada'
@@ -445,10 +447,12 @@ if ($instrutorId) {
                    al.categoria_cnh as aluno_categoria_cnh,
                    al.email as aluno_email,
                    v.modelo as veiculo_modelo, v.placa as veiculo_placa,
+                   lc.code as categoria_code, lc.name as categoria_name,
                    'pratica' as tipo_aula
             FROM aulas a
             JOIN alunos al ON a.aluno_id = al.id
             LEFT JOIN veiculos v ON a.veiculo_id = v.id
+            LEFT JOIN lesson_categories lc ON a.lesson_category_id = lc.id
             WHERE a.instrutor_id = ? 
               AND a.data_aula > ?
               AND a.data_aula <= DATE_ADD(?, INTERVAL 7 DAY)
