@@ -448,7 +448,7 @@ $filtroDataFim = $_GET['data_fim'] ?? '';
                             document.getElementById('catAtivo').checked = this.getAttribute('data-cat-ativo') == '1';
                             document.getElementById('modalCategoriaForm').showModal();
                         } else if (action === 'excluir') {
-                            if (!confirm('Excluir a categoria “‘ + nome + '”?\n\nSó é possível se não houver contas usando ela.')) return;
+                            if (!confirm('Excluir a categoria "' + nome + '"?\n\nSó é possível se não houver contas usando ela.')) return;
                             api('DELETE', categoriasApiUrl + '?id=' + encodeURIComponent(id)).then(function(res) {
                                 if (res.ok && res.json.success) loadCategoriasModal();
                                 else alert(res.json.error || 'Erro ao excluir');
