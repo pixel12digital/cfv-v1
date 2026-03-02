@@ -59,12 +59,18 @@ class AlunosController extends Controller
         $stateModel = new State();
         $states = $stateModel->findAll();
 
+        // Recuperar dados do formulário da sessão se houver erro de validação
+        $formData = $_SESSION['form_data'] ?? null;
+        $formErrors = $_SESSION['form_errors'] ?? [];
+        unset($_SESSION['form_data'], $_SESSION['form_errors']);
+
         $data = [
             'pageTitle' => 'Novo Aluno',
-            'student' => null,
+            'student' => $formData,
             'states' => $states,
             'currentCity' => null,
-            'currentBirthCity' => null
+            'currentBirthCity' => null,
+            'formErrors' => $formErrors
         ];
         $this->view('alunos/form', $data);
     }
@@ -85,6 +91,8 @@ class AlunosController extends Controller
         $errors = $this->validateStudentData($_POST, null);
         if (!empty($errors)) {
             $_SESSION['error'] = implode(' ', $errors);
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['form_errors'] = $errors;
             redirect(base_url('alunos/novo'));
         }
 
@@ -96,6 +104,7 @@ class AlunosController extends Controller
         $existing = $studentModel->findByCpf($this->cfcId, $data['cpf']);
         if ($existing) {
             $_SESSION['error'] = 'Já existe um aluno cadastrado com este CPF.';
+            $_SESSION['form_data'] = $_POST;
             redirect(base_url('alunos/novo'));
         }
 
@@ -285,12 +294,23 @@ class AlunosController extends Controller
             $currentBirthCity = $cityModel->findById($student['birth_city_id']);
         }
 
+        // Recuperar dados do formulário da sessão se houver erro de validação
+        $formData = $_SESSION['form_data'] ?? null;
+        $formErrors = $_SESSION['form_errors'] ?? [];
+        unset($_SESSION['form_data'], $_SESSION['form_errors']);
+
+        // Mesclar dados do formulário com dados existentes (formulário tem prioridade)
+        if ($formData) {
+            $student = array_merge($student, $formData);
+        }
+
         $data = [
             'pageTitle' => 'Editar Aluno',
             'student' => $student,
             'states' => $states,
             'currentCity' => $currentCity,
-            'currentBirthCity' => $currentBirthCity
+            'currentBirthCity' => $currentBirthCity,
+            'formErrors' => $formErrors
         ];
         $this->view('alunos/form', $data);
     }
@@ -319,6 +339,8 @@ class AlunosController extends Controller
         $errors = $this->validateStudentData($_POST, $id);
         if (!empty($errors)) {
             $_SESSION['error'] = implode(' ', $errors);
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['form_errors'] = $errors;
             redirect(base_url("alunos/{$id}/editar"));
         }
 
@@ -328,6 +350,7 @@ class AlunosController extends Controller
             $existing = $studentModel->findByCpf($this->cfcId, $cpf);
             if ($existing) {
                 $_SESSION['error'] = 'Já existe um aluno cadastrado com este CPF.';
+                $_SESSION['form_data'] = $_POST;
                 redirect(base_url("alunos/{$id}/editar"));
             }
         }

@@ -13,8 +13,19 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="<?= base_path($student ? "alunos/{$student['id']}/atualizar" : 'alunos/criar') ?>" enctype="multipart/form-data">
+        <form method="POST" action="<?= base_path($student ? "alunos/{$student['id']}/atualizar" : 'alunos/criar') ?>" enctype="multipart/form-data" id="studentForm">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+
+            <?php if (!empty($formErrors)): ?>
+            <div class="alert alert-danger" role="alert" style="margin-bottom: var(--spacing-lg, 24px);">
+                <strong>Corrija os seguintes erros:</strong>
+                <ul style="margin: var(--spacing-xs, 8px) 0 0; padding-left: var(--spacing-lg, 24px);">
+                    <?php foreach ($formErrors as $error): ?>
+                        <li><?= htmlspecialchars($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
 
             <!-- Dados Pessoais -->
             <div class="form-section">
@@ -1308,4 +1319,21 @@ initCityAutocomplete({
     currentStateUf: '<?= htmlspecialchars($student['birth_state_uf'] ?? '', ENT_QUOTES) ?>',
     fieldName: 'nascimento'
 });
+
+// Rolar para o alerta de erro quando houver erros de validação
+<?php if (!empty($formErrors)): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    const errorAlert = document.querySelector('.alert-danger');
+    if (errorAlert) {
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focar no primeiro campo com erro (se houver)
+        setTimeout(function() {
+            const firstInvalidInput = document.querySelector('input:invalid, select:invalid');
+            if (firstInvalidInput) {
+                firstInvalidInput.focus();
+            }
+        }, 500);
+    }
+});
+<?php endif; ?>
 </script>
