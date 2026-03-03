@@ -1829,6 +1829,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                         </div>
                     </a>
                     <div class="nav-submenu" id="relatorios">
+                        <a href="index.php?page=relatorio-alunos-status" class="nav-sublink <?php echo $page === 'relatorio-alunos-status' ? 'active' : ''; ?>">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Alunos por Status</span>
+                        </a>
                         <a href="pages/relatorio-frequencia.php" class="nav-sublink <?php echo ($page === 'relatorio-frequencia' || $page === 'relatorio-presencas') ? 'active' : ''; ?>">
                             <i class="fas fa-chart-bar"></i>
                             <span>Frequência Teórica</span>
@@ -2169,6 +2173,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                                 <i class="fas fa-chevron-down mobile-nav-arrow"></i>
                             </div>
                             <div class="mobile-nav-submenu">
+                                <a href="index.php?page=relatorio-alunos-status" class="mobile-nav-sublink <?php echo $page === 'relatorio-alunos-status' ? 'active' : ''; ?>">
+                                    <i class="fas fa-users-cog"></i>
+                                    <span>Alunos por Status</span>
+                                </a>
                                 <a href="pages/relatorio-frequencia.php" class="mobile-nav-sublink <?php echo ($page === 'relatorio-frequencia' || $page === 'relatorio-presencas') ? 'active' : ''; ?>">
                                     <i class="fas fa-chart-bar"></i>
                                     <span>Frequência Teórica</span>
@@ -2824,6 +2832,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'veiculos') {
                     } catch (Exception $e) {
                         $relatorio_alunos_lista = [];
                     }
+                    break;
+
+                case 'relatorio-alunos-status':
+                    // Relatório de Alunos por Status com Controle de Aulas (ADMIN/SECRETARIA)
+                    // Dados são carregados via AJAX no frontend
                     break;
 
                 // === CASES PARA TURMAS TEÓRICAS ===
