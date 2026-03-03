@@ -151,27 +151,9 @@ class RelatorioAlunosStatusController extends Controller
 
             $sql .= " ORDER BY s.name ASC";
 
-            // Debug logging
-            error_log('[RelatorioAlunosStatus] SQL: ' . $sql);
-            error_log('[RelatorioAlunosStatus] Params: ' . json_encode($params));
-            error_log('[RelatorioAlunosStatus] Filters - Status: ' . $status . ', CFC: ' . $cfcIdFilter . ', DataInicio: ' . $dataInicio . ', DataFim: ' . $dataFim);
-
-            // Diagnostic queries
-            $diagTotal = $db->query("SELECT COUNT(*) as total FROM students")->fetch(\PDO::FETCH_ASSOC);
-            $diagEnrollments = $db->query("SELECT COUNT(*) as total FROM enrollments WHERE deleted_at IS NULL")->fetch(\PDO::FETCH_ASSOC);
-            $diagEnrollmentsInPeriod = $db->prepare("SELECT COUNT(*) as total FROM enrollments WHERE deleted_at IS NULL AND created_at >= ? AND created_at <= ?");
-            $diagEnrollmentsInPeriod->execute([$dataInicio . ' 00:00:00', $dataFim . ' 23:59:59']);
-            $diagPeriod = $diagEnrollmentsInPeriod->fetch(\PDO::FETCH_ASSOC);
-            
-            error_log('[RelatorioAlunosStatus] DIAG - Total students: ' . $diagTotal['total']);
-            error_log('[RelatorioAlunosStatus] DIAG - Total enrollments: ' . $diagEnrollments['total']);
-            error_log('[RelatorioAlunosStatus] DIAG - Enrollments in period: ' . $diagPeriod['total']);
-
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
             $resultados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            
-            error_log('[RelatorioAlunosStatus] Resultados encontrados: ' . count($resultados));
 
             // Processar dados
             foreach ($resultados as $aluno) {
@@ -249,9 +231,7 @@ class RelatorioAlunosStatusController extends Controller
             'filtroStatus' => $status,
             'filtroCfc' => $cfcIdFilter,
             'filtroDataInicio' => $dataInicio,
-            'filtroDataFim' => $dataFim,
-            'debugSql' => $sql ?? '',
-            'debugParams' => $params ?? []
+            'filtroDataFim' => $dataFim
         ]);
     }
 
