@@ -143,9 +143,16 @@ class RelatorioAlunosStatusController extends Controller
 
             $sql .= " ORDER BY s.name ASC";
 
+            // Debug logging
+            error_log('[RelatorioAlunosStatus] SQL: ' . $sql);
+            error_log('[RelatorioAlunosStatus] Params: ' . json_encode($params));
+            error_log('[RelatorioAlunosStatus] Filters - Status: ' . $status . ', CFC: ' . $cfcIdFilter . ', DataInicio: ' . $dataInicio . ', DataFim: ' . $dataFim);
+
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
             $resultados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            error_log('[RelatorioAlunosStatus] Resultados encontrados: ' . count($resultados));
 
             // Processar dados
             foreach ($resultados as $aluno) {
@@ -223,7 +230,9 @@ class RelatorioAlunosStatusController extends Controller
             'filtroStatus' => $status,
             'filtroCfc' => $cfcIdFilter,
             'filtroDataInicio' => $dataInicio,
-            'filtroDataFim' => $dataFim
+            'filtroDataFim' => $dataFim,
+            'debugSql' => $sql ?? '',
+            'debugParams' => $params ?? []
         ]);
     }
 

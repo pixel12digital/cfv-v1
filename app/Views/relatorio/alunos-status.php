@@ -169,6 +169,16 @@ function getFinancialBadge($financialStatus, $bloqueado) {
         <?php endif; ?>
     </div>
     
+    <!-- DEBUG INFO (remover em produção) -->
+    <?php if (!empty($debugSql)): ?>
+    <div class="no-print" style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; font-size: 0.85rem;">
+        <strong>🔍 DEBUG - SQL Query:</strong>
+        <pre style="background: #fff; padding: 0.5rem; margin: 0.5rem 0; overflow-x: auto; border: 1px solid #ddd;"><?= htmlspecialchars($debugSql) ?></pre>
+        <strong>📊 Parâmetros:</strong>
+        <pre style="background: #fff; padding: 0.5rem; margin: 0.5rem 0; overflow-x: auto; border: 1px solid #ddd;"><?= htmlspecialchars(json_encode($debugParams, JSON_PRETTY_PRINT)) ?></pre>
+    </div>
+    <?php endif; ?>
+    
     <div class="page-header no-print" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
         <div>
             <h1>Relatório de Alunos por Status</h1>
