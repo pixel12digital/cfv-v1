@@ -126,21 +126,20 @@ class RelatorioAlunosStatusController extends Controller
                 $params[] = $cfcIdFilter;
             }
 
-            // Filter by enrollment date range - only apply if we have date filters
-            // This will exclude students without enrollments when date filter is active
+            // Filter by enrollment date range - apply to enrollments OR student creation date
             if (!empty($dataInicio) && !empty($dataFim)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at >= ?";
+                $whereConditions[] = "(e.created_at BETWEEN ? AND ? OR (e.id IS NULL AND s.created_at BETWEEN ? AND ?))";
                 $params[] = $dataInicio . ' 00:00:00';
-                $whereConditions[] = "e.created_at <= ?";
+                $params[] = $dataFim . ' 23:59:59';
+                $params[] = $dataInicio . ' 00:00:00';
                 $params[] = $dataFim . ' 23:59:59';
             } elseif (!empty($dataInicio)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at >= ?";
+                $whereConditions[] = "(e.created_at >= ? OR (e.id IS NULL AND s.created_at >= ?))";
+                $params[] = $dataInicio . ' 00:00:00';
                 $params[] = $dataInicio . ' 00:00:00';
             } elseif (!empty($dataFim)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at <= ?";
+                $whereConditions[] = "(e.created_at <= ? OR (e.id IS NULL AND s.created_at <= ?))";
+                $params[] = $dataFim . ' 23:59:59';
                 $params[] = $dataFim . ' 23:59:59';
             }
 
@@ -292,18 +291,18 @@ class RelatorioAlunosStatusController extends Controller
                 $params[] = $cfcIdFilter;
             }
             if (!empty($dataInicio) && !empty($dataFim)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at >= ?";
+                $whereConditions[] = "(e.created_at BETWEEN ? AND ? OR (e.id IS NULL AND s.created_at BETWEEN ? AND ?))";
                 $params[] = $dataInicio . ' 00:00:00';
-                $whereConditions[] = "e.created_at <= ?";
+                $params[] = $dataFim . ' 23:59:59';
+                $params[] = $dataInicio . ' 00:00:00';
                 $params[] = $dataFim . ' 23:59:59';
             } elseif (!empty($dataInicio)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at >= ?";
+                $whereConditions[] = "(e.created_at >= ? OR (e.id IS NULL AND s.created_at >= ?))";
+                $params[] = $dataInicio . ' 00:00:00';
                 $params[] = $dataInicio . ' 00:00:00';
             } elseif (!empty($dataFim)) {
-                $whereConditions[] = "e.id IS NOT NULL";
-                $whereConditions[] = "e.created_at <= ?";
+                $whereConditions[] = "(e.created_at <= ? OR (e.id IS NULL AND s.created_at <= ?))";
+                $params[] = $dataFim . ' 23:59:59';
                 $params[] = $dataFim . ' 23:59:59';
             }
             
