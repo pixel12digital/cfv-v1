@@ -58,6 +58,7 @@ class RelatorioAlunosStatusController extends Controller
         ];
 
         try {
+            // Build base query - get students first, then join enrollments
             $sql = "
                 SELECT 
                     s.id,
@@ -78,14 +79,14 @@ class RelatorioAlunosStatusController extends Controller
                     (SELECT COUNT(*) 
                      FROM lessons l 
                      WHERE l.student_id = s.id 
-                     AND l.enrollment_id = e.id 
+                     AND (e.id IS NULL OR l.enrollment_id = e.id)
                      AND l.status = 'concluida'
                     ) AS aulas_realizadas,
                     
                     (SELECT COUNT(*) 
                      FROM lessons l 
                      WHERE l.student_id = s.id 
-                     AND l.enrollment_id = e.id 
+                     AND (e.id IS NULL OR l.enrollment_id = e.id)
                      AND l.status IN ('agendada', 'em_andamento')
                      AND (l.scheduled_date > CURDATE() OR (l.scheduled_date = CURDATE() AND l.scheduled_time >= CURTIME()))
                     ) AS aulas_agendadas,
@@ -93,7 +94,7 @@ class RelatorioAlunosStatusController extends Controller
                     (SELECT COUNT(*) 
                      FROM lessons l 
                      WHERE l.student_id = s.id 
-                     AND l.enrollment_id = e.id 
+                     AND (e.id IS NULL OR l.enrollment_id = e.id)
                      AND l.status IN ('cancelada', 'no_show')
                     ) AS aulas_canceladas,
                     
@@ -104,30 +105,40 @@ class RelatorioAlunosStatusController extends Controller
                     
                 FROM students s
                 LEFT JOIN cfcs c ON s.cfc_id = c.id
-                LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'ativa' AND e.deleted_at IS NULL
-                WHERE 1=1
+                LEFT JOIN enrollments e ON e.student_id = s.id 
+                    AND e.deleted_at IS NULL
             ";
 
+            // Build WHERE clause
+            $whereConditions = [];
             $params = [];
 
+            // Filter by student status
             if (!empty($status)) {
-                $sql .= " AND s.status = ?";
+                $whereConditions[] = "s.status = ?";
                 $params[] = $status;
             }
 
+            // Filter by CFC
             if (!empty($cfcIdFilter)) {
-                $sql .= " AND s.cfc_id = ?";
+                $whereConditions[] = "s.cfc_id = ?";
                 $params[] = $cfcIdFilter;
             }
 
+            // Filter by enrollment date range
             if (!empty($dataInicio)) {
-                $sql .= " AND e.created_at >= ?";
+                $whereConditions[] = "e.created_at >= ?";
                 $params[] = $dataInicio . ' 00:00:00';
             }
-
+            
             if (!empty($dataFim)) {
-                $sql .= " AND e.created_at <= ?";
+                $whereConditions[] = "e.created_at <= ?";
                 $params[] = $dataFim . ' 23:59:59';
+            }
+
+            // Add WHERE clause if we have conditions
+            if (!empty($whereConditions)) {
+                $sql .= " WHERE " . implode(" AND ", $whereConditions);
             }
 
             $sql .= " ORDER BY s.name ASC";
@@ -250,34 +261,40 @@ class RelatorioAlunosStatusController extends Controller
                     e.aulas_contratadas,
                     e.created_at AS data_matricula,
                     
-                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND l.enrollment_id = e.id AND l.status = 'concluida') AS aulas_realizadas,
-                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND l.enrollment_id = e.id AND l.status IN ('agendada', 'em_andamento') AND (l.scheduled_date > CURDATE() OR (l.scheduled_date = CURDATE() AND l.scheduled_time >= CURTIME()))) AS aulas_agendadas,
-                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND l.enrollment_id = e.id AND l.status IN ('cancelada', 'no_show')) AS aulas_canceladas,
+                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND (e.id IS NULL OR l.enrollment_id = e.id) AND l.status = 'concluida') AS aulas_realizadas,
+                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND (e.id IS NULL OR l.enrollment_id = e.id) AND l.status IN ('agendada', 'em_andamento') AND (l.scheduled_date > CURDATE() OR (l.scheduled_date = CURDATE() AND l.scheduled_time >= CURTIME()))) AS aulas_agendadas,
+                    (SELECT COUNT(*) FROM lessons l WHERE l.student_id = s.id AND (e.id IS NULL OR l.enrollment_id = e.id) AND l.status IN ('cancelada', 'no_show')) AS aulas_canceladas,
                     (SELECT COALESCE(SUM(elq.quantity), 0) FROM enrollment_lesson_quotas elq WHERE elq.enrollment_id = e.id) AS total_quotas
                     
                 FROM students s
                 LEFT JOIN cfcs c ON s.cfc_id = c.id
-                LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'ativa' AND e.deleted_at IS NULL
-                WHERE 1=1
+                LEFT JOIN enrollments e ON e.student_id = s.id AND e.deleted_at IS NULL
             ";
 
+            $whereConditions = [];
             $params = [];
+            
             if (!empty($status)) {
-                $sql .= " AND s.status = ?";
+                $whereConditions[] = "s.status = ?";
                 $params[] = $status;
             }
             if (!empty($cfcIdFilter)) {
-                $sql .= " AND s.cfc_id = ?";
+                $whereConditions[] = "s.cfc_id = ?";
                 $params[] = $cfcIdFilter;
             }
             if (!empty($dataInicio)) {
-                $sql .= " AND e.created_at >= ?";
+                $whereConditions[] = "e.created_at >= ?";
                 $params[] = $dataInicio . ' 00:00:00';
             }
             if (!empty($dataFim)) {
-                $sql .= " AND e.created_at <= ?";
+                $whereConditions[] = "e.created_at <= ?";
                 $params[] = $dataFim . ' 23:59:59';
             }
+            
+            if (!empty($whereConditions)) {
+                $sql .= " WHERE " . implode(" AND ", $whereConditions);
+            }
+            
             $sql .= " ORDER BY s.name ASC";
 
             $stmt = $db->prepare($sql);
