@@ -9,11 +9,12 @@ $filtroDataFim = $filtroDataFim ?? '';
 
 function getStatusBadge($status) {
     $badges = [
-        'lead' => '<span class="badge bg-secondary">Lead</span>',
+        'sem_matricula' => '<span class="badge bg-secondary">Sem Matrícula</span>',
         'matriculado' => '<span class="badge bg-primary">Matriculado</span>',
         'em_andamento' => '<span class="badge bg-warning text-dark">Em Andamento</span>',
         'concluido' => '<span class="badge bg-success">Concluído</span>',
-        'cancelado' => '<span class="badge bg-danger">Cancelado</span>'
+        'cancelado' => '<span class="badge bg-danger">Cancelado</span>',
+        'lead' => '<span class="badge bg-secondary">Sem Matrícula</span>'
     ];
     return $badges[$status] ?? '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
 }
@@ -193,7 +194,7 @@ function getFinancialBadge($financialStatus, $bloqueado) {
                     <label class="form-label">Status</label>
                     <select name="status" class="form-input" style="min-width: 140px;">
                         <option value="">Todos</option>
-                        <option value="lead" <?= $filtroStatus === 'lead' ? 'selected' : '' ?>>Lead</option>
+                        <option value="sem_matricula" <?= $filtroStatus === 'sem_matricula' ? 'selected' : '' ?>>Sem Matrícula</option>
                         <option value="matriculado" <?= $filtroStatus === 'matriculado' ? 'selected' : '' ?>>Matriculado</option>
                         <option value="em_andamento" <?= $filtroStatus === 'em_andamento' ? 'selected' : '' ?>>Em Andamento</option>
                         <option value="concluido" <?= $filtroStatus === 'concluido' ? 'selected' : '' ?>>Concluído</option>

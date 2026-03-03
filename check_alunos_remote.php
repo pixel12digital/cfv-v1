@@ -22,21 +22,25 @@ try {
     }
     echo "\n";
     
-    // Verificar tabela students
+    // Verificar tabela students e distribuição por status
     echo "=== VERIFICAÇÃO DA TABELA STUDENTS ===\n";
     $stmt = $pdo->query("SELECT COUNT(*) as total FROM students");
     $totalStudents = $stmt->fetch()['total'];
     echo "📊 Total de registros na tabela 'students': $totalStudents\n";
     
     if ($totalStudents > 0) {
-        $stmt = $pdo->query("SELECT COUNT(*) as total FROM students WHERE status = 'ativo'");
-        $studentsAtivos = $stmt->fetch()['total'];
-        echo "✅ Students ativos: $studentsAtivos\n";
+        // Verificar distribuição por status
+        $stmt = $pdo->query("SELECT status, COUNT(*) as total FROM students GROUP BY status ORDER BY total DESC");
+        $statusDist = $stmt->fetchAll();
+        echo "\nDistribuição por status:\n";
+        foreach ($statusDist as $s) {
+            echo "  - {$s['status']}: {$s['total']}\n";
+        }
         
         // Verificar alguns registros
+        echo "\nAmostras de registros:\n";
         $stmt = $pdo->query("SELECT id, name, cpf, status, created_at FROM students LIMIT 5");
         $samples = $stmt->fetchAll();
-        echo "\nAmostras de registros:\n";
         foreach ($samples as $s) {
             echo "  - ID: {$s['id']}, Nome: {$s['name']}, Status: {$s['status']}\n";
         }
