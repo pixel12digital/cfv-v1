@@ -70,7 +70,7 @@ class RelatorioAlunosStatusController extends Controller
                     s.created_at AS data_cadastro,
                     c.nome AS cfc_nome,
                     e.id AS enrollment_id,
-                    e.service_name,
+                    srv.name AS service_name,
                     e.status AS enrollment_status,
                     e.financial_status,
                     e.aulas_contratadas,
@@ -107,6 +107,7 @@ class RelatorioAlunosStatusController extends Controller
                 LEFT JOIN cfcs c ON s.cfc_id = c.id
                 LEFT JOIN enrollments e ON e.student_id = s.id 
                     AND e.deleted_at IS NULL
+                LEFT JOIN services srv ON e.service_id = srv.id
             ";
 
             // Build WHERE clause
@@ -282,7 +283,7 @@ class RelatorioAlunosStatusController extends Controller
                     s.created_at AS data_cadastro,
                     c.nome AS cfc_nome,
                     e.id AS enrollment_id,
-                    e.service_name,
+                    srv.name AS service_name,
                     e.status AS enrollment_status,
                     e.financial_status,
                     e.aulas_contratadas,
@@ -296,6 +297,7 @@ class RelatorioAlunosStatusController extends Controller
                 FROM students s
                 LEFT JOIN cfcs c ON s.cfc_id = c.id
                 LEFT JOIN enrollments e ON e.student_id = s.id AND e.deleted_at IS NULL
+                LEFT JOIN services srv ON e.service_id = srv.id
             ";
 
             $whereConditions = [];
