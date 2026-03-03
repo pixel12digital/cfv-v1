@@ -33,29 +33,106 @@ function getFinancialBadge($financialStatus, $bloqueado) {
 
 <style>
 @media print {
-    .no-print { display: none !important; }
+    .no-print, .sidebar, .topbar, .btn { display: none !important; }
+    .relatorio-print { padding: 0; margin: 0; }
     body { margin: 0; padding: 20px; }
+    
+    .print-header {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #333;
+    }
+    
+    .print-header-logo {
+        max-height: 60px;
+        max-width: 150px;
+    }
+    
+    .print-header-info {
+        text-align: right;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+    
+    .print-header-info h2 {
+        margin: 0 0 5px 0;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .print-title {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 16px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .print-period {
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .print-totals {
+        display: flex !important;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 5px;
+        font-size: 11px;
+    }
+    
+    .print-totals span {
+        font-weight: bold;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+    }
+    
+    .table th {
+        background: #333;
+        color: white;
+        padding: 8px 5px;
+        text-align: left;
+        font-weight: bold;
+        border: 1px solid #333;
+    }
+    
+    .table td {
+        padding: 6px 5px;
+        border: 1px solid #ddd;
+    }
+    
+    .table tbody tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+    
+    .badge {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: bold;
+    }
 }
-.stats-card {
-    padding: 1.25rem;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
+
+.print-header,
+.print-footer {
+    display: none;
 }
-.stats-number {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-.stats-label {
-    font-size: 0.875rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
+
 .progress-bar-custom {
-    height: 20px;
+    height: 18px;
     border-radius: 4px;
     background: #e9ecef;
     overflow: hidden;
@@ -68,37 +145,52 @@ function getFinancialBadge($financialStatus, $bloqueado) {
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 </style>
 
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-users-cog me-2"></i>Relatório de Alunos por Status
-        </h1>
+<div class="relatorio-print">
+    <!-- Cabeçalho para Impressão -->
+    <div class="print-header">
         <div>
-            <a href="<?= base_url('relatorio-alunos-status/exportar?' . http_build_query($_GET)) ?>" class="btn btn-success me-2">
-                <i class="fas fa-file-csv me-1"></i>Exportar CSV
+            <img src="<?= base_url('configuracoes/cfc/logo') ?>" alt="Logo CFC" class="print-header-logo" onerror="this.style.display='none'">
+        </div>
+        <div class="print-header-info">
+            <h2>CFC</h2>
+        </div>
+    </div>
+    
+    <div class="print-title">Relatório de Alunos por Status</div>
+    <div class="print-period">
+        <?php if ($filtroStatus): ?>Status: <?= ucfirst($filtroStatus) ?><?php endif; ?>
+        <?php if ($filtroDataInicio && $filtroDataFim): ?>
+            | Período: <?= date('d/m/Y', strtotime($filtroDataInicio)) ?> a <?= date('d/m/Y', strtotime($filtroDataFim)) ?>
+        <?php endif; ?>
+    </div>
+    
+    <div class="page-header no-print" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+        <div>
+            <h1>Relatório de Alunos por Status</h1>
+            <p class="text-muted">Controle de aulas contratadas, realizadas, agendadas e restantes por aluno.</p>
+        </div>
+        <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+            <a href="<?= base_url('relatorio-alunos-status/exportar?' . http_build_query($_GET)) ?>" class="btn btn-outline" target="_blank" rel="noopener">
+                Exportar CSV
             </a>
             <button type="button" class="btn btn-primary" onclick="window.print();">
-                <i class="fas fa-print me-1"></i>Imprimir
+                Imprimir
             </button>
         </div>
     </div>
 
     <!-- Filtros -->
-    <div class="card mb-4 no-print">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h5>
-        </div>
+    <div class="card no-print" style="margin-bottom: var(--spacing-lg);">
         <div class="card-body">
-            <form method="GET" action="<?= base_url('relatorio-alunos-status') ?>" class="row g-3">
-                <div class="col-md-3">
-                    <label for="status" class="form-label">Status do Aluno</label>
-                    <select class="form-select" id="status" name="status">
+            <form method="GET" action="<?= base_url('relatorio-alunos-status') ?>" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--spacing-md); align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input" style="min-width: 140px;">
                         <option value="">Todos</option>
                         <option value="lead" <?= $filtroStatus === 'lead' ? 'selected' : '' ?>>Lead</option>
                         <option value="matriculado" <?= $filtroStatus === 'matriculado' ? 'selected' : '' ?>>Matriculado</option>
@@ -108,9 +200,9 @@ function getFinancialBadge($financialStatus, $bloqueado) {
                     </select>
                 </div>
                 
-                <div class="col-md-3">
-                    <label for="cfc_id" class="form-label">Unidade/CFC</label>
-                    <select class="form-select" id="cfc_id" name="cfc_id">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Unidade/CFC</label>
+                    <select name="cfc_id" class="form-input" style="min-width: 140px;">
                         <option value="">Todas</option>
                         <?php foreach ($cfcs as $cfc): ?>
                             <option value="<?= $cfc['id'] ?>" <?= $filtroCfc == $cfc['id'] ? 'selected' : '' ?>>
@@ -120,80 +212,47 @@ function getFinancialBadge($financialStatus, $bloqueado) {
                     </select>
                 </div>
                 
-                <div class="col-md-2">
-                    <label for="data_inicio" class="form-label">Data Matrícula Início</label>
-                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" value="<?= htmlspecialchars($filtroDataInicio) ?>">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" name="data_inicio" class="form-input" value="<?= htmlspecialchars($filtroDataInicio) ?>">
                 </div>
                 
-                <div class="col-md-2">
-                    <label for="data_fim" class="form-label">Data Matrícula Fim</label>
-                    <input type="date" class="form-control" id="data_fim" name="data_fim" value="<?= htmlspecialchars($filtroDataFim) ?>">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" name="data_fim" class="form-input" value="<?= htmlspecialchars($filtroDataFim) ?>">
                 </div>
                 
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-1"></i>Filtrar
-                    </button>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Estatísticas -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #e3f2fd;">
-                <div class="stats-number text-primary"><?= $stats['total_alunos'] ?></div>
-                <div class="stats-label">Total</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #fff3e0;">
-                <div class="stats-number text-warning"><?= $stats['em_andamento'] ?></div>
-                <div class="stats-label">Em Andamento</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #e8f5e8;">
-                <div class="stats-number text-success"><?= $stats['concluido'] ?></div>
-                <div class="stats-label">Concluídos</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #f3e5f5;">
-                <div class="stats-number text-info"><?= $stats['matriculado'] ?></div>
-                <div class="stats-label">Matriculados</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #ffebee;">
-                <div class="stats-number text-danger"><?= $stats['bloqueados'] ?></div>
-                <div class="stats-label">Bloqueados</div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stats-card" style="background: #fce4ec;">
-                <div class="stats-number text-secondary"><?= $stats['cancelado'] ?></div>
-                <div class="stats-label">Cancelados</div>
-            </div>
-        </div>
+    <!-- Totais -->
+    <div class="print-totals" style="display: flex; flex-wrap: wrap; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--cfc-surface-muted, #f3f4f6); border-radius: var(--radius-md);">
+        <span><strong>Total:</strong> <span class="badge badge-secondary"><?= $stats['total_alunos'] ?></span></span>
+        <span><strong>Em Andamento:</strong> <span class="badge badge-warning"><?= $stats['em_andamento'] ?></span></span>
+        <span><strong>Concluídos:</strong> <span class="badge badge-success"><?= $stats['concluido'] ?></span></span>
+        <span><strong>Matriculados:</strong> <span class="badge badge-info"><?= $stats['matriculado'] ?></span></span>
+        <span><strong>Bloqueados:</strong> <span class="badge badge-danger"><?= $stats['bloqueados'] ?></span></span>
+        <span><strong>Cancelados:</strong> <span class="badge badge-secondary"><?= $stats['cancelado'] ?></span></span>
     </div>
 
     <!-- Tabela -->
     <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Listagem de Alunos (<?= count($alunos) ?>)</h5>
-        </div>
-        <div class="card-body p-0">
+        <div class="card-body" style="padding: 0;">
+            <div style="padding: var(--spacing-md); border-bottom: 1px solid var(--cfc-border-subtle, #e5e7eb);">
+                <strong>Listagem (<?= count($alunos) ?> aluno(s))</strong>
+            </div>
             <?php if (empty($alunos)): ?>
-                <div class="p-4 text-center text-muted">
-                    <i class="fas fa-inbox fa-2x mb-2"></i>
-                    <p class="mb-0">Nenhum aluno encontrado com os filtros aplicados.</p>
+                <div style="padding: var(--spacing-xl); text-align: center; color: var(--gray-500);">
+                    Nenhum aluno encontrado com os filtros aplicados.
                 </div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-light">
+                <div style="overflow-x: auto;">
+                    <table class="table" style="margin: 0; font-size: 0.9rem;">
+                        <thead>
                             <tr>
                                 <th>Nome</th>
                                 <th>CPF</th>
@@ -257,6 +316,14 @@ function getFinancialBadge($financialStatus, $bloqueado) {
                     </table>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Rodapé para Impressão -->
+    <div class="print-footer">
+        <div class="print-footer-content">
+            <div>Gerado em: <?= date('d/m/Y H:i:s') ?></div>
+            <div>Relatório de Alunos por Status</div>
         </div>
     </div>
 </div>
