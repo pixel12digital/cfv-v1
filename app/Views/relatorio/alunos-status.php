@@ -176,6 +176,10 @@ function getFinancialBadge($financialStatus, $bloqueado) {
         <pre style="background: #fff; padding: 0.5rem; margin: 0.5rem 0; overflow-x: auto; border: 1px solid #ddd;"><?= htmlspecialchars($debugSql) ?></pre>
         <strong>📊 Parâmetros:</strong>
         <pre style="background: #fff; padding: 0.5rem; margin: 0.5rem 0; overflow-x: auto; border: 1px solid #ddd;"><?= htmlspecialchars(json_encode($debugParams, JSON_PRETTY_PRINT)) ?></pre>
+        <div style="margin-top: 1rem; padding: 0.5rem; background: #e7f3ff; border: 1px solid #2196F3; border-radius: 4px;">
+            <strong>💡 Dica:</strong> Verifique os logs do servidor em <code>/var/log/</code> ou erro do PHP para ver estatísticas do banco de dados.
+            <br>Se não houver matrículas no período selecionado, tente remover os filtros de data ou ampliar o período.
+        </div>
     </div>
     <?php endif; ?>
     
