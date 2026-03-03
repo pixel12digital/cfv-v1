@@ -125,13 +125,20 @@ class RelatorioAlunosStatusController extends Controller
                 $params[] = $cfcIdFilter;
             }
 
-            // Filter by enrollment date range
-            if (!empty($dataInicio)) {
+            // Filter by enrollment date range - only apply if we have date filters
+            // This will exclude students without enrollments when date filter is active
+            if (!empty($dataInicio) && !empty($dataFim)) {
+                $whereConditions[] = "e.id IS NOT NULL";
                 $whereConditions[] = "e.created_at >= ?";
                 $params[] = $dataInicio . ' 00:00:00';
-            }
-            
-            if (!empty($dataFim)) {
+                $whereConditions[] = "e.created_at <= ?";
+                $params[] = $dataFim . ' 23:59:59';
+            } elseif (!empty($dataInicio)) {
+                $whereConditions[] = "e.id IS NOT NULL";
+                $whereConditions[] = "e.created_at >= ?";
+                $params[] = $dataInicio . ' 00:00:00';
+            } elseif (!empty($dataFim)) {
+                $whereConditions[] = "e.id IS NOT NULL";
                 $whereConditions[] = "e.created_at <= ?";
                 $params[] = $dataFim . ' 23:59:59';
             }
@@ -291,11 +298,18 @@ class RelatorioAlunosStatusController extends Controller
                 $whereConditions[] = "s.cfc_id = ?";
                 $params[] = $cfcIdFilter;
             }
-            if (!empty($dataInicio)) {
+            if (!empty($dataInicio) && !empty($dataFim)) {
+                $whereConditions[] = "e.id IS NOT NULL";
                 $whereConditions[] = "e.created_at >= ?";
                 $params[] = $dataInicio . ' 00:00:00';
-            }
-            if (!empty($dataFim)) {
+                $whereConditions[] = "e.created_at <= ?";
+                $params[] = $dataFim . ' 23:59:59';
+            } elseif (!empty($dataInicio)) {
+                $whereConditions[] = "e.id IS NOT NULL";
+                $whereConditions[] = "e.created_at >= ?";
+                $params[] = $dataInicio . ' 00:00:00';
+            } elseif (!empty($dataFim)) {
+                $whereConditions[] = "e.id IS NOT NULL";
                 $whereConditions[] = "e.created_at <= ?";
                 $params[] = $dataFim . ' 23:59:59';
             }
