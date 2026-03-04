@@ -25,80 +25,88 @@ class RelatorioPresencaTeoricaController extends Controller
 
     public function index()
     {
-        $role = $_SESSION['active_role'] ?? $_SESSION['current_role'] ?? null;
-        if (!in_array($role, ['ADMIN', 'SECRETARIA'], true)) {
-            http_response_code(403);
-            echo 'Acesso negado. Apenas administradores e secretárias podem acessar o Relatório de Presença Teórica.';
-            return;
-        }
-
-        $classModel = new TheoryClass();
-
-        // Filtros
-        $classId = isset($_GET['class_id']) && $_GET['class_id'] !== '' ? (int)$_GET['class_id'] : null;
-        $studentId = isset($_GET['student_id']) && $_GET['student_id'] !== '' ? (int)$_GET['student_id'] : null;
-        $disciplineId = isset($_GET['discipline_id']) && $_GET['discipline_id'] !== '' ? (int)$_GET['discipline_id'] : null;
-        $startDate = $_GET['start_date'] ?? null;
-        $endDate = $_GET['end_date'] ?? null;
-
-        // Buscar todas as turmas para o seletor
-        $allClasses = $classModel->findByCfc($this->cfcId);
-
-        // Dados da turma selecionada
-        $selectedClass = null;
-        $students = [];
-        $disciplines = [];
-        $attendanceRecords = [];
-        $totals = [
-            'total_sessions' => 0,
-            'total_presences' => 0,
-            'total_absences' => 0,
-            'total_justified' => 0,
-            'total_makeup' => 0,
-            'attendance_rate' => 0
-        ];
-        $studentTotals = [];
-
-        if ($classId) {
-            $selectedClass = $classModel->findWithDetails($classId);
-            
-            // Validar que a turma pertence ao CFC
-            if ($selectedClass && $selectedClass['cfc_id'] == $this->cfcId) {
-                // Buscar disciplinas da turma
-                $disciplines = $this->getDisciplinesByClass($classId);
-                
-                // Buscar alunos matriculados
-                $students = $this->getStudentsByClass($classId);
-                
-                // Buscar registros de presença
-                $attendanceRecords = $this->getAttendanceRecords($classId, $studentId, $disciplineId, $startDate, $endDate);
-                
-                // Calcular totais por aluno
-                $studentTotals = $this->calculateStudentTotals($classId, $studentId, $startDate, $endDate);
-                
-                // Calcular totais gerais
-                $totals = $this->calculateGeneralTotals($attendanceRecords, $studentTotals);
-            } else {
-                $selectedClass = null;
+        try {
+            $role = $_SESSION['active_role'] ?? $_SESSION['current_role'] ?? null;
+            if (!in_array($role, ['ADMIN', 'SECRETARIA'], true)) {
+                http_response_code(403);
+                echo 'Acesso negado. Apenas administradores e secretárias podem acessar o Relatório de Presença Teórica.';
+                return;
             }
-        }
 
-        $pageTitle = 'Relatório de Presença Teórica';
-        $this->view('relatorio/presenca-teorica', [
-            'pageTitle' => $pageTitle,
-            'allClasses' => $allClasses,
-            'selectedClass' => $selectedClass,
-            'students' => $students,
-            'disciplines' => $disciplines,
-            'attendanceRecords' => $attendanceRecords,
-            'studentTotals' => $studentTotals,
-            'totals' => $totals,
-            'classId' => $classId,
-            'studentId' => $studentId,
-            'disciplineId' => $disciplineId,
-            'startDate' => $startDate,
-            'endDate' => $endDate
-        ]);
+            $classModel = new TheoryClass();
+
+            // Filtros
+            $classId = isset($_GET['class_id']) && $_GET['class_id'] !== '' ? (int)$_GET['class_id'] : null;
+            $studentId = isset($_GET['student_id']) && $_GET['student_id'] !== '' ? (int)$_GET['student_id'] : null;
+            $disciplineId = isset($_GET['discipline_id']) && $_GET['discipline_id'] !== '' ? (int)$_GET['discipline_id'] : null;
+            $startDate = $_GET['start_date'] ?? null;
+            $endDate = $_GET['end_date'] ?? null;
+
+            // Buscar todas as turmas para o seletor
+            $allClasses = $classModel->findByCfc($this->cfcId);
+
+            // Dados da turma selecionada
+            $selectedClass = null;
+            $students = [];
+            $disciplines = [];
+            $attendanceRecords = [];
+            $totals = [
+                'total_sessions' => 0,
+                'total_presences' => 0,
+                'total_absences' => 0,
+                'total_justified' => 0,
+                'total_makeup' => 0,
+                'attendance_rate' => 0
+            ];
+            $studentTotals = [];
+
+            if ($classId) {
+                $selectedClass = $classModel->findWithDetails($classId);
+                
+                // Validar que a turma pertence ao CFC
+                if ($selectedClass && $selectedClass['cfc_id'] == $this->cfcId) {
+                    // Buscar disciplinas da turma
+                    $disciplines = $this->getDisciplinesByClass($classId);
+                    
+                    // Buscar alunos matriculados
+                    $students = $this->getStudentsByClass($classId);
+                    
+                    // Buscar registros de presença
+                    $attendanceRecords = $this->getAttendanceRecords($classId, $studentId, $disciplineId, $startDate, $endDate);
+                    
+                    // Calcular totais por aluno
+                    $studentTotals = $this->calculateStudentTotals($classId, $studentId, $startDate, $endDate);
+                    
+                    // Calcular totais gerais
+                    $totals = $this->calculateGeneralTotals($attendanceRecords, $studentTotals);
+                } else {
+                    $selectedClass = null;
+                }
+            }
+
+            $pageTitle = 'Relatório de Presença Teórica';
+            $this->view('relatorio/presenca-teorica', [
+                'pageTitle' => $pageTitle,
+                'allClasses' => $allClasses,
+                'selectedClass' => $selectedClass,
+                'students' => $students,
+                'disciplines' => $disciplines,
+                'attendanceRecords' => $attendanceRecords,
+                'studentTotals' => $studentTotals,
+                'totals' => $totals,
+                'classId' => $classId,
+                'studentId' => $studentId,
+                'disciplineId' => $disciplineId,
+                'startDate' => $startDate,
+                'endDate' => $endDate
+            ]);
+        } catch (\Exception $e) {
+            error_log("Erro no RelatorioPresencaTeoricaController::index: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            http_response_code(500);
+            echo "Erro ao conectar ao banco de dados. Por favor, tente novamente mais tarde.<br>";
+            echo "Detalhes do erro: " . htmlspecialchars($e->getMessage());
+        }
     }
 
     /**
