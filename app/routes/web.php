@@ -25,6 +25,7 @@ use App\Controllers\RelatorioAlunosStatusController;
 use App\Controllers\RelatorioAulasController;
 use App\Controllers\RelatorioQuilometragemController;
 use App\Controllers\RelatorioTransacoesController;
+use App\Controllers\RelatorioTurmasTeoricasController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\RoleMiddleware;
 
@@ -103,6 +104,10 @@ $router->get('/relatorio-quilometragem/exportar', [RelatorioQuilometragemControl
 // Relatório de Transações Financeiras por período (ADMIN/SECRETARIA - checado no controller)
 $router->get('/relatorio-transacoes', [RelatorioTransacoesController::class, 'index'], [AuthMiddleware::class]);
 $router->get('/relatorio-transacoes/exportar', [RelatorioTransacoesController::class, 'exportar'], [AuthMiddleware::class]);
+
+// Relatório de Turmas Teóricas (ADMIN/SECRETARIA - checado no controller)
+$router->get('/relatorio-turmas-teoricas', [RelatorioTurmasTeoricasController::class, 'index'], [AuthMiddleware::class]);
+$router->get('/relatorio-turmas-teoricas/exportar', [RelatorioTurmasTeoricasController::class, 'exportar'], [AuthMiddleware::class]);
 
 $router->get('/agenda/novo', [AgendaController::class, 'novo'], [AuthMiddleware::class]);
 $router->post('/agenda/criar', [AgendaController::class, 'criar'], [AuthMiddleware::class]);
