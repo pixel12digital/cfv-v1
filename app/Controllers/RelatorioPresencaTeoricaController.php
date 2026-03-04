@@ -157,7 +157,6 @@ class RelatorioPresencaTeoricaController extends Controller
                     td.name as discipline_name,
                     ts.starts_at,
                     ts.ends_at,
-                    ts.duration_minutes,
                     u.nome as marked_by_name
                 FROM theory_attendance ta
                 INNER JOIN theory_sessions ts ON ta.session_id = ts.id
