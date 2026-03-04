@@ -321,98 +321,85 @@ function statusBadgeClass($status) {
         <?php endif; ?>
     </div>
 
-    <!-- Conteúdo principal -->
-    <div class="card no-print">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;">Relatório de Transações Financeiras</h2>
-            <div style="display: flex; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline" onclick="window.print()">
-                    🖨️ Imprimir
-                </button>
-            </div>
+    <!-- Cabeçalho -->
+    <div class="page-header no-print" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+        <div>
+            <h1>Relatório de Transações Financeiras</h1>
+            <p class="text-muted">Período: <?= date('d/m/Y', strtotime($dataInicio)) ?> a <?= date('d/m/Y', strtotime($dataFim)) ?></p>
         </div>
+        <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary" onclick="window.print();">
+                Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card no-print" style="margin-bottom: var(--spacing-lg);">
         <div class="card-body">
-            <!-- Filtros -->
-            <form method="GET" action="<?= base_path('relatorio-transacoes') ?>" style="margin-bottom: 2rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label for="data_inicio" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Data Início</label>
-                        <input type="date" id="data_inicio" name="data_inicio" value="<?= htmlspecialchars($dataInicio) ?>" class="form-control" required>
-                    </div>
-                    <div>
-                        <label for="data_fim" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Data Fim</label>
-                        <input type="date" id="data_fim" name="data_fim" value="<?= htmlspecialchars($dataFim) ?>" class="form-control" required>
-                    </div>
-                    <div>
-                        <label for="forma_pagamento" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Forma de Pagamento</label>
-                        <select id="forma_pagamento" name="forma_pagamento" class="form-control">
-                            <option value="">Todas</option>
-                            <option value="pix" <?= $filtroFormaPagamento === 'pix' ? 'selected' : '' ?>>PIX</option>
-                            <option value="boleto" <?= $filtroFormaPagamento === 'boleto' ? 'selected' : '' ?>>Boleto</option>
-                            <option value="cartao" <?= $filtroFormaPagamento === 'cartao' ? 'selected' : '' ?>>Cartão</option>
-                            <option value="entrada_parcelas" <?= $filtroFormaPagamento === 'entrada_parcelas' ? 'selected' : '' ?>>Entrada + Parcelas</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="status" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Status Financeiro</label>
-                        <select id="status" name="status" class="form-control">
-                            <option value="">Todos</option>
-                            <option value="em_dia" <?= $filtroStatus === 'em_dia' ? 'selected' : '' ?>>Em Dia</option>
-                            <option value="pendente" <?= $filtroStatus === 'pendente' ? 'selected' : '' ?>>Pendente</option>
-                            <option value="bloqueado" <?= $filtroStatus === 'bloqueado' ? 'selected' : '' ?>>Bloqueado</option>
-                        </select>
-                    </div>
+            <form method="get" action="<?= base_path('relatorio-transacoes') ?>" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-md); align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" name="data_inicio" class="form-input" value="<?= htmlspecialchars($dataInicio) ?>">
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" name="data_fim" class="form-input" value="<?= htmlspecialchars($dataFim) ?>">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Forma de Pagamento</label>
+                    <select name="forma_pagamento" class="form-input" style="min-width: 180px;">
+                        <option value="">Todas</option>
+                        <option value="pix" <?= $filtroFormaPagamento === 'pix' ? 'selected' : '' ?>>PIX</option>
+                        <option value="boleto" <?= $filtroFormaPagamento === 'boleto' ? 'selected' : '' ?>>Boleto</option>
+                        <option value="cartao" <?= $filtroFormaPagamento === 'cartao' ? 'selected' : '' ?>>Cartão</option>
+                        <option value="entrada_parcelas" <?= $filtroFormaPagamento === 'entrada_parcelas' ? 'selected' : '' ?>>Entrada + Parcelas</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Status Financeiro</label>
+                    <select name="status" class="form-input" style="min-width: 180px;">
+                        <option value="">Todos</option>
+                        <option value="em_dia" <?= $filtroStatus === 'em_dia' ? 'selected' : '' ?>>Em Dia</option>
+                        <option value="pendente" <?= $filtroStatus === 'pendente' ? 'selected' : '' ?>>Pendente</option>
+                        <option value="bloqueado" <?= $filtroStatus === 'bloqueado' ? 'selected' : '' ?>>Bloqueado</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
                     <button type="submit" class="btn btn-primary">Filtrar</button>
-                    <a href="<?= base_path('relatorio-transacoes') ?>" class="btn btn-outline">Limpar Filtros</a>
                 </div>
             </form>
+        </div>
+    </div>
 
-            <!-- Cards de Totais -->
-            <div class="totals-grid">
-                <div class="total-card">
-                    <h4>Total de Transações</h4>
-                    <div class="value"><?= $totais['quantidade'] ?></div>
-                    <div class="subtitle">matrículas no período</div>
-                </div>
-                <div class="total-card">
-                    <h4>Valor Total</h4>
-                    <div class="value">R$ <?= number_format($totais['valor_total'], 2, ',', '.') ?></div>
-                    <div class="subtitle">soma de todas as transações</div>
-                </div>
-                <div class="total-card">
-                    <h4>Valor Pago</h4>
-                    <div class="value" style="color: #28a745;">R$ <?= number_format($totais['valor_pago'], 2, ',', '.') ?></div>
-                    <div class="subtitle">entradas recebidas</div>
-                </div>
-                <div class="total-card">
-                    <h4>Saldo Devedor</h4>
-                    <div class="value" style="color: #dc3545;">R$ <?= number_format($totais['saldo_devedor'], 2, ',', '.') ?></div>
-                    <div class="subtitle">a receber</div>
-                </div>
-            </div>
+    <!-- Totais -->
+    <div class="print-totals no-print" style="display: flex; flex-wrap: wrap; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--cfc-surface-muted, #f3f4f6); border-radius: var(--radius-md);">
+        <span><strong>Total de Transações:</strong> <span class="badge badge-secondary"><?= $totais['quantidade'] ?></span></span>
+        <span><strong>Valor Total:</strong> <span class="badge badge-secondary">R$ <?= number_format($totais['valor_total'], 2, ',', '.') ?></span></span>
+        <span><strong>Valor Pago:</strong> <span class="badge badge-success">R$ <?= number_format($totais['valor_pago'], 2, ',', '.') ?></span></span>
+        <span><strong>Saldo Devedor:</strong> <span class="badge badge-danger">R$ <?= number_format($totais['saldo_devedor'], 2, ',', '.') ?></span></span>
+    </div>
 
-            <!-- Totais por Forma de Pagamento -->
-            <div style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">Totais por Forma de Pagamento</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <?php foreach ($totais['por_forma'] as $forma => $dados): ?>
-                        <?php if ($dados['quantidade'] > 0): ?>
-                        <div style="background: var(--color-bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--color-border);">
-                            <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--color-primary);">
-                                <?= formatPaymentMethod($forma) ?>
-                            </div>
-                            <div style="font-size: 0.875rem; color: var(--color-text-muted);">
-                                <div>Qtd: <strong><?= $dados['quantidade'] ?></strong></div>
-                                <div>Total: <strong>R$ <?= number_format($dados['valor'], 2, ',', '.') ?></strong></div>
-                                <div>Pago: <strong style="color: #28a745;">R$ <?= number_format($dados['pago'], 2, ',', '.') ?></strong></div>
-                                <div>Saldo: <strong style="color: #dc3545;">R$ <?= number_format($dados['saldo'], 2, ',', '.') ?></strong></div>
-                            </div>
+    <!-- Totais por Forma de Pagamento -->
+    <div class="card no-print" style="margin-bottom: var(--spacing-lg);">
+        <div class="card-body">
+            <h3 style="margin-bottom: var(--spacing-md);">Totais por Forma de Pagamento</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-md);">
+                <?php foreach ($totais['por_forma'] as $forma => $dados): ?>
+                    <?php if ($dados['quantidade'] > 0): ?>
+                    <div style="background: var(--cfc-surface-muted, #f3f4f6); padding: var(--spacing-md); border-radius: var(--radius-md); border: 1px solid var(--cfc-border-subtle, #e5e7eb); min-width: 200px;">
+                        <div style="font-weight: 600; margin-bottom: var(--spacing-sm); color: var(--cfc-primary, #2563eb);">
+                            <?= formatPaymentMethod($forma) ?>
                         </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
+                        <div style="font-size: 0.875rem; color: var(--gray-600);">
+                            <div>Qtd: <strong><?= $dados['quantidade'] ?></strong></div>
+                            <div>Total: <strong>R$ <?= number_format($dados['valor'], 2, ',', '.') ?></strong></div>
+                            <div>Pago: <strong style="color: #28a745;">R$ <?= number_format($dados['pago'], 2, ',', '.') ?></strong></div>
+                            <div>Saldo: <strong style="color: #dc3545;">R$ <?= number_format($dados['saldo'], 2, ',', '.') ?></strong></div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
