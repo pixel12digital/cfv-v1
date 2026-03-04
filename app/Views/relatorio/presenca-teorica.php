@@ -317,7 +317,7 @@ function attendanceStatusBadgeClass($status) {
     <?php if ($selectedClass): ?>
     <!-- Totais Gerais -->
     <div class="print-totals no-print" style="display: flex; flex-wrap: wrap; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--cfc-surface-muted, #f3f4f6); border-radius: var(--radius-md);">
-        <span><strong>Sessões Realizadas:</strong> <span class="badge badge-secondary"><?= $totals['total_sessions'] ?></span></span>
+        <span><strong>Aulas Realizadas:</strong> <span class="badge badge-secondary"><?= $totals['total_sessions'] ?></span></span>
         <span><strong>Presenças:</strong> <span class="badge badge-success"><?= $totals['total_presences'] ?></span></span>
         <span><strong>Faltas:</strong> <span class="badge badge-danger"><?= $totals['total_absences'] ?></span></span>
         <span><strong>Justificadas:</strong> <span class="badge badge-warning"><?= $totals['total_justified'] ?></span></span>
@@ -327,7 +327,7 @@ function attendanceStatusBadgeClass($status) {
 
     <!-- Totais para impressão -->
     <div class="print-totals">
-        <span><strong>Sessões:</strong> <?= $totals['total_sessions'] ?></span>
+        <span><strong>Aulas:</strong> <?= $totals['total_sessions'] ?></span>
         <span><strong>Presenças:</strong> <?= $totals['total_presences'] ?></span>
         <span><strong>Faltas:</strong> <?= $totals['total_absences'] ?></span>
         <span><strong>Justificadas:</strong> <?= $totals['total_justified'] ?></span>
@@ -344,7 +344,7 @@ function attendanceStatusBadgeClass($status) {
                     <thead>
                         <tr>
                             <th>Aluno</th>
-                            <th style="text-align: center;">Sessões</th>
+                            <th style="text-align: center;">Aulas</th>
                             <th style="text-align: center;">Presenças</th>
                             <th style="text-align: center;">Faltas</th>
                             <th style="text-align: center;">Justificadas</th>
