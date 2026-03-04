@@ -51,104 +51,162 @@ function statusBadgeClass($status) {
 @media print {
     .no-print, .sidebar, .topbar, .btn { display: none !important; }
     .relatorio-print { padding: 0; margin: 0; }
-    body { margin: 0; padding: 20px; }
+    body { 
+        margin: 0; 
+        padding: 15px; 
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+    }
+    
+    @page {
+        size: A4 landscape;
+        margin: 1cm;
+    }
     
     .print-header {
         display: flex !important;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
         border-bottom: 2px solid #333;
     }
     
     .print-header-logo {
-        max-height: 60px;
-        max-width: 150px;
+        max-height: 50px;
+        max-width: 120px;
     }
     
     .print-header-info {
         text-align: right;
-        font-size: 11px;
-        line-height: 1.4;
+        font-size: 9pt;
+        line-height: 1.3;
     }
     
     .print-header-info h2 {
-        margin: 0 0 5px 0;
-        font-size: 18px;
+        margin: 0 0 3px 0;
+        font-size: 14pt;
         font-weight: bold;
         color: #333;
     }
     
     .print-title {
         text-align: center;
-        margin: 20px 0;
-        font-size: 16px;
+        margin: 10px 0 5px 0;
+        font-size: 13pt;
         font-weight: bold;
         text-transform: uppercase;
+        color: #333;
     }
     
     .print-period {
         text-align: center;
-        margin-bottom: 15px;
-        font-size: 12px;
+        margin-bottom: 10px;
+        font-size: 9pt;
         color: #666;
     }
     
     .print-totals {
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 20px;
-        padding: 10px;
-        background: #f5f5f5;
-        border-radius: 5px;
-        font-size: 11px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 15px;
+        padding: 8px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        font-size: 8pt;
+        page-break-inside: avoid;
     }
     
     .print-totals-item {
-        padding: 5px;
+        padding: 3px;
+        text-align: center;
     }
     
     .print-totals-item strong {
         font-weight: bold;
+        display: block;
+        margin-bottom: 2px;
     }
     
     .table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 9px;
+        font-size: 7.5pt;
+        page-break-inside: auto;
+    }
+    
+    .table thead {
+        display: table-header-group;
+    }
+    
+    .table tfoot {
+        display: table-footer-group;
+        page-break-inside: avoid;
+    }
+    
+    .table tbody tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
     }
     
     .table th {
-        background: #333;
-        color: white;
-        padding: 6px 4px;
+        background: #333 !important;
+        color: white !important;
+        padding: 5px 3px;
         text-align: left;
         font-weight: bold;
         border: 1px solid #333;
+        font-size: 7.5pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     
     .table td {
-        padding: 5px 4px;
-        border: 1px solid #ddd;
+        padding: 4px 3px;
+        border: 1px solid #ccc;
+        vertical-align: middle;
     }
     
     .table tbody tr:nth-child(even) {
-        background: #f9f9f9;
+        background: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .table tfoot td {
+        background: #e8e8e8 !important;
+        font-weight: bold;
+        border-top: 2px solid #333;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     
     .badge {
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 8px;
+        padding: 1px 4px;
+        border-radius: 2px;
+        font-size: 7pt;
         font-weight: bold;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     
-    .badge-success { background: #28a745; color: white; }
-    .badge-warning { background: #ffc107; color: #333; }
-    .badge-danger { background: #dc3545; color: white; }
-    .badge-secondary { background: #6c757d; color: white; }
+    .badge-success { 
+        background: #28a745 !important; 
+        color: white !important; 
+    }
+    .badge-warning { 
+        background: #ffc107 !important; 
+        color: #333 !important; 
+    }
+    .badge-danger { 
+        background: #dc3545 !important; 
+        color: white !important; 
+    }
+    .badge-secondary { 
+        background: #6c757d !important; 
+        color: white !important; 
+    }
     
     .print-footer {
         display: block !important;
@@ -156,11 +214,21 @@ function statusBadgeClass($status) {
         bottom: 0;
         left: 0;
         right: 0;
-        padding: 10px 20px;
+        padding: 8px 15px;
         text-align: center;
-        font-size: 10px;
-        border-top: 1px solid #ddd;
+        font-size: 8pt;
+        border-top: 1px solid #ccc;
         background: white;
+    }
+    
+    /* Otimizações de espaço */
+    .card { 
+        box-shadow: none !important; 
+        border: none !important;
+    }
+    
+    h2, h3, h4 { 
+        margin: 5px 0 !important; 
     }
 }
 
