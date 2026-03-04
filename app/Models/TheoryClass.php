@@ -12,12 +12,12 @@ class TheoryClass extends Model
     public function findByCfc($cfcId, $status = null)
     {
         $sql = "SELECT tc.*, 
-                       tco.name as course_name,
-                       i.name as instructor_name,
+                       COALESCE(tco.name, 'Curso não definido') as course_name,
+                       COALESCE(i.name, 'Instrutor não definido') as instructor_name,
                        COUNT(DISTINCT te.id) as enrolled_count
                 FROM {$this->table} tc
-                INNER JOIN theory_courses tco ON tc.course_id = tco.id
-                INNER JOIN instructors i ON tc.instructor_id = i.id
+                LEFT JOIN theory_courses tco ON tc.course_id = tco.id
+                LEFT JOIN instructors i ON tc.instructor_id = i.id
                 LEFT JOIN theory_enrollments te ON tc.id = te.class_id AND te.status = 'active'
                 WHERE tc.cfc_id = ?";
         
