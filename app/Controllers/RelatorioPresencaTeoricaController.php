@@ -108,8 +108,8 @@ class RelatorioPresencaTeoricaController extends Controller
     {
         $stmt = $this->db->prepare(
             "SELECT DISTINCT td.id, td.name
-             FROM theory_disciplines td
-             INNER JOIN theory_sessions ts ON td.id = ts.discipline_id
+             FROM theory_sessions ts
+             INNER JOIN theory_disciplines td ON ts.discipline_id = td.id
              WHERE ts.class_id = ?
              ORDER BY td.name ASC"
         );

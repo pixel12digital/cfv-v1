@@ -265,10 +265,10 @@ function attendanceStatusBadgeClass($status) {
     <!-- Filtros -->
     <div class="card no-print" style="margin-bottom: var(--spacing-lg);">
         <div class="card-body">
-            <form method="get" action="<?= base_path('relatorio-presenca-teorica') ?>" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-md); align-items: end;">
+            <form method="get" action="<?= base_path('relatorio-presenca-teorica') ?>" id="filterForm" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-md); align-items: end;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Turma *</label>
-                    <select name="class_id" class="form-input" style="min-width: 180px;" required>
+                    <select name="class_id" class="form-input" style="min-width: 180px;" required onchange="document.getElementById('filterForm').submit();">
                         <option value="">Selecione uma turma</option>
                         <?php foreach ($allClasses as $class): ?>
                             <option value="<?= (int)$class['id'] ?>" <?= $classId == $class['id'] ? 'selected' : '' ?>>
