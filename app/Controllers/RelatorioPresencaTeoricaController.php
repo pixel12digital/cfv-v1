@@ -163,7 +163,7 @@ class RelatorioPresencaTeoricaController extends Controller
                 INNER JOIN theory_disciplines td ON ts.discipline_id = td.id
                 INNER JOIN students s ON ta.student_id = s.id
                 LEFT JOIN usuarios u ON ta.marked_by = u.id
-                WHERE ts.class_id = ? AND ts.status = 'done'";
+                WHERE ts.class_id = ?";
         
         $params = [$classId];
         
@@ -211,7 +211,7 @@ class RelatorioPresencaTeoricaController extends Controller
                 INNER JOIN theory_enrollments te ON s.id = te.student_id
                 INNER JOIN theory_sessions ts ON te.class_id = ts.class_id
                 LEFT JOIN theory_attendance ta ON ts.id = ta.session_id AND s.id = ta.student_id
-                WHERE te.class_id = ? AND te.status = 'active' AND ts.status = 'done'";
+                WHERE te.class_id = ? AND te.status = 'active'";
         
         $params = [$classId];
         
