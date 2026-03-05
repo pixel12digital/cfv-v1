@@ -427,13 +427,19 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
                         </div>
                     </div>
                 </div>
-                <?php if (\App\Services\PermissionService::check('enrollments', 'update')): ?>
-                <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border); display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+                    <?php if (\App\Services\PermissionService::check('enrollments', 'update')): ?>
                     <a href="<?= base_path("matriculas/{$enrollment['id']}") ?>" class="btn btn-outline btn-sm">
                         Editar Matrícula
                     </a>
+                    <?php endif; ?>
+                    <a href="<?= base_path("enrollment/{$enrollment['id']}/contract") ?>" class="btn btn-primary btn-sm" target="_blank">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                        Imprimir Contrato
+                    </a>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>
