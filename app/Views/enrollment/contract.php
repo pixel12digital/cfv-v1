@@ -49,88 +49,96 @@ function formatEnrollmentStatus($status) {
         
         body {
             font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
-            color: #333;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #000;
             background: white;
+            margin: 0;
+            padding: 0;
         }
         
         .container {
+            width: 100%;
             max-width: 210mm;
             margin: 0 auto;
-            padding: 20mm;
+            padding: 10mm 15mm;
         }
         
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #333;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
         .header-logo {
-            max-width: 150px;
-            max-height: 80px;
+            max-width: 80px;
+            max-height: 60px;
+            object-fit: contain;
         }
         
         .header-info {
             text-align: right;
-            flex: 1;
-            margin-left: 20px;
         }
         
         .header-info h1 {
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             color: #000;
         }
         
         .header-info p {
-            font-size: 9pt;
-            margin: 2px 0;
-            color: #666;
+            font-size: 8pt;
+            margin: 1px 0;
+            color: #333;
         }
         
         .title {
             text-align: center;
-            margin: 25px 0 20px 0;
+            margin: 15px 0 12px 0;
         }
         
         .title h2 {
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: bold;
             text-transform: uppercase;
             color: #000;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .title .contract-number {
-            font-size: 10pt;
-            color: #666;
+            font-size: 9pt;
+            color: #333;
         }
         
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             page-break-inside: avoid;
         }
         
         .section-title {
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: bold;
             color: #000;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #ddd;
+            margin-bottom: 6px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #ccc;
         }
         
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px 20px;
-            margin-bottom: 10px;
+            gap: 6px 15px;
+            margin-bottom: 8px;
         }
         
         .info-item {
@@ -143,36 +151,36 @@ function formatEnrollmentStatus($status) {
         }
         
         .info-label {
-            font-size: 9pt;
+            font-size: 8pt;
             font-weight: bold;
-            color: #666;
-            margin-bottom: 2px;
+            color: #555;
+            margin-bottom: 1px;
         }
         
         .info-value {
-            font-size: 11pt;
+            font-size: 9pt;
             color: #000;
         }
         
         .financial-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 10px 0;
         }
         
         .financial-table th {
-            background: #f5f5f5;
-            padding: 10px;
+            background: #f0f0f0;
+            padding: 6px 8px;
             text-align: left;
-            font-size: 10pt;
+            font-size: 9pt;
             font-weight: bold;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
         }
         
         .financial-table td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            font-size: 10pt;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            font-size: 9pt;
         }
         
         .financial-table .text-right {
@@ -185,32 +193,32 @@ function formatEnrollmentStatus($status) {
         }
         
         .payment-summary {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
         }
         
         .payment-summary-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
-            font-size: 11pt;
+            padding: 3px 0;
+            font-size: 9pt;
         }
         
         .payment-summary-item.total {
-            font-size: 13pt;
+            font-size: 11pt;
             font-weight: bold;
-            border-top: 2px solid #333;
-            margin-top: 10px;
-            padding-top: 10px;
+            border-top: 2px solid #000;
+            margin-top: 6px;
+            padding-top: 6px;
         }
         
         .signatures {
-            margin-top: 50px;
+            margin-top: 30px;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
+            gap: 30px;
         }
         
         .signature-block {
@@ -218,66 +226,45 @@ function formatEnrollmentStatus($status) {
         }
         
         .signature-line {
-            border-top: 1px solid #333;
-            margin-bottom: 5px;
-            padding-top: 5px;
+            border-top: 1px solid #000;
+            margin-bottom: 3px;
+            padding-top: 3px;
         }
         
         .signature-label {
-            font-size: 9pt;
-            color: #666;
+            font-size: 8pt;
+            color: #555;
         }
         
         .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
+            margin-top: 20px;
+            padding-top: 8px;
+            border-top: 1px solid #ccc;
             text-align: center;
-            font-size: 8pt;
-            color: #999;
-        }
-        
-        .no-print {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn:hover {
-            background: #0056b3;
+            font-size: 7pt;
+            color: #666;
         }
         
         @media print {
-            .no-print {
-                display: none !important;
-            }
-            
             body {
                 margin: 0;
                 padding: 0;
+                background: white;
             }
             
             .container {
                 max-width: 100%;
-                padding: 15mm;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .section {
+                page-break-inside: avoid;
             }
             
             @page {
                 size: A4 portrait;
-                margin: 15mm;
+                margin: 12mm 15mm;
             }
         }
     </style>
@@ -298,16 +285,18 @@ function formatEnrollmentStatus($status) {
     <div class="container">
         <!-- Cabeçalho -->
         <div class="header">
-            <div>
+            <div class="header-left">
                 <?php
                 $logoPath = __DIR__ . '/../../../public/uploads/logo.png';
                 if (file_exists($logoPath)) {
                     echo '<img src="' . base_path('public/uploads/logo.png') . '" alt="Logo" class="header-logo">';
                 }
                 ?>
+                <div>
+                    <h1 style="font-size: 14pt; margin: 0;"><?= htmlspecialchars($cfc['nome'] ?? 'CFC') ?></h1>
+                </div>
             </div>
             <div class="header-info">
-                <h1><?= htmlspecialchars($cfc['nome'] ?? 'CFC') ?></h1>
                 <?php if (!empty($cfc['cnpj'])): ?>
                 <p><strong>CNPJ:</strong> <?= htmlspecialchars($cfc['cnpj']) ?></p>
                 <?php endif; ?>
