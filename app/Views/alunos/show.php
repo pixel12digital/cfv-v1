@@ -433,12 +433,12 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
                         Editar Matrícula
                     </a>
                     <?php endif; ?>
-                    <a href="<?= base_path("enrollment/{$enrollment['id']}/contract") ?>" class="btn btn-primary btn-sm">
+                    <button onclick="printContract(<?= $enrollment['id'] ?>)" class="btn btn-primary btn-sm" type="button">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                         </svg>
                         Imprimir Contrato
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -965,3 +965,16 @@ $primaryPhone = $studentModel->getPrimaryPhone($student);
     font-weight: var(--font-weight-medium);
 }
 </style>
+
+<script>
+function printContract(enrollmentId) {
+    const url = '<?= base_path("enrollment/") ?>' + enrollmentId + '/contract';
+    const printWindow = window.open(url, 'PrintContract', 'width=800,height=600');
+    
+    if (printWindow) {
+        printWindow.focus();
+    } else {
+        alert('Por favor, permita pop-ups para imprimir o contrato.');
+    }
+}
+</script>

@@ -283,10 +283,17 @@ function formatEnrollmentStatus($status) {
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <button onclick="window.print()" class="btn">Imprimir / Salvar PDF</button>
-        <a href="<?= base_path('alunos/' . $student['id']) ?>" class="btn" style="background: #6c757d; margin-left: 10px;">Voltar</a>
-    </div>
+    <script>
+        // Auto-trigger print dialog when page loads
+        window.onload = function() {
+            window.print();
+        };
+        
+        // Close window after print dialog is closed
+        window.onafterprint = function() {
+            window.close();
+        };
+    </script>
 
     <div class="container">
         <!-- Cabeçalho -->
