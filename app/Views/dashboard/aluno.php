@@ -37,6 +37,75 @@ $studentModel = new Student();
         </div>
     </div>
 
+    <!-- Minha Matrícula -->
+    <?php if (!empty($activeEnrollment)): ?>
+    <div class="card" style="margin-bottom: var(--spacing-md);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Minha Matrícula</h3>
+            <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">
+                Nº <?= str_pad($activeEnrollment['id'], 6, '0', STR_PAD_LEFT) ?>
+            </span>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md);">
+                <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: 2px;">Plano Contratado</div>
+                    <div style="font-weight: var(--font-weight-semibold);">
+                        <?= htmlspecialchars($activeEnrollment['service_name'] ?? '—') ?>
+                        <?php if (!empty($activeEnrollment['service_category'])): ?>
+                        <span style="font-size: var(--font-size-sm); color: var(--color-text-muted); font-weight: normal;">
+                            (<?= htmlspecialchars($activeEnrollment['service_category']) ?>)
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: 2px;">Valor do Contrato</div>
+                    <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg);">
+                        R$ <?= number_format((float)($activeEnrollment['final_price'] ?? 0), 2, ',', '.') ?>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: 2px;">Status</div>
+                    <div>
+                        <?php
+                        $statusMap = ['ativa' => ['label' => 'Ativa', 'color' => 'var(--color-success)'], 'concluida' => ['label' => 'Concluída', 'color' => 'var(--color-primary)'], 'cancelada' => ['label' => 'Cancelada', 'color' => 'var(--color-danger)']];
+                        $statusInfo = $statusMap[$activeEnrollment['status']] ?? ['label' => ucfirst($activeEnrollment['status'] ?? ''), 'color' => 'var(--color-text-muted)'];
+                        ?>
+                        <span style="color: <?= $statusInfo['color'] ?>; font-weight: var(--font-weight-semibold);">
+                            <?= $statusInfo['label'] ?>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: 2px;">Situação Financeira</div>
+                    <div>
+                        <?php
+                        $finMap = ['em_dia' => ['label' => 'Em Dia', 'color' => 'var(--color-success)'], 'pendente' => ['label' => 'Pendente', 'color' => 'var(--color-warning)'], 'bloqueado' => ['label' => 'Bloqueado', 'color' => 'var(--color-danger)']];
+                        $finInfo = $finMap[$activeEnrollment['financial_status']] ?? ['label' => ucfirst($activeEnrollment['financial_status'] ?? ''), 'color' => 'var(--color-text-muted)'];
+                        ?>
+                        <span style="color: <?= $finInfo['color'] ?>; font-weight: var(--font-weight-semibold);">
+                            <?= $finInfo['label'] ?>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: 2px;">Data de Matrícula</div>
+                    <div><?= !empty($activeEnrollment['created_at']) ? date('d/m/Y', strtotime($activeEnrollment['created_at'])) : '—' ?></div>
+                </div>
+            </div>
+            <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                <button onclick="printStudentContract(<?= $activeEnrollment['id'] ?>)" class="btn btn-sm btn-outline" type="button">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    Ver / Imprimir Contrato
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Resumo de Aulas Práticas (contador para o aluno) -->
     <?php if (isset($lessonSummary) && ($lessonSummary['completed_count'] > 0 || $lessonSummary['upcoming_count'] > 0)): ?>
     <div class="card" style="margin-bottom: var(--spacing-md); background: var(--color-bg-light, #f8fafc); border-left: 4px solid var(--color-success, #10b981);">
@@ -521,4 +590,14 @@ document.getElementById('rescheduleForm')?.addEventListener('submit', function(e
     btn.disabled = true;
     btn.textContent = 'Enviando...';
 });
+
+function printStudentContract(enrollmentId) {
+    const url = '<?= base_path("enrollment/") ?>' + enrollmentId + '/contract';
+    const printWindow = window.open(url, 'PrintContract', 'width=800,height=600');
+    if (printWindow) {
+        printWindow.focus();
+    } else {
+        alert('Por favor, permita pop-ups para visualizar o contrato.');
+    }
+}
 </script>

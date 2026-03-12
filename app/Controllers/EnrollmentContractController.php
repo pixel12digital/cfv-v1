@@ -30,9 +30,10 @@ class EnrollmentContractController extends Controller
     {
         // Verificar permissões RBAC
         $role = $_SESSION['active_role'] ?? $_SESSION['current_role'] ?? null;
-        if (!in_array($role, ['ADMIN', 'SECRETARIA'], true)) {
+        $allowedRoles = ['ADMIN', 'SECRETARIA', 'ALUNO'];
+        if (!in_array($role, $allowedRoles, true)) {
             http_response_code(403);
-            echo 'Acesso negado. Apenas administradores e secretárias podem gerar contratos de matrícula.';
+            echo 'Acesso negado.';
             return;
         }
 
@@ -46,8 +47,19 @@ class EnrollmentContractController extends Controller
                 return;
             }
 
-            // Validar que a matrícula pertence ao CFC
-            if ($enrollment['cfc_id'] != $this->cfcId) {
+            // Aluno: verificar que a matrícula pertence ao próprio aluno logado
+            if ($role === 'ALUNO') {
+                $userId = $_SESSION['user_id'] ?? null;
+                $studentId = $this->getStudentIdByUserId($userId);
+                if (!$studentId || $enrollment['student_id'] != $studentId) {
+                    http_response_code(403);
+                    echo 'Acesso negado. Você só pode visualizar o contrato da sua própria matrícula.';
+                    return;
+                }
+            }
+
+            // Admin/Secretaria: validar que a matrícula pertence ao CFC
+            if (in_array($role, ['ADMIN', 'SECRETARIA'], true) && $enrollment['cfc_id'] != $this->cfcId) {
                 http_response_code(403);
                 echo 'Acesso negado. Esta matrícula não pertence ao seu CFC.';
                 return;
@@ -56,8 +68,8 @@ class EnrollmentContractController extends Controller
             // Buscar dados do aluno
             $student = $this->getStudentData($enrollment['student_id']);
 
-            // Buscar dados do CFC
-            $cfc = $this->getCfcData($this->cfcId);
+            // Buscar dados do CFC (usar cfc_id da matrícula para garantir consistência)
+            $cfc = $this->getCfcData($enrollment['cfc_id'] ?? $this->cfcId);
 
             // Buscar dados do serviço
             $service = $this->getServiceData($enrollment['service_id']);
@@ -155,6 +167,20 @@ class EnrollmentContractController extends Controller
         );
         $stmt->execute([$serviceId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Retorna o student_id vinculado a um user_id
+     */
+    private function getStudentIdByUserId($userId)
+    {
+        if (!$userId) return null;
+        $stmt = $this->db->prepare(
+            "SELECT id FROM students WHERE user_id = ? LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row['id'] ?? null;
     }
 
     /**
